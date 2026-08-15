@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12283F">
+<title>Attendance</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="robots" content="noindex, nofollow">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2312283F'/><text x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='Arial'>A</text></svg>">
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#F4F6F8;overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+  .ask{position:fixed;inset:0;display:grid;place-items:center;padding:24px}
+  .box{width:100%;max-width:320px;text-align:center}
+  .box h1{font-size:19px;margin:0 0 6px;color:#0E1B2A}
+  .box p{font-size:13.5px;color:#67788C;margin:0 0 18px;line-height:1.5}
+  .box input{width:100%;padding:13px;border:1px solid #E3E7ED;border-radius:12px;font-size:16px;
+    text-align:center;letter-spacing:.05em;background:#fff;color:#0E1B2A}
+  .box button{width:100%;margin-top:10px;padding:14px;border:0;border-radius:12px;background:#12283F;
+    color:#fff;font-size:15.5px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+<!--
+  SETUP: paste your web app /exec URL into WEBAPP_URL below. Nothing else to change.
+
+  Send each teacher:  https://YOURNAME.github.io/attendance/?t=THEIR_TOKEN
+  On first open the code is saved on their device and wiped from the address bar, so
+  the link stops being visible in history, screenshots or over-the-shoulder glances.
+  This file itself contains no teacher codes — it is safe to host publicly.
+-->
+<div class="ask" id="ask" style="display:none">
+  <div class="box">
+    <h1>Attendance</h1>
+    <p>Enter the code from your attendance link.</p>
+    <input id="code" type="text" inputmode="latin" autocomplete="off" spellcheck="false" placeholder="your code">
+    <button id="go">Open my register</button>
+  </div>
+</div>
+<iframe id="app" title="Attendance" style="display:none" allow="clipboard-write"></iframe>
+
+<script>
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxtkE0-FzD5YCp5yweSo4pP2EEtZdVfEl7mW_VTa7hnEkCx41gqpfLj6IonJtCksQHh/exec';
+  var KEY = 'attendance-code';
+
+  function stored(){ try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+  function keep(t){ try { localStorage.setItem(KEY, t); } catch (e) {} }
+
+  function open(t){
+    var f = document.getElementById('app');
+    f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t);
+    f.style.display = 'block';
+    document.getElementById('ask').style.display = 'none';
+  }
+
+  var fromLink = (location.search.match(/[?&]t=([^&]+)/) || [])[1] || '';
+  if (fromLink) {
+    fromLink = decodeURIComponent(fromLink);
+    keep(fromLink);
+    history.replaceState(null, '', location.pathname);   // drop the code from the address bar
+    open(fromLink);
+  } else if (stored()) {
+    open(stored());
+  } else {
+    document.getElementById('ask').style.display = 'grid';
+    document.getElementById('go').addEventListener('click', function(){
+      var v = document.getElementById('code').value.trim();
+      if (!v) return;
+      keep(v); open(v);
+    });
+    document.getElementById('code').addEventListener('keydown', function(e){
+      if (e.key === 'Enter') document.getElementById('go').click();
+    });
+  }
+</script>
+</body>
+</html>
