@@ -50,27 +50,41 @@
   function stored(){ try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
   function keep(t){ try { localStorage.setItem(KEY, t); } catch (e) {} }
 
-  function open(t){
+  /* Anything else in the address (view=students, s=P014) rides along to the app. */
+  function passthrough(){
+    var extra = '';
+    location.search.replace(/^\?/, '').split('&').forEach(function (kv) {
+      if (!kv) return;
+      var k = kv.split('=')[0];
+      if (k === 't') return;                       // the code is handled separately
+      extra += '&' + kv;
+    });
+    return extra;
+  }
+
+  function open(t, extra){
     var f = document.getElementById('app');
-    f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t);
+    f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '');
     f.style.display = 'block';
     document.getElementById('ask').style.display = 'none';
   }
 
+  var extra = passthrough();
   var fromLink = (location.search.match(/[?&]t=([^&]+)/) || [])[1] || '';
   if (fromLink) {
     fromLink = decodeURIComponent(fromLink);
     keep(fromLink);
-    history.replaceState(null, '', location.pathname);   // drop the code from the address bar
-    open(fromLink);
+    // drop the code from the address bar, but keep any view the link asked for
+    history.replaceState(null, '', location.pathname + (extra ? '?' + extra.substring(1) : ''));
+    open(fromLink, extra);
   } else if (stored()) {
-    open(stored());
+    open(stored(), extra);
   } else {
     document.getElementById('ask').style.display = 'grid';
     document.getElementById('go').addEventListener('click', function(){
       var v = document.getElementById('code').value.trim();
       if (!v) return;
-      keep(v); open(v);
+      keep(v); open(v, extra);
     });
     document.getElementById('code').addEventListener('keydown', function(e){
       if (e.key === 'Enter') document.getElementById('go').click();
