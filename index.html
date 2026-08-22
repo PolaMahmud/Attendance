@@ -11,9 +11,39 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2312283F'/><text x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='Arial'>A</text></svg>">
 <style>
-  html,body{margin:0;padding:0;height:100%;background:#F4F6F8;overflow:hidden;
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#EFF2F8;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+  /* the same colour field the app sits on, so the shell and the app are continuous */
+  body::before{content:"";position:fixed;inset:-25%;z-index:0;pointer-events:none;filter:blur(56px);
+    background:
+      radial-gradient(30% 34% at 12% 14%, rgba(86,120,255,.70), transparent 66%),
+      radial-gradient(28% 30% at 90% 10%, rgba(255,120,190,.58), transparent 66%),
+      radial-gradient(34% 36% at 80% 86%, rgba(48,214,200,.55), transparent 66%),
+      radial-gradient(30% 34% at 14% 90%, rgba(255,190,90,.50), transparent 66%),
+      linear-gradient(180deg,#F4F6FB 0%,#E9EDF6 100%)}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2;opacity:0;
+    transition:opacity .25s ease}
+  iframe.ready{opacity:1}
+
+  /* Painted immediately, before Apps Script has even been asked for the page. */
+  #shell{position:fixed;inset:0;z-index:1;padding:calc(env(safe-area-inset-top) + 14px) 16px 0;
+    max-width:900px;margin:0 auto;transition:opacity .25s ease}
+  #shell.gone{opacity:0;pointer-events:none}
+  .sbar{display:flex;align-items:center;gap:10px;padding:12px 4px 16px}
+  .spill{width:74px;height:26px;border-radius:99px;background:rgba(255,255,255,.8);
+    border:1px solid rgba(255,255,255,.95)}
+  .slogo{font-weight:700;font-size:17px;letter-spacing:-.02em;color:#0B1020}
+  .sdot{margin-left:auto;width:26px;height:26px;border-radius:50%;background:rgba(11,16,32,.82)}
+  .sblock{border-radius:18px;background:rgba(255,255,255,.74);border:1px solid rgba(255,255,255,.9);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 10px 30px -18px rgba(16,24,48,.45);
+    -webkit-backdrop-filter:saturate(160%) blur(12px);backdrop-filter:saturate(160%) blur(12px);
+    margin-bottom:12px;overflow:hidden;position:relative}
+  .sblock::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.55) 50%,transparent 80%);
+    background-size:220% 100%;animation:sh 1.4s linear infinite}
+  @keyframes sh{from{background-position:180% 0}to{background-position:-80% 0}}
+  .h76{height:76px}.h44{height:44px}
+  @media (prefers-reduced-motion:reduce){.sblock::after{animation:none}}
   .ask{position:fixed;inset:0;display:grid;place-items:center;padding:24px}
   .box{width:100%;max-width:320px;text-align:center}
   .box h1{font-size:19px;margin:0 0 6px;color:#0E1B2A}
@@ -41,10 +71,17 @@
     <button id="go">Open my register</button>
   </div>
 </div>
-<iframe id="app" title="Attendance" style="display:none" allow="clipboard-write"></iframe>
+<div id="shell" aria-hidden="true">
+  <div class="sbar"><span class="slogo">Attendance</span><span class="spill"></span><span class="sdot"></span></div>
+  <div class="sblock h44" style="width:70%;margin:0 auto 16px"></div>
+  <div class="sblock h76"></div>
+  <div class="sblock h76"></div>
+  <div class="sblock h76"></div>
+</div>
+<div id="slot"></div>
 
 <script>
-  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxtkE0-FzD5YCp5yweSo4pP2EEtZdVfEl7mW_VTa7hnEkCx41gqpfLj6IonJtCksQHh/exec';
+  var WEBAPP_URL = 'https://script.google.com/macros/s/PASTE_YOUR_EXEC_URL_HERE/exec';
   var KEY = 'attendance-code';
 
   function stored(){ try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
@@ -63,10 +100,34 @@
   }
 
   function open(t, extra){
-    var f = document.getElementById('app');
-    f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '');
-    f.style.display = 'block';
+    var shell = document.getElementById('shell');
     document.getElementById('ask').style.display = 'none';
+
+    // Built fresh with its src already set, so the only load event is the app's own —
+    // an iframe that starts empty fires one for about:blank and hides the shell too early.
+    var f = document.createElement('iframe');
+    f.id = 'app';
+    f.title = 'Attendance';
+    f.setAttribute('allow', 'clipboard-write');
+    var shown = false;
+    function reveal(){
+      if (shown) return;
+      shown = true;
+      f.classList.add('ready');
+      setTimeout(function(){ if (shell) shell.classList.add('gone'); }, 180);
+    }
+    // the app posts this the moment it paints — exact, and not fooled by the
+    // load event an empty iframe fires before it has navigated anywhere
+    window.addEventListener('message', function(e){
+      if (e && e.data === 'attendance:ready') reveal();
+    });
+    // hard stop, in case an older build is deployed that doesn't post the message
+    setTimeout(reveal, 12000);
+    f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '');
+    document.getElementById('slot').appendChild(f);
+
+    // never leave the shell up forever if something goes wrong
+    setTimeout(function(){ f.classList.add('ready'); if (shell) shell.classList.add('gone'); }, 15000);
   }
 
   var extra = passthrough();
@@ -80,6 +141,7 @@
   } else if (stored()) {
     open(stored(), extra);
   } else {
+    document.getElementById('shell').classList.add('gone');
     document.getElementById('ask').style.display = 'grid';
     document.getElementById('go').addEventListener('click', function(){
       var v = document.getElementById('code').value.trim();
