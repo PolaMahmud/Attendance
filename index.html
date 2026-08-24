@@ -10,9 +10,29 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="robots" content="noindex, nofollow">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2312283F'/><text x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='Arial'>A</text></svg>">
+
+<!-- Start the DNS lookup and TLS handshake for Apps Script now, in parallel with
+     parsing this page, rather than when the iframe is created a moment later. -->
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Same faces the app uses, so the cached cards do not reflow when the live
+     app fades in over them. Non-blocking: it never delays first paint. -->
+<link rel="stylesheet" media="print" onload="this.media='all'"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
+
 <style>
+  :root{
+    --ink:#0B1020; --ink-2:#55607A; --ink-3:#8F98AD;
+    --glass:rgba(255,255,255,.50); --glass-line:rgba(255,255,255,.65);
+    --blur:saturate(180%) blur(20px);
+    --shadow:0 1px 1px rgba(16,24,48,.04), 0 10px 30px -18px rgba(16,24,48,.45);
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --display:"Bricolage Grotesque","Inter",-apple-system,sans-serif;
+  }
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#EFF2F8;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+    font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
   /* the same colour field the app sits on, so the shell and the app are continuous */
   body::before{content:"";position:fixed;inset:-25%;z-index:0;pointer-events:none;filter:blur(56px);
     background:
@@ -25,14 +45,17 @@
     transition:opacity .25s ease}
   iframe.ready{opacity:1}
 
-  /* Painted immediately, before Apps Script has even been asked for the page. */
-  #shell{position:fixed;inset:0;z-index:1;padding:calc(env(safe-area-inset-top) + 14px) 16px 0;
-    max-width:900px;margin:0 auto;transition:opacity .25s ease}
-  #shell.gone{opacity:0;pointer-events:none}
+  /* ---- placeholder layer: either the skeleton or the cached cards ---- */
+  .ph{position:fixed;inset:0;z-index:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 24px);
+    transition:opacity .25s ease}
+  .ph.gone{opacity:0;pointer-events:none}
+  .inner{max-width:900px;margin:0 auto}
+
   .sbar{display:flex;align-items:center;gap:10px;padding:12px 4px 16px}
+  .slogo{font-weight:700;font-size:17px;letter-spacing:-.02em;color:#0B1020}
   .spill{width:74px;height:26px;border-radius:99px;background:rgba(255,255,255,.8);
     border:1px solid rgba(255,255,255,.95)}
-  .slogo{font-weight:700;font-size:17px;letter-spacing:-.02em;color:#0B1020}
   .sdot{margin-left:auto;width:26px;height:26px;border-radius:50%;background:rgba(11,16,32,.82)}
   .sblock{border-radius:18px;background:rgba(255,255,255,.74);border:1px solid rgba(255,255,255,.9);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 10px 30px -18px rgba(16,24,48,.45);
@@ -44,7 +67,49 @@
   @keyframes sh{from{background-position:180% 0}to{background-position:-80% 0}}
   .h76{height:76px}.h44{height:44px}
   @media (prefers-reduced-motion:reduce){.sblock::after{animation:none}}
-  .ask{position:fixed;inset:0;display:grid;place-items:center;padding:24px}
+
+  /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
+  .name{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .name .nm{font-size:13.5px;font-weight:500;color:var(--ink-2)}
+  .avatar{width:26px;height:26px;border-radius:50%;background:rgba(11,16,32,.82);color:#fff;
+    display:grid;place-items:center;font-size:11px;font-weight:700;letter-spacing:.02em;flex:none}
+  .dhead{text-align:center;margin:2px 0 14px}
+  .dhead b{display:block;font-family:var(--display);font-size:20px;letter-spacing:-.02em}
+  .dhead span{font-size:12.5px;color:var(--ink-2)}
+  .note{display:flex;align-items:center;justify-content:center;gap:7px;
+    font-size:12px;color:var(--ink-2);margin:0 auto 14px;padding:6px 12px;width:max-content;
+    max-width:100%;background:rgba(255,255,255,.42);border:1px solid var(--glass-line);
+    border-radius:99px;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+  .spin{width:11px;height:11px;border-radius:50%;border:2px solid rgba(11,16,32,.18);
+    border-top-color:rgba(11,16,32,.55);animation:sp .7s linear infinite;flex:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+  .lessons{display:grid;gap:12px}
+  @media(min-width:620px){.lessons{grid-template-columns:1fr 1fr}}
+  .lsn{display:flex;gap:14px;align-items:center;text-align:left;width:100%;
+    background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;padding:14px;
+    box-shadow:var(--shadow);pointer-events:none;
+    -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+  .lsn .per{width:44px;flex:none;text-align:center}
+  .lsn .per b{display:block;font-family:var(--display);font-size:22px;letter-spacing:-.03em;line-height:1}
+  .lsn .per span{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .lsn .mid{flex:1;min-width:0}
+  .lsn .mid .t{font-weight:600;font-size:15.5px;letter-spacing:-.01em}
+  .lsn .mid .s{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  .lsn .end{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+  .lsn .end .n{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .lsn.leave{opacity:.72}
+  .chip{font-size:12px;font-weight:600;border-radius:99px;padding:4px 10px;white-space:nowrap;
+    border:1px solid transparent}
+  .chip.ok{background:rgba(6,122,85,.12);border-color:rgba(6,122,85,.22);color:#046b4b}
+  .chip.todo{background:rgba(43,68,255,.12);border-color:rgba(43,68,255,.24);color:#1b31d8}
+  .chip.bad{background:rgba(180,35,24,.12);border-color:rgba(180,35,24,.24);color:#a01e14}
+  .chip.leave{background:rgba(184,80,10,.13);border-color:rgba(184,80,10,.24);color:#9b4408}
+  .chip.wait{background:rgba(11,16,32,.06);border-color:rgba(11,16,32,.10);color:var(--ink-3)}
+
+  /* ---- first-ever open: ask for the code ---- */
+  .ask{position:fixed;inset:0;z-index:3;display:grid;place-items:center;padding:24px}
   .box{width:100%;max-width:320px;text-align:center}
   .box h1{font-size:19px;margin:0 0 6px;color:#0E1B2A}
   .box p{font-size:13.5px;color:#67788C;margin:0 0 18px;line-height:1.5}
@@ -62,6 +127,11 @@
   On first open the code is saved on their device and wiped from the address bar, so
   the link stops being visible in history, screenshots or over-the-shoulder glances.
   This file itself contains no teacher codes — it is safe to host publicly.
+
+  After the first successful load the app posts a copy of the day back to this page,
+  which stores it per token. Later opens paint those cards immediately, so the teacher
+  is looking at their real timetable while Apps Script is still starting up. The
+  snapshot holds no student names and no marks — only the lesson grid.
 -->
 <div class="ask" id="ask" style="display:none">
   <div class="box">
@@ -71,21 +141,149 @@
     <button id="go">Open my register</button>
   </div>
 </div>
-<div id="shell" aria-hidden="true">
-  <div class="sbar"><span class="slogo">Attendance</span><span class="spill"></span><span class="sdot"></span></div>
-  <div class="sblock h44" style="width:70%;margin:0 auto 16px"></div>
-  <div class="sblock h76"></div>
-  <div class="sblock h76"></div>
-  <div class="sblock h76"></div>
+
+<div class="ph" id="shell" aria-hidden="true">
+  <div class="inner">
+    <div class="sbar"><span class="slogo">Attendance</span><span class="spill"></span><span class="sdot"></span></div>
+    <div class="sblock h44" style="width:70%;margin:0 auto 16px"></div>
+    <div class="sblock h76"></div>
+    <div class="sblock h76"></div>
+    <div class="sblock h76"></div>
+  </div>
 </div>
+
+<div class="ph" id="instant" aria-hidden="true" style="display:none"><div class="inner" id="instantInner"></div></div>
 <div id="slot"></div>
 
 <script>
-  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxtkE0-FzD5YCp5yweSo4pP2EEtZdVfEl7mW_VTa7hnEkCx41gqpfLj6IonJtCksQHh/exec';
-  var KEY = 'attendance-code';
+(function () {
+  'use strict';
 
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxMz8cjk0kZwAVSap7v8W0pqBV5aNctTJWQP06eQxJ8v6wUDB5kRZpBHu2-jJAZkNLf/exec';
+  var KEY  = 'attendance-code';
+  var SNAP = 'attendance-snap:';      // one entry per token, so a shared device cannot mix people up
+  var KEEP_DAYS = 10;
+
+  function $(id){ return document.getElementById(id); }
+  function p2(n){ return (n < 10 ? '0' : '') + n; }
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   function stored(){ try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
   function keep(t){ try { localStorage.setItem(KEY, t); } catch (e) {} }
+
+  /* ---- the device-side snapshot ------------------------------------------ */
+
+  function readSnap(token){
+    try {
+      var raw = localStorage.getItem(SNAP + token);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      return (s && s.v === 1) ? s : null;
+    } catch (e) { return null; }
+  }
+  function writeSnap(token, s){
+    try { localStorage.setItem(SNAP + token, JSON.stringify(s)); } catch (e) {}
+  }
+
+  /* Store today's day under its date, and also keep the lesson grid under its
+     weekday. The timetable repeats weekly, so last Monday's grid is a correct
+     preview of this Monday's — the marks are not, which is why only the
+     structure is reused and every chip is reset. */
+  function absorbSnap(token, msg){
+    var s = readSnap(token) || { v:1, days:{}, dow:{} };
+    s.meta = { school: msg.school, teacher: msg.teacher };
+    s.days = s.days || {}; s.dow = s.dow || {};
+    if (msg.day && msg.day.date) {
+      msg.day.savedAt = Date.now();
+      s.days[msg.day.date] = msg.day;
+      if (msg.day.dayShort) s.dow[msg.day.dayShort] = msg.day.lessons || [];
+      var keys = Object.keys(s.days).sort();
+      while (keys.length > KEEP_DAYS) delete s.days[keys.shift()];
+    }
+    writeSnap(token, s);
+  }
+
+  /* ---- rendering the cached view ----------------------------------------- */
+
+  var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var SHORT  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function todayIso(){ var d = new Date(); return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+  // midday avoids any daylight-saving edge shifting the day by one
+  function asDate(iso){ return new Date(iso + 'T12:00:00'); }
+  function initials(n){
+    return String(n||'').trim().split(/\s+/).slice(0,2)
+      .map(function(w){ return w.charAt(0).toUpperCase(); }).join('');
+  }
+
+  function chip(l, live){
+    if (!live)   return '<span class="chip wait">&hellip;</span>';
+    if (l.taken) return '<span class="chip ok">Taken</span>';
+    if (l.leave) return '<span class="chip leave">' + esc(l.leave) + '</span>';
+    return '<span class="chip todo">To do</span>';
+  }
+  function card(l, admin, live){
+    var sub = [ (l.start ? l.start + '\u2013' + l.end : ''), l.room, (admin ? l.teacher : '') ]
+      .filter(Boolean).join(' \u00b7 ');
+    var count = (live && l.taken) ? (l.flagged + '/' + l.total + ' flagged')
+                                  : (l.total + ' students');
+    return '<div class="lsn' + (l.leave && !l.taken ? ' leave' : '') + '">' +
+      '<div class="per"><b>' + esc(l.period) + '</b><span>Per</span></div>' +
+      '<div class="mid"><div class="t">' + esc(l.label) + '</div>' +
+      '<div class="s">' + esc(sub) + '</div></div>' +
+      '<div class="end">' + chip(l, live) + '<span class="n">' + esc(count) + '</span></div></div>';
+  }
+
+  /**
+   * Paint whatever the device already knows. Returns true if anything was drawn.
+   * Three levels, in order of preference:
+   *   1. today's own snapshot     -> real cards, real chips
+   *   2. the same weekday's grid  -> real cards, chips reset to "…"
+   *   3. name and date only       -> skeleton cards underneath
+   * It never guesses attendance: a chip only appears when it came from today.
+   */
+  function paintCached(token){
+    var s = readSnap(token);
+    if (!s || !s.meta) return false;
+
+    var iso = todayIso(), d = asDate(iso);
+    var day = s.days && s.days[iso];
+    var live = !!day;
+    if (!day) {
+      var proto = s.dow && s.dow[SHORT[d.getDay()]];
+      if (proto && proto.length) day = { lessons: proto };
+    }
+
+    var admin = !!(s.meta.teacher && s.meta.teacher.admin);
+    var name  = (s.meta.teacher && s.meta.teacher.name) || '';
+    var html =
+      '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'Attendance') + '</span>' +
+      '<span class="name"><span class="nm">' + esc(name) + '</span>' +
+      '<span class="avatar">' + esc(initials(name)) + '</span></span></div>' +
+      '<div class="dhead"><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
+        esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
+      '<div class="note"><span class="spin"></span>' +
+        (live ? 'Your last view \u00b7 updating' : 'Your usual timetable \u00b7 checking today') +
+      '</div>';
+
+    if (day && day.lessons && day.lessons.length) {
+      html += '<div class="lessons">' +
+        day.lessons.map(function (l) { return card(l, admin, live); }).join('') +
+        '</div>';
+    } else {
+      html += '<div class="sblock h76"></div><div class="sblock h76"></div><div class="sblock h76"></div>';
+    }
+
+    $('instantInner').innerHTML = html;
+    $('instant').style.display = 'block';
+    $('shell').classList.add('gone');
+    return true;
+  }
+
+  /* ---- opening the app ---------------------------------------------------- */
 
   /* Anything else in the address (view=students, s=P014) rides along to the app. */
   function passthrough(){
@@ -100,34 +298,51 @@
   }
 
   function open(t, extra){
-    var shell = document.getElementById('shell');
-    document.getElementById('ask').style.display = 'none';
+    $('ask').style.display = 'none';
 
-    // Built fresh with its src already set, so the only load event is the app's own —
-    // an iframe that starts empty fires one for about:blank and hides the shell too early.
-    var f = document.createElement('iframe');
-    f.id = 'app';
-    f.title = 'Attendance';
-    f.setAttribute('allow', 'clipboard-write');
+    // Only preview the register when the link is asking for the register. A link
+    // carrying view=students or s=P014 wants a different screen entirely.
+    if (!extra) { try { paintCached(t); } catch (e) {} }
+
     var shown = false;
+    var f = null;
     function reveal(){
       if (shown) return;
       shown = true;
-      f.classList.add('ready');
-      setTimeout(function(){ if (shell) shell.classList.add('gone'); }, 180);
+      if (f) f.classList.add('ready');
+      setTimeout(function () {
+        $('shell').classList.add('gone');
+        $('instant').classList.add('gone');
+      }, 180);
     }
-    // the app posts this the moment it paints — exact, and not fooled by the
-    // load event an empty iframe fires before it has navigated anywhere
-    window.addEventListener('message', function(e){
-      if (e && e.data === 'attendance:ready') reveal();
+
+    // Store every snapshot the app sends, for this open and all the ones after.
+    window.addEventListener('message', function (e) {
+      var m = e && e.data;
+      if (m === 'attendance:ready') { reveal(); return; }
+      if (m && m.type === 'attendance:snapshot' && m.v === 1) {
+        try { absorbSnap(t, m); } catch (err) {}
+      }
     });
+
+    // Built fresh with its src already set, so the only load event is the app's own —
+    // an iframe that starts empty fires one for about:blank and hides the shell too early.
+    f = document.createElement('iframe');
+    f.id = 'app';
+    f.title = 'Attendance';
+    f.setAttribute('allow', 'clipboard-write');
+
     // hard stop, in case an older build is deployed that doesn't post the message
     setTimeout(reveal, 12000);
     f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '');
-    document.getElementById('slot').appendChild(f);
+    $('slot').appendChild(f);
 
-    // never leave the shell up forever if something goes wrong
-    setTimeout(function(){ f.classList.add('ready'); if (shell) shell.classList.add('gone'); }, 15000);
+    // never leave a placeholder up forever if something goes wrong
+    setTimeout(function () {
+      f.classList.add('ready');
+      $('shell').classList.add('gone');
+      $('instant').classList.add('gone');
+    }, 15000);
   }
 
   var extra = passthrough();
@@ -141,17 +356,18 @@
   } else if (stored()) {
     open(stored(), extra);
   } else {
-    document.getElementById('shell').classList.add('gone');
-    document.getElementById('ask').style.display = 'grid';
-    document.getElementById('go').addEventListener('click', function(){
-      var v = document.getElementById('code').value.trim();
+    $('shell').classList.add('gone');
+    $('ask').style.display = 'grid';
+    $('go').addEventListener('click', function () {
+      var v = $('code').value.trim();
       if (!v) return;
       keep(v); open(v, extra);
     });
-    document.getElementById('code').addEventListener('keydown', function(e){
-      if (e.key === 'Enter') document.getElementById('go').click();
+    $('code').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') $('go').click();
     });
   }
+})();
 </script>
 </body>
 </html>
