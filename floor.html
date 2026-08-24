@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Load time test</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{ --ink:#0B1020; --ink-2:#55607A; --line:#E4E8F0; --accent:#2B44FF; }
+  *{box-sizing:border-box}
+  body{margin:0;padding:22px 18px 60px;background:#F2F4F8;color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--ink-2);font-size:13.5px;margin:0 0 22px}
+  label{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--ink-2);margin:16px 0 6px}
+  input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+    font-size:15px;background:#fff;color:var(--ink)}
+  .hint{font-size:12px;color:var(--ink-2);margin-top:5px}
+  button{width:100%;margin-top:20px;padding:14px;border:0;border-radius:11px;
+    background:var(--accent);color:#fff;font-size:15.5px;font-weight:600}
+  button[disabled]{opacity:.5}
+  table{width:100%;border-collapse:collapse;margin-top:24px;font-size:14px}
+  th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}
+  th{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+  td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .verdict{margin-top:22px;padding:14px 16px;border-radius:12px;background:#fff;
+    border:1px solid var(--line);font-size:14px;line-height:1.55}
+  .verdict b{display:block;margin-bottom:4px}
+  iframe{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0;left:-9999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Load time test</h1>
+  <p class="sub">Times an empty Apps Script app against your real one. The empty one is the floor —
+     the part of the wait that belongs to Google, not to your code.</p>
+
+  <label for="floor">Empty app URL</label>
+  <input id="floor" placeholder="https://script.google.com/macros/s/…/exec">
+  <div class="hint">The throwaway deployment. No token needed.</div>
+
+  <label for="real">Your real app URL (with token)</label>
+  <input id="real" placeholder="https://script.google.com/macros/s/…/exec?t=YOURTOKEN">
+  <div class="hint">Paste it here rather than saving it in this file, so no token ends up on GitHub.</div>
+
+  <button id="go">Run test</button>
+
+  <table id="out" hidden>
+    <thead><tr><th>Run</th><th class="n">Empty</th><th class="n">Real</th><th class="n">Your code</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="verdict" id="verdict" hidden></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var RUNS = 3;
+
+  /* Load a URL in an iframe and report how long until it is on screen.
+     A fresh iframe created with its src already set fires exactly one load
+     event — the real navigation — so the timing is honest. If the page posts
+     'attendance:ready' (your app does), we use that instead, because it means
+     painted rather than merely downloaded. */
+  function timeLoad(url) {
+    return new Promise(function (resolve) {
+      var bust = url + (url.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
+      var t0 = performance.now(), done = false;
+      var f = document.createElement('iframe');
+
+      function finish(how) {
+        if (done) return;
+        done = true;
+        window.removeEventListener('message', onMsg);
+        var ms = Math.round(performance.now() - t0);
+        setTimeout(function () { try { f.remove(); } catch (e) {} }, 50);
+        resolve({ ms: ms, how: how });
+      }
+      function onMsg(e) { if (e && e.data === 'attendance:ready') finish('painted'); }
+
+      window.addEventListener('message', onMsg);
+      f.onload = function () { setTimeout(function () { finish('loaded'); }, 120); };
+      f.onerror = function () { finish('error'); };
+      setTimeout(function () { finish('timeout'); }, 30000);
+
+      f.src = bust;
+      document.body.appendChild(f);
+    });
+  }
+
+  function cell(v) { return v === null ? '—' : (v + ' ms'); }
+
+  $('go').addEventListener('click', function () {
+    var floorUrl = $('floor').value.trim();
+    var realUrl  = $('real').value.trim();
+    if (!floorUrl && !realUrl) { alert('Paste at least one URL.'); return; }
+
+    var btn = $('go'), body = $('out').querySelector('tbody');
+    btn.disabled = true; btn.textContent = 'Running…';
+    body.innerHTML = ''; $('out').hidden = false; $('verdict').hidden = true;
+
+    var floors = [], reals = [], i = 0;
+
+    function step() {
+      if (i >= RUNS) return done();
+      i++;
+      var row = document.createElement('tr');
+      row.innerHTML = '<td>' + i + (i === 1 ? ' <small>(cold)</small>' : '') +
+                      '</td><td class="n">…</td><td class="n">…</td><td class="n">…</td>';
+      body.appendChild(row);
+
+      var pFloor = floorUrl ? timeLoad(floorUrl) : Promise.resolve(null);
+      pFloor.then(function (a) {
+        if (a) floors.push(a.ms);
+        row.cells[1].textContent = a ? cell(a.ms) : '—';
+        var pReal = realUrl ? timeLoad(realUrl) : Promise.resolve(null);
+        return pReal.then(function (b) {
+          if (b) reals.push(b.ms);
+          row.cells[2].textContent = b ? cell(b.ms) : '—';
+          row.cells[3].textContent = (a && b) ? cell(Math.max(b.ms - a.ms, 0)) : '—';
+          setTimeout(step, 700);
+        });
+      });
+    }
+
+    function median(a) {
+      if (!a.length) return null;
+      var s = a.slice().sort(function (x, y) { return x - y; });
+      return s[Math.floor(s.length / 2)];
+    }
+
+    function done() {
+      btn.disabled = false; btn.textContent = 'Run again';
+      var f = median(floors), r = median(reals);
+      var v = $('verdict'); v.hidden = false;
+
+      if (f === null || r === null) {
+        v.innerHTML = '<b>Partial result</b>Paste both URLs to see the split.';
+        return;
+      }
+      var mine = Math.max(r - f, 0);
+      var msg = '<b>Floor ' + f + ' ms · your code ' + mine + ' ms</b>';
+      if (f >= 4000) {
+        msg += 'The platform alone is over 4 seconds. Sub-5 on a first open is not realistically ' +
+               'available while Apps Script serves the page — put the effort into the cached ' +
+               'first paint instead, since that skips this wait entirely.';
+      } else if (mine <= 800) {
+        msg += 'Almost all the wait is Google\'s, not yours. There is little left to optimise ' +
+               'in the script — further gains have to come from the wrapper painting instantly.';
+      } else {
+        msg += 'About ' + mine + ' ms is your own code, so there is real room. Worth attacking: ' +
+               'the rosters embedded in the first payload, and shipping the student pane only ' +
+               'to people who can open it.';
+      }
+      v.innerHTML = msg;
+    }
+
+    step();
+  });
+})();
+</script>
+</body>
+</html>
