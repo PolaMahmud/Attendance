@@ -232,10 +232,21 @@
     if (msg.day && msg.day.date) {
       msg.day.savedAt = Date.now();
       s.days[msg.day.date] = msg.day;
-      if (msg.day.dayShort) {
-        s.dow[msg.day.dayShort] = msg.day.lessons || [];
-        s.dowAt[msg.day.dayShort] = Date.now();       // how old this class list is
+      /* Key the weekday grid by the same three-letter weekday paintCached reads.
+         dayShort is a DISPLAY string from the server — "Friday 28 Aug" — so keying
+         on it wrote the grid under one name and read it under another, and the two
+         never met. That silently disabled the fallback that matters most: the first
+         open of each morning, when there is no snapshot for today yet. Deriving the
+         key from the day's own date cannot drift from the label's format. */
+      var dow = SHORT[asDate(msg.day.date).getDay()];
+      if (dow) {
+        s.dow[dow] = msg.day.lessons || [];
+        s.dowAt[dow] = Date.now();                    // how old this class list is
       }
+      // Drop anything written under the old display-string key.
+      Object.keys(s.dow).forEach(function (k) {
+        if (SHORT.indexOf(k) === -1) { delete s.dow[k]; delete s.dowAt[k]; }
+      });
       var keys = Object.keys(s.days).sort();
       while (keys.length > KEEP_DAYS) delete s.days[keys.shift()];
     }
