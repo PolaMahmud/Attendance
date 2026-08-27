@@ -107,6 +107,32 @@
   .chip.bad{background:rgba(180,35,24,.12);border-color:rgba(180,35,24,.24);color:#a01e14}
   .chip.leave{background:rgba(184,80,10,.13);border-color:rgba(184,80,10,.24);color:#9b4408}
   .chip.wait{background:rgba(11,16,32,.06);border-color:rgba(11,16,32,.10);color:var(--ink-3)}
+  .chip.queued{background:rgba(43,68,255,.14);border-color:rgba(43,68,255,.26);color:#1b31d8}
+
+  /* ---- taking a register before the app is up ---- */
+  .lsn.tap{pointer-events:auto;cursor:pointer;text-align:left}
+  .lsn.tap:active{transform:scale(.995)}
+  .qbar{display:flex;align-items:center;gap:12px;padding:2px 4px 14px}
+  .qbar b{font-family:var(--display);font-size:19px;letter-spacing:-.02em;flex:1;min-width:0}
+  .qback{background:rgba(255,255,255,.6);border:1px solid var(--glass-line);border-radius:10px;
+    width:36px;height:36px;flex:none;cursor:pointer;font-size:17px;line-height:1;color:var(--ink)}
+  .qsub{font-size:12.5px;color:var(--ink-2);padding:0 4px 12px}
+  .srow{display:flex;align-items:center;gap:12px;padding:9px 14px;background:var(--glass);
+    border:1px solid var(--glass-line);border-radius:14px;margin-bottom:8px;
+    -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+  .snm{flex:1;min-width:0;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .seg{display:flex;gap:4px;flex:none}
+  .sg{width:34px;height:34px;border-radius:9px;border:1px solid rgba(11,16,32,.12);
+    background:rgba(255,255,255,.7);font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink-3)}
+  .sg.on.p{background:#067A55;border-color:#067A55;color:#fff}
+  .sg.on.l{background:#B8500A;border-color:#B8500A;color:#fff}
+  .sg.on.a{background:#B42318;border-color:#B42318;color:#fff}
+  .qacts{display:flex;gap:10px;margin:14px 0 4px;position:sticky;bottom:0;
+    padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
+  .qbtn{flex:1;padding:15px;border:0;border-radius:13px;background:#12283F;color:#fff;
+    font-size:15.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .qbtn.alt{background:rgba(255,255,255,.72);color:var(--ink);border:1px solid var(--glass-line)}
+  .qnote{font-size:12px;color:var(--ink-2);text-align:center;padding:8px 0 0}
 
   /* ---- first-ever open: ask for the code ---- */
   .ask{position:fixed;inset:0;z-index:3;display:grid;place-items:center;padding:24px}
@@ -153,6 +179,7 @@
 </div>
 
 <div class="ph" id="instant" aria-hidden="true" style="display:none"><div class="inner" id="instantInner"></div></div>
+<div class="ph" id="quick" style="display:none"><div class="inner" id="quickInner"></div></div>
 <div id="slot"></div>
 
 <script>
@@ -160,9 +187,16 @@
   'use strict';
 
   var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxtkE0-FzD5YCp5yweSo4pP2EEtZdVfEl7mW_VTa7hnEkCx41gqpfLj6IonJtCksQHh/exec';
-  var KEY  = 'attendance-code';
-  var SNAP = 'attendance-snap:';      // one entry per token, so a shared device cannot mix people up
+  var KEY   = 'attendance-code';
+  var SNAP  = 'attendance-snap:';     // one entry per token, so a shared device cannot mix people up
+  var QUEUE = 'attendance-queue:';    // registers marked before the app was up
   var KEEP_DAYS = 10;
+
+  /* How stale a class list may be and still be typed into. The timetable repeats
+     weekly, so last Tuesday's list is almost always this Tuesday's — but a student
+     who joined or left three weeks ago should not still be on it. The server has the
+     last word regardless: apiSave rebuilds the marks from the current roster. */
+  var ROSTER_DAYS = 14;
 
   function $(id){ return document.getElementById(id); }
   function p2(n){ return (n < 10 ? '0' : '') + n; }
@@ -194,15 +228,47 @@
   function absorbSnap(token, msg){
     var s = readSnap(token) || { v:1, days:{}, dow:{} };
     s.meta = { school: msg.school, teacher: msg.teacher };
-    s.days = s.days || {}; s.dow = s.dow || {};
+    s.days = s.days || {}; s.dow = s.dow || {}; s.dowAt = s.dowAt || {};
     if (msg.day && msg.day.date) {
       msg.day.savedAt = Date.now();
       s.days[msg.day.date] = msg.day;
-      if (msg.day.dayShort) s.dow[msg.day.dayShort] = msg.day.lessons || [];
+      if (msg.day.dayShort) {
+        s.dow[msg.day.dayShort] = msg.day.lessons || [];
+        s.dowAt[msg.day.dayShort] = Date.now();       // how old this class list is
+      }
       var keys = Object.keys(s.days).sort();
       while (keys.length > KEEP_DAYS) delete s.days[keys.shift()];
     }
     writeSnap(token, s);
+  }
+
+  /* ---- registers marked before the app finished loading ------------------- */
+
+  function readQueue(token){
+    try { return JSON.parse(localStorage.getItem(QUEUE + token) || '[]') || []; }
+    catch (e) { return []; }
+  }
+  function writeQueue(token, q){
+    try { localStorage.setItem(QUEUE + token, JSON.stringify(q)); } catch (e) {}
+  }
+  function sameLesson(a, b){
+    return a.classId === b.classId && a.date === b.date && String(a.period) === String(b.period);
+  }
+  /* One entry per lesson: marking it twice before it syncs replaces, never duplicates. */
+  function queueAdd(token, item){
+    var q = readQueue(token).filter(function (x) { return !sameLesson(x, item); });
+    q.push(item);
+    writeQueue(token, q);
+  }
+  function queueDrop(token, m){
+    writeQueue(token, readQueue(token).filter(function (x) { return !sameLesson(x, m); }));
+  }
+  function queuedFor(token, l, iso){
+    var q = readQueue(token);
+    for (var i = 0; i < q.length; i++) {
+      if (sameLesson(q[i], { classId: l.classId, date: iso, period: l.period })) return q[i];
+    }
+    return null;
   }
 
   /* ---- rendering the cached view ----------------------------------------- */
@@ -219,22 +285,33 @@
       .map(function(w){ return w.charAt(0).toUpperCase(); }).join('');
   }
 
-  function chip(l, live){
+  function chip(l, live, queued){
+    if (queued)  return '<span class="chip queued">Saved &middot; syncing</span>';
     if (!live)   return '<span class="chip wait">&hellip;</span>';
     if (l.taken) return '<span class="chip ok">Taken</span>';
     if (l.leave) return '<span class="chip leave">' + esc(l.leave) + '</span>';
     return '<span class="chip todo">To do</span>';
   }
-  function card(l, admin, live){
+  /* Tappable only when we hold a class list for it that is recent enough to type
+     into, and the lesson is not someone else's cover. */
+  function markable(l, fresh){
+    return !!(fresh && l.students && l.students.length && !l.leave);
+  }
+  function card(l, admin, live, i, fresh, queued){
     var sub = [ (l.start ? l.start + '\u2013' + l.end : ''), l.room, (admin ? l.teacher : '') ]
       .filter(Boolean).join(' \u00b7 ');
-    var count = (live && l.taken) ? (l.flagged + '/' + l.total + ' flagged')
+    var count = queued ? 'register ready'
+              : (live && l.taken) ? (l.flagged + '/' + l.total + ' flagged')
                                   : (l.total + ' students');
-    return '<div class="lsn' + (l.leave && !l.taken ? ' leave' : '') + '">' +
+    var tap = markable(l, fresh);
+    return '<' + (tap ? 'button type="button"' : 'div') +
+      ' class="lsn' + (l.leave && !l.taken ? ' leave' : '') + (tap ? ' tap' : '') + '"' +
+      (tap ? ' data-i="' + i + '"' : '') + '>' +
       '<div class="per"><b>' + esc(l.period) + '</b><span>Per</span></div>' +
       '<div class="mid"><div class="t">' + esc(l.label) + '</div>' +
       '<div class="s">' + esc(sub) + '</div></div>' +
-      '<div class="end">' + chip(l, live) + '<span class="n">' + esc(count) + '</span></div></div>';
+      '<div class="end">' + chip(l, live, queued) + '<span class="n">' + esc(count) + '</span></div>' +
+      '</' + (tap ? 'button' : 'div') + '>';
   }
 
   /**
@@ -252,13 +329,27 @@
     var iso = todayIso(), d = asDate(iso);
     var day = s.days && s.days[iso];
     var live = !!day;
+    var at = day ? day.savedAt : 0;
     if (!day) {
-      var proto = s.dow && s.dow[SHORT[d.getDay()]];
-      if (proto && proto.length) day = { lessons: proto };
+      var key = SHORT[d.getDay()];
+      var proto = s.dow && s.dow[key];
+      if (proto && proto.length) { day = { lessons: proto }; at = (s.dowAt && s.dowAt[key]) || 0; }
     }
+    // Old enough that someone may have joined or left the class since.
+    var fresh = !!at && (Date.now() - at) < ROSTER_DAYS * 864e5;
 
     var admin = !!(s.meta.teacher && s.meta.teacher.admin);
     var name  = (s.meta.teacher && s.meta.teacher.name) || '';
+    var lessons = (day && day.lessons) || [];
+    var anyTap = lessons.some(function (l) { return markable(l, fresh); });
+
+    QS.token = token;
+    QS.lessons = lessons;
+    QS.admin = admin;
+    QS.live = live;
+    QS.fresh = fresh;
+    QS.iso = iso;
+
     var html =
       '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'Attendance') + '</span>' +
       '<span class="name"><span class="nm">' + esc(name) + '</span>' +
@@ -266,12 +357,15 @@
       '<div class="dhead"><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
         esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
       '<div class="note"><span class="spin"></span>' +
-        (live ? 'Your last view \u00b7 updating' : 'Your usual timetable \u00b7 checking today') +
+        (anyTap ? 'Ready \u2014 tap a lesson to take the register'
+                : live ? 'Your last view \u00b7 updating' : 'Your usual timetable \u00b7 checking today') +
       '</div>';
 
-    if (day && day.lessons && day.lessons.length) {
+    if (lessons.length) {
       html += '<div class="lessons">' +
-        day.lessons.map(function (l) { return card(l, admin, live); }).join('') +
+        lessons.map(function (l, i) {
+          return card(l, admin, live, i, fresh, !!queuedFor(token, l, iso));
+        }).join('') +
         '</div>';
     } else {
       html += '<div class="sblock h76"></div><div class="sblock h76"></div><div class="sblock h76"></div>';
@@ -281,6 +375,112 @@
     $('instant').style.display = 'block';
     $('shell').classList.add('gone');
     return true;
+  }
+
+  /* ---- the register the teacher can take while Apps Script is still starting ---- */
+
+  var QS = { token:'', lessons:[], admin:false, live:false, fresh:false, iso:'',
+             lesson:null, marks:{}, editing:false, ready:false, frame:null, onDone:null };
+
+  function repaintCards(){
+    if (!QS.lessons.length) return;
+    var host = $('instantInner').querySelector('.lessons');
+    if (!host) return;
+    host.innerHTML = QS.lessons.map(function (l, i) {
+      return card(l, QS.admin, QS.live, i, QS.fresh, !!queuedFor(QS.token, l, QS.iso));
+    }).join('');
+  }
+
+  function openQuick(i){
+    var l = QS.lessons[i];
+    if (!l || !markable(l, QS.fresh)) return;
+    QS.lesson = l;
+    QS.marks = {};
+    var prev = queuedFor(QS.token, l, QS.iso);
+    l.students.forEach(function (st) {
+      QS.marks[st.id] = (prev && prev.statuses && prev.statuses[st.id]) || 'P';
+    });
+    QS.editing = true;
+    $('quick').style.display = 'block';
+    $('instant').style.display = 'none';
+    renderQuick();
+  }
+  function closeQuick(){
+    QS.editing = false;
+    QS.lesson = null;
+    $('quick').style.display = 'none';
+    $('instant').style.display = 'block';
+    repaintCards();
+    // The app may have finished loading while they were marking; only now is it
+    // safe to swap the screen out from under them.
+    if (QS.ready && QS.onDone) QS.onDone();
+  }
+
+  function renderQuick(){
+    var l = QS.lesson;
+    var sub = [ (l.start ? l.start + '\u2013' + l.end : ''), l.room ].filter(Boolean).join(' \u00b7 ');
+    var rows = l.students.map(function (st) {
+      var on = QS.marks[st.id] || 'P';
+      return '<div class="srow"><span class="snm">' + esc(st.name) + '</span>' +
+        '<span class="seg" data-id="' + esc(st.id) + '">' +
+        ['P', 'L', 'A'].map(function (k) {
+          return '<button type="button" class="sg' + (on === k ? ' on ' + k.toLowerCase() : '') +
+                 '" data-k="' + k + '">' + k + '</button>';
+        }).join('') + '</span></div>';
+    }).join('');
+
+    $('quickInner').innerHTML =
+      '<div class="qbar"><button type="button" class="qback" id="qb" aria-label="Back to lessons">&#8249;</button>' +
+      '<b>' + esc(l.label) + '</b></div>' +
+      '<div class="qsub">Period ' + esc(l.period) + (sub ? ' \u00b7 ' + esc(sub) : '') +
+        ' \u00b7 ' + l.students.length + ' students</div>' +
+      rows +
+      '<div class="qacts">' +
+        '<button type="button" class="qbtn alt" id="qall">All present</button>' +
+        '<button type="button" class="qbtn" id="qsave">Save register</button>' +
+      '</div>' +
+      '<div class="qnote">Saves as soon as the app finishes loading.</div>';
+
+    $('qb').addEventListener('click', closeQuick);
+    $('qall').addEventListener('click', function () {
+      l.students.forEach(function (st) { QS.marks[st.id] = 'P'; });
+      renderQuick();
+    });
+    $('qsave').addEventListener('click', saveQuick);
+    $('quickInner').addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.sg') : null;
+      if (!b) return;
+      var seg = b.parentNode, id = seg.getAttribute('data-id');
+      QS.marks[id] = b.getAttribute('data-k');
+      Array.prototype.forEach.call(seg.querySelectorAll('.sg'), function (x) {
+        x.className = 'sg' + (x === b ? ' on ' + b.getAttribute('data-k').toLowerCase() : '');
+      });
+    });
+    $('quick').scrollTop = 0;
+  }
+
+  function saveQuick(){
+    var l = QS.lesson, statuses = {};
+    l.students.forEach(function (st) { statuses[st.id] = QS.marks[st.id] || 'P'; });
+    queueAdd(QS.token, { classId: l.classId, date: QS.iso, period: l.period,
+                         statuses: statuses, label: l.label, at: Date.now() });
+    closeQuick();
+    flushQueue();
+  }
+
+  /* google.script.run only exists inside the app's frame, so queued registers are
+     handed to it to write. Entries stay put until the app confirms each one.
+
+     The target is the window that talked to US (captured from the inbound message),
+     never our own iframe's contentWindow — that iframe is Google's shim page, and
+     the app runs in a sandbox frame one level below it. Posting to the shim drops
+     the message silently. */
+  function flushQueue(){
+    var target = QS.app || (QS.frame && QS.frame.contentWindow);
+    if (!QS.ready || !target) return;
+    var q = readQueue(QS.token);
+    if (!q.length) return;
+    try { target.postMessage({ type:'attendance:save', v:1, items:q }, '*'); } catch (e) {}
   }
 
   /* ---- opening the app ---------------------------------------------------- */
@@ -297,17 +497,47 @@
     return extra;
   }
 
+  /* ---- timing readout, shown only with ?debug=1 --------------------------
+     Measures the real thing on the real device, rather than a stand-in on a
+     laptop. Also prints which deployment is being called, which is the usual
+     culprit when the app is slower in use than in a test. */
+  var DEBUG = /[?&]debug=1/.test(location.search);
+  var T0 = (window.performance && performance.now) ? performance.now() : Date.now();
+  var marks = [];
+  function mark(label){
+    if (!DEBUG) return;
+    var now = (window.performance && performance.now) ? performance.now() : Date.now();
+    marks.push([label, Math.round(now - T0)]);
+    var el = $('dbg');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'dbg';
+      el.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9;' +
+        'background:rgba(11,16,32,.90);color:#fff;font:11.5px/1.5 ui-monospace,Menlo,Consolas,monospace;' +
+        'padding:10px 12px;border-radius:10px;white-space:pre-wrap;max-height:44vh;overflow:auto';
+      document.body.appendChild(el);
+    }
+    var dep = (WEBAPP_URL.match(/\/macros\/s\/([^/]+)/) || ['',''])[1];
+    el.textContent = 'deployment ' + dep.substring(0, 16) + '…\n' +
+      marks.map(function (m) { return m[1] + ' ms  ' + m[0]; }).join('\n');
+  }
+
   function open(t, extra){
     $('ask').style.display = 'none';
+    mark('script start');
 
     // Only preview the register when the link is asking for the register. A link
     // carrying view=students or s=P014 wants a different screen entirely.
-    if (!extra) { try { paintCached(t); } catch (e) {} }
+    if (!extra) {
+      try { mark(paintCached(t) ? 'cached cards painted' : 'no cache — skeleton'); } catch (e) {}
+    }
 
     var shown = false;
     var f = null;
     function reveal(){
       if (shown) return;
+      // Never swap the app in over a half-marked register. closeQuick calls back.
+      if (QS.editing) { QS.onDone = reveal; return; }
       shown = true;
       if (f) f.classList.add('ready');
       setTimeout(function () {
@@ -316,12 +546,37 @@
       }, 180);
     }
 
+    // Tapping a cached lesson opens the register, before the app is anywhere near up.
+    $('instant').addEventListener('click', function (e) {
+      var c = e.target.closest ? e.target.closest('.lsn.tap') : null;
+      if (!c) return;
+      openQuick(Number(c.getAttribute('data-i')));
+    });
+
     // Store every snapshot the app sends, for this open and all the ones after.
     window.addEventListener('message', function (e) {
       var m = e && e.data;
-      if (m === 'attendance:ready') { reveal(); return; }
-      if (m && m.type === 'attendance:snapshot' && m.v === 1) {
+      // Remember which window the app actually speaks from; it is not our iframe.
+      if (e.source && e.source !== window &&
+          (m === 'attendance:ready' || (m && m.v === 1))) QS.app = e.source;
+      if (m === 'attendance:ready') {
+        mark('app painted (attendance:ready)');
+        QS.ready = true;
+        flushQueue();                       // anything marked while it was loading
+        reveal();
+        return;
+      }
+      if (!m || m.v !== 1) return;
+      if (m.type === 'attendance:snapshot') {
         try { absorbSnap(t, m); } catch (err) {}
+        return;
+      }
+      if (m.type === 'attendance:saved') {
+        // Only drop it once the server has confirmed; a failure keeps it queued so
+        // the next open tries again rather than losing the register.
+        if (m.ok) { queueDrop(t, m); mark('queued register saved'); }
+        else { mark('queued register failed: ' + (m.error || '')); }
+        if (!QS.editing) repaintCards();
       }
     });
 
@@ -332,13 +587,25 @@
     f.title = 'Attendance';
     f.setAttribute('allow', 'clipboard-write');
 
-    // hard stop, in case an older build is deployed that doesn't post the message
+    // Hard stop, in case an older build is deployed that doesn't post the message.
+    // This used to be the normal path rather than the exception: the app was posting
+    // to the wrong window, so nothing ever arrived and every open sat here for the
+    // full 12 seconds while the app itself had been ready for nine of them.
     setTimeout(reveal, 12000);
+    f.onload = function () {
+      mark('iframe document loaded');
+      // Second line of defence. Only fires if attendance:ready never lands; when it
+      // does, reveal has already run and this is a no-op.
+      setTimeout(reveal, 3500);
+    };
     f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '');
+    QS.frame = f;
     $('slot').appendChild(f);
+    mark('iframe requested');
 
     // never leave a placeholder up forever if something goes wrong
     setTimeout(function () {
+      if (QS.editing) return;                 // unless they are mid-register
       f.classList.add('ready');
       $('shell').classList.add('gone');
       $('instant').classList.add('gone');
