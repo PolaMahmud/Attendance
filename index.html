@@ -52,6 +52,8 @@
     --card:rgba(255,255,255,.8); --card-line:rgba(255,255,255,.95);
     --sheen:rgba(255,255,255,.55); --dot:rgba(11,16,32,.82);
     --note-bg:rgba(255,255,255,.42);
+    --late:#B8500A; --late-soft:rgba(184,80,10,.13); --late-line:rgba(184,80,10,.28);
+    --absent:#B42318; --absent-soft:rgba(180,35,24,.12); --absent-line:rgba(180,35,24,.28);
     --field:radial-gradient(30% 34% at 12% 14%, rgba(86,120,255,.70), transparent 66%),
             radial-gradient(28% 30% at 90% 10%, rgba(255,120,190,.58), transparent 66%),
             radial-gradient(34% 36% at 80% 86%, rgba(48,214,200,.55), transparent 66%),
@@ -68,6 +70,8 @@
     --card:rgba(255,255,255,.07); --card-line:rgba(255,255,255,.12);
     --sheen:rgba(255,255,255,.10); --dot:rgba(233,236,242,.85);
     --note-bg:rgba(255,255,255,.06);
+    --late:#E0A356; --late-soft:rgba(224,163,86,.16); --late-line:rgba(224,163,86,.30);
+    --absent:#F08579; --absent-soft:rgba(240,133,121,.15); --absent-line:rgba(240,133,121,.30);
     --field:radial-gradient(30% 34% at 12% 14%, rgba(86,120,255,.24), transparent 66%),
             radial-gradient(28% 30% at 90% 10%, rgba(255,120,190,.16), transparent 66%),
             radial-gradient(34% 36% at 80% 86%, rgba(48,214,200,.16), transparent 66%),
@@ -160,16 +164,48 @@
   .qback{background:var(--card);border:1px solid var(--glass-line);border-radius:10px;
     width:36px;height:36px;flex:none;cursor:pointer;font-size:17px;line-height:1;color:var(--ink)}
   .qsub{font-size:12.5px;color:var(--ink-2);padding:0 4px 12px}
-  .srow{display:flex;align-items:center;gap:12px;padding:9px 14px;background:var(--glass);
-    border:1px solid var(--glass-line);border-radius:14px;margin-bottom:8px;
+  /* The same tile grid the app uses, and the same P -> A -> L cycle on tap, so the
+     register a teacher takes here is the one they already know rather than a second
+     way of doing it that happens to live in the shell. */
+  .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+  .qtile{position:relative;background:var(--card);border:1px solid var(--glass-line);
+    border-radius:12px;padding:13px 8px 11px;text-align:center;overflow:hidden;
+    box-shadow:var(--shadow);cursor:pointer;font-family:inherit;color:var(--ink);
+    transition:background .14s ease,border-color .14s ease,transform .1s ease}
+  .qtile:active{transform:scale(.97)}
+  .qtile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent}
+  .qtile .av{width:42px;height:42px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;
+    background:var(--note-bg);border:1px solid var(--glass-line);color:var(--ink-2);
+    font-weight:600;font-size:14px}
+  .qtile .nm{font-size:12.5px;line-height:1.3;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden;min-height:32px}
+  .qtile .st{margin-top:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    font-weight:700;color:var(--ink-3)}
+  .qtile[data-s="L"]{background:var(--late-soft);border-color:var(--late-line)}
+  .qtile[data-s="L"]::before{background:var(--late)}
+  .qtile[data-s="L"] .av{background:var(--late);border-color:var(--late);color:#fff}
+  .qtile[data-s="L"] .st{color:var(--late)}
+  .qtile[data-s="A"]{background:var(--absent-soft);border-color:var(--absent-line)}
+  .qtile[data-s="A"]::before{background:var(--absent)}
+  .qtile[data-s="A"] .av{background:var(--absent);border-color:var(--absent);color:#fff}
+  .qtile[data-s="A"] .st{color:var(--absent)}
+  .qlegend{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--ink-2);margin-bottom:10px}
+  .qlegend i{width:8px;height:8px;border-radius:3px;display:inline-block;margin-right:5px}
+
+  /* ---- a student's cached summary ---- */
+  .stot{background:var(--card);border:1px solid var(--card-line);border-radius:18px;
+    padding:18px;text-align:center;margin-bottom:12px;box-shadow:var(--shadow);
     -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
-  .snm{flex:1;min-width:0;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .seg{display:flex;gap:4px;flex:none}
-  .sg{width:34px;height:34px;border-radius:9px;border:1px solid var(--glass-line);
-    background:var(--card);font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink-3)}
-  .sg.on.p{background:#067A55;border-color:#067A55;color:#fff}
-  .sg.on.l{background:#B8500A;border-color:#B8500A;color:#fff}
-  .sg.on.a{background:#B42318;border-color:#B42318;color:#fff}
+  .stot b{display:block;font-family:var(--display);font-size:34px;letter-spacing:-.03em;line-height:1}
+  .stot span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:6px}
+  .srow{display:flex;align-items:center;gap:10px;padding:12px 15px;background:var(--card);
+    border:1px solid var(--card-line);border-radius:14px;margin-bottom:8px;box-shadow:var(--shadow);
+    -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+  .srow.past{opacity:.55}
+  .slab{flex:1;min-width:0;font-size:14.5px;font-weight:600;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .sfig{font-size:12.5px;color:var(--ink-3);flex:none}
+  .spct{font-family:var(--display);font-weight:700;font-size:16px;flex:none;min-width:52px;text-align:right}
   .qacts{display:flex;gap:10px;margin:14px 0 4px;position:sticky;bottom:0;
     padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
   .qbtn{flex:1;padding:15px;border:0;border-radius:13px;background:#12283F;color:#fff;
@@ -233,6 +269,7 @@
   var KEY   = 'attendance-code';
   var SNAP  = 'attendance-snap:';     // one entry per token, so a shared device cannot mix people up
   var QUEUE = 'attendance-queue:';    // registers marked before the app was up
+  var STU   = 'attendance-stu:';      // a student's own figures, for their next open
   var KEEP_DAYS = 10;
 
   /* How stale a class list may be and still be typed into. The timetable repeats
@@ -294,6 +331,61 @@
       while (keys.length > KEEP_DAYS) delete s.days[keys.shift()];
     }
     writeSnap(token, s);
+  }
+
+  /* ---- a student's own figures ------------------------------------------- */
+
+  /**
+   * Students had no cached screen at all: every open waited out the whole cold start,
+   * every single time, because the only snapshot the app ever posted was a teacher's
+   * register grid. This is the same idea pointed at the other role — their own totals,
+   * on their own device, replaced by the live figures moments later.
+   */
+  /* Normally the live figures land a second later and nobody reads this line. But if
+     the app never loads at all, this is the only screen that can sit there showing old
+     numbers, and "updating" alone would not admit how old. Anything not from today
+     names its day; a calendar day, not 24 hours, because "last seen on 12 Sep" is what
+     a person means when they ask when they last looked. */
+  function seenNote(s){
+    var at = Number(s.at || 0);
+    if (at) {
+      var d = new Date(at), now = new Date();
+      if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()
+          || d.getDate() !== now.getDate())
+        return 'Last seen on ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' &middot; updating';
+    }
+    // No stamp means it was stored before this page learned to date them: one open.
+    return 'Your last view &middot; updating';
+  }
+
+  function paintStudent(token){
+    var s;
+    try { s = JSON.parse(localStorage.getItem(STU + token) || 'null'); } catch (e) { return false; }
+    if (!s || !s.totals) return false;
+
+    var t = s.totals;
+    var pct = function (v) { return Math.round((v || 0) * 100) + '%'; };
+    var row = function (label, x, muted) {
+      return '<div class="srow' + (muted ? ' past' : '') + '">' +
+        '<span class="slab">' + esc(label) + '</span>' +
+        '<span class="sfig">' + (x.total || 0) + ' lessons</span>' +
+        '<span class="spct">' + pct(x.rate) + '</span></div>';
+    };
+
+    $('instantInner').innerHTML =
+      '<div class="sbar"><span class="slogo">' + esc(s.school || 'Attendance') + '</span>' +
+      '<span class="name"><span class="avatar">' + esc(initials(s.name)) + '</span></span></div>' +
+      '<div class="dhead"><b>' + esc(s.name || '') + '</b><span>' +
+        esc(['Year ' + (s.year || ''), s.option, s.rangeLabel].filter(Boolean).join(' · ')) +
+      '</span></div>' +
+      '<div class="note"><span class="spin"></span>' + seenNote(s) + '</div>' +
+      '<div class="stot"><b>' + pct(t.rate) + '</b><span>' + (t.present || 0) + ' present · ' +
+        (t.late || 0) + ' late · ' + (t.absent || 0) + ' absent</span></div>' +
+      (s.subjects || []).map(function (x) { return row(x.label, x, x.dropped); }).join('');
+
+    $('instant').style.display = 'block';
+    $('shell').classList.add('gone');
+    return true;
   }
 
   /* ---- registers marked before the app finished loading ------------------- */
@@ -489,25 +581,31 @@
     if (QS.ready && QS.onDone) QS.onDone();
   }
 
+  /* The app's own cycle and wording, so a teacher is not learning a second register. */
+  var CYCLE = { P: 'A', A: 'L', L: 'P' };
+  var WORD  = { P: 'Present', A: 'Absent', L: 'Late' };
+
+  function tile(st){
+    var v = QS.marks[st.id] || 'P';
+    return '<button type="button" class="qtile" data-id="' + esc(st.id) + '" data-s="' + v + '"' +
+      ' aria-label="' + esc(st.name) + ', ' + WORD[v] + '">' +
+      '<span class="av">' + (v === 'A' ? '&#10005;' : esc(initials(st.name))) + '</span>' +
+      '<span class="nm">' + esc(st.name) + '</span>' +
+      '<span class="st">' + WORD[v] + '</span></button>';
+  }
+
   function renderQuick(){
     var l = QS.lesson;
     var sub = [ (l.start ? l.start + '\u2013' + l.end : ''), l.room ].filter(Boolean).join(' \u00b7 ');
-    var rows = l.students.map(function (st) {
-      var on = QS.marks[st.id] || 'P';
-      return '<div class="srow"><span class="snm">' + esc(st.name) + '</span>' +
-        '<span class="seg" data-id="' + esc(st.id) + '">' +
-        ['P', 'L', 'A'].map(function (k) {
-          return '<button type="button" class="sg' + (on === k ? ' on ' + k.toLowerCase() : '') +
-                 '" data-k="' + k + '">' + k + '</button>';
-        }).join('') + '</span></div>';
-    }).join('');
 
     $('quickInner').innerHTML =
       '<div class="qbar"><button type="button" class="qback" id="qb" aria-label="Back to lessons">&#8249;</button>' +
       '<b>' + esc(l.label) + '</b></div>' +
       '<div class="qsub">Period ' + esc(l.period) + (sub ? ' \u00b7 ' + esc(sub) : '') +
-        ' \u00b7 ' + l.students.length + ' students</div>' +
-      rows +
+        ' \u00b7 ' + l.students.length + ' students \u00b7 tap to change</div>' +
+      '<div class="qlegend"><span><i style="background:var(--late)"></i>Late</span>' +
+        '<span><i style="background:var(--absent)"></i>Absent</span></div>' +
+      '<div class="qgrid" id="qgrid">' + l.students.map(tile).join('') + '</div>' +
       '<div class="qacts">' +
         '<button type="button" class="qbtn alt" id="qall">All present</button>' +
         '<button type="button" class="qbtn" id="qsave">Save register</button>' +
@@ -520,14 +618,19 @@
       renderQuick();
     });
     $('qsave').addEventListener('click', saveQuick);
-    $('quickInner').addEventListener('click', function (e) {
-      var b = e.target.closest ? e.target.closest('.sg') : null;
-      if (!b) return;
-      var seg = b.parentNode, id = seg.getAttribute('data-id');
-      QS.marks[id] = b.getAttribute('data-k');
-      Array.prototype.forEach.call(seg.querySelectorAll('.sg'), function (x) {
-        x.className = 'sg' + (x === b ? ' on ' + b.getAttribute('data-k').toLowerCase() : '');
-      });
+
+    // One listener on the grid: tapping a tile advances it P -> A -> L -> P.
+    $('qgrid').addEventListener('click', function (e) {
+      var el = e.target.closest ? e.target.closest('.qtile') : null;
+      if (!el) return;
+      var id = el.getAttribute('data-id');
+      var next = CYCLE[QS.marks[id] || 'P'];
+      QS.marks[id] = next;
+      el.setAttribute('data-s', next);
+      var who = l.students.filter(function (s) { return s.id === id; })[0] || { name: '' };
+      el.querySelector('.av').innerHTML = next === 'A' ? '&#10005;' : esc(initials(who.name));
+      el.querySelector('.st').textContent = WORD[next];
+      el.setAttribute('aria-label', who.name + ', ' + WORD[next]);
     });
     $('quick').scrollTop = 0;
   }
@@ -602,7 +705,12 @@
     // Only preview the register when the link is asking for the register. A link
     // carrying view=students or s=P014 wants a different screen entirely.
     if (!extra) {
-      try { mark(paintCached(t) ? 'cached cards painted' : 'no cache — skeleton'); } catch (e) {}
+      try {
+        // Teacher first, then the student summary: whichever this device has.
+        mark(paintCached(t) ? 'cached cards painted'
+           : paintStudent(t) ? 'cached student figures painted'
+           : 'no cache — skeleton');
+      } catch (e) {}
     }
 
     var shown = false;
@@ -642,6 +750,13 @@
       if (!m || m.v !== 1) return;
       if (m.type === 'attendance:snapshot') {
         try { absorbSnap(t, m); } catch (err) {}
+        return;
+      }
+      if (m.type === 'attendance:student') {
+        // Stamped on arrival so a summary that is never refreshed can say how old it
+        // is. The device that writes it is the device that reads it, so only its own
+        // clock has to agree with itself.
+        try { m.at = Date.now(); localStorage.setItem(STU + t, JSON.stringify(m)); } catch (err) {}
         return;
       }
       if (m.type === 'attendance:theme') {
