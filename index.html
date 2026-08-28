@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#EFF2F8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0D1015" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171B22" media="(prefers-color-scheme: dark)">
 <title>Attendance</title>
 
 <script>
@@ -32,57 +32,65 @@
      parsing this page, rather than when the iframe is created a moment later. -->
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Same faces the app uses, so the cached cards do not reflow when the live
-     app fades in over them. Non-blocking: it never delays first paint. -->
-<link rel="stylesheet" media="print" onload="this.media='all'"
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
-
 <style>
   /* This page paints the first screen and the app fades in over it, so the two have
-     to agree on the theme. They cannot share storage — different origins — so the
-     app posts its choice here and this page passes it back on the iframe URL. */
+     to agree — on the theme, and on the metrics. They cannot share storage (different
+     origins), so the app posts its choice here and this page passes it back on the
+     iframe URL.
+
+     Every token below is copied from App.html. When one moves, both move, or the
+     cached cards jump the moment the live app arrives. */
   :root{
-    --ink:#0B1020; --ink-2:#55607A; --ink-3:#8F98AD;
-    --glass:rgba(255,255,255,.50); --glass-line:rgba(255,255,255,.65);
-    --blur:saturate(180%) blur(20px);
-    --shadow:0 1px 1px rgba(16,24,48,.04), 0 10px 30px -18px rgba(16,24,48,.45);
-    --ground:#EFF2F8;
-    --card:rgba(255,255,255,.8); --card-line:rgba(255,255,255,.95);
-    --sheen:rgba(255,255,255,.55); --dot:rgba(11,16,32,.82);
-    --note-bg:rgba(255,255,255,.42);
-    --late:#B8500A; --late-soft:rgba(184,80,10,.13); --late-line:rgba(184,80,10,.28);
-    --absent:#B42318; --absent-soft:rgba(180,35,24,.12); --absent-line:rgba(180,35,24,.28);
-    --field:radial-gradient(30% 34% at 12% 14%, rgba(86,120,255,.70), transparent 66%),
-            radial-gradient(28% 30% at 90% 10%, rgba(255,120,190,.58), transparent 66%),
-            radial-gradient(34% 36% at 80% 86%, rgba(48,214,200,.55), transparent 66%),
-            radial-gradient(30% 34% at 14% 90%, rgba(255,190,90,.50), transparent 66%),
-            linear-gradient(180deg,#F4F6FB 0%,#E9EDF6 100%);
-    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    --display:"Bricolage Grotesque","Inter",-apple-system,sans-serif;
+    --bg:#EEF0F4; --surface:#FFFFFF; --surface-2:#F4F6F9; --surface-3:#E8EBF1;
+    --ink:#12151C; --ink-2:#5A6373; --ink-3:#646D7C;
+    --line:#DDE1E9; --line-2:#C6CCD8;
+
+    --accent:#3446C8; --accent-hover:#2A38A8; --accent-ink:#FFFFFF;
+    --accent-soft:#E9ECFB; --accent-line:#C3CBF2;
+
+    --low:#9A5407;  --low-soft:#FDF0DE;  --low-line:#EFD3AC;
+    --full:#A81E17; --full-soft:#FDECEA; --full-line:#F0C4C0;
+    --ok:#0A6B4B;   --ok-soft:#E3F4EC;   --ok-line:#BCE0D2;
+
+    --r-lg:14px; --r-md:10px; --r-sm:8px;
+    --shadow:0 1px 2px rgba(18,21,28,.05);
+    --sheen:rgba(18,21,28,.05);
+
+    /* The shell's own JS writes var(--late) and var(--absent) into the legend
+       swatches inline, so those two names have to survive. Declared literally in
+       both themes rather than aliased to --low / --full: an alias resolves against
+       whichever value wins on :root, which is correct but easy to break silently. */
+    --late:#9A5407; --absent:#A81E17;
+    --ground:#EEF0F4;
+
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --display:var(--sans);
   }
   :root[data-theme="dark"]{
-    --ink:#E9ECF2; --ink-2:#A3ADBE; --ink-3:#78828F;
-    --glass:rgba(255,255,255,.07); --glass-line:rgba(255,255,255,.12);
-    --shadow:0 1px 1px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
-    --ground:#0D1015;
-    --card:rgba(255,255,255,.07); --card-line:rgba(255,255,255,.12);
-    --sheen:rgba(255,255,255,.10); --dot:rgba(233,236,242,.85);
-    --note-bg:rgba(255,255,255,.06);
-    --late:#E0A356; --late-soft:rgba(224,163,86,.16); --late-line:rgba(224,163,86,.30);
-    --absent:#F08579; --absent-soft:rgba(240,133,121,.15); --absent-line:rgba(240,133,121,.30);
-    --field:radial-gradient(30% 34% at 12% 14%, rgba(86,120,255,.24), transparent 66%),
-            radial-gradient(28% 30% at 90% 10%, rgba(255,120,190,.16), transparent 66%),
-            radial-gradient(34% 36% at 80% 86%, rgba(48,214,200,.16), transparent 66%),
-            radial-gradient(30% 34% at 14% 90%, rgba(255,190,90,.13), transparent 66%),
-            linear-gradient(180deg,#0E1219 0%,#0A0D13 100%);
+    --bg:#0F1218; --surface:#171B22; --surface-2:#1E232B; --surface-3:#262C36;
+    --ink:#E8EBF1; --ink-2:#9BA5B4; --ink-3:#8791A1;
+    --line:#272D37; --line-2:#39414E;
+
+    --accent:#8496FF; --accent-hover:#9EACFF; --accent-ink:#0B0E14;
+    --accent-soft:#1D2440; --accent-line:#333D6B;
+
+    --low:#E3AA63;  --low-soft:#2A1F0F;  --low-line:#503C1D;
+    --full:#F58A7E; --full-soft:#2E1815; --full-line:#552822;
+    --ok:#5CC79B;   --ok-soft:#0F2A20;   --ok-line:#1E4B38;
+
+    --late:#E3AA63; --absent:#F58A7E;
+    --ground:#0F1218;
+
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --sheen:rgba(255,255,255,.06);
   }
-  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--ground);
+
+  /* App.html has this in its shared block and this file never did, so anything with
+     width:100% plus padding was rendering wider than its container: the lesson card
+     (347 + 26 + 2 = 375 in a 347 track), the code input and the save buttons. */
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);
     font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
-  /* the same colour field the app sits on, so the shell and the app are continuous */
-  body::before{content:"";position:fixed;inset:-25%;z-index:0;pointer-events:none;filter:blur(56px);
-    background:var(--field)}
   /* pointer-events is the load-bearing half of this rule, not opacity.
      The frame is fixed at inset:0 above the cached screen, so at opacity:0 it is
      invisible AND still swallows every tap — the cards underneath render correctly,
@@ -94,134 +102,157 @@
 
   /* ---- placeholder layer: either the skeleton or the cached cards ---- */
   .ph{position:fixed;inset:0;z-index:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 24px);
+    padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 24px);
     transition:opacity .25s ease}
   .ph.gone{opacity:0;pointer-events:none}
-  .inner{max-width:900px;margin:0 auto}
+  .inner{max-width:880px;margin:0 auto}
 
-  .sbar{display:flex;align-items:center;gap:10px;padding:12px 4px 16px}
-  .slogo{font-weight:700;font-size:17px;letter-spacing:-.02em;color:var(--ink)}
-  .spill{width:74px;height:26px;border-radius:99px;background:var(--card);
-    border:1px solid var(--card-line)}
-  .sdot{margin-left:auto;width:26px;height:26px;border-radius:50%;background:var(--dot)}
-  .sblock{border-radius:18px;background:var(--card);border:1px solid var(--card-line);
-    box-shadow:inset 0 1px 0 var(--sheen),0 10px 30px -18px rgba(16,24,48,.45);
-    -webkit-backdrop-filter:saturate(160%) blur(12px);backdrop-filter:saturate(160%) blur(12px);
-    margin-bottom:12px;overflow:hidden;position:relative}
+  .sbar{display:flex;align-items:center;gap:10px;padding:10px 0 14px}
+  .slogo{font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--ink)}
+  .spill{width:74px;height:26px;border-radius:99px;background:var(--surface-3)}
+  .sdot{margin-left:auto;width:26px;height:26px;border-radius:50%;background:var(--surface-3)}
+  .sblock{border-radius:var(--r-lg);background:var(--surface-3);
+    margin-bottom:9px;overflow:hidden;position:relative}
   .sblock::after{content:"";position:absolute;inset:0;
     background:linear-gradient(100deg,transparent 20%,var(--sheen) 50%,transparent 80%);
     background-size:220% 100%;animation:sh 1.4s linear infinite}
   @keyframes sh{from{background-position:180% 0}to{background-position:-80% 0}}
-  .h76{height:76px}.h44{height:44px}
-  @media (prefers-reduced-motion:reduce){.sblock::after{animation:none}}
+  /* Measured off the live app: .lsn is 68px on a 9px grid, .datebar is 47px. If those
+     change in App.html they change here, or the skeleton resizes under the teacher. */
+  .hlsn{height:68px}.hday{height:47px}
 
   /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
   .name{margin-left:auto;display:flex;align-items:center;gap:8px}
-  .name .nm{font-size:13.5px;font-weight:500;color:var(--ink-2)}
-  .avatar{width:26px;height:26px;border-radius:50%;background:var(--dot);color:var(--ground);
-    display:grid;place-items:center;font-size:11px;font-weight:700;letter-spacing:.02em;flex:none}
-  .dhead{text-align:center;margin:2px 0 14px}
-  .dhead b{display:block;font-family:var(--display);font-size:20px;letter-spacing:-.02em}
+  .name .nm{font-size:13px;font-weight:500;color:var(--ink-2)}
+  .avatar{width:26px;height:26px;border-radius:50%;background:var(--surface-3);color:var(--ink-2);
+    display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+  .dhead{text-align:center;margin:2px 0 12px}
+  .dhead b{display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;line-height:1.3}
   .dhead span{font-size:12.5px;color:var(--ink-2)}
   .note{display:flex;align-items:center;justify-content:center;gap:7px;
-    font-size:12px;color:var(--ink-2);margin:0 auto 14px;padding:6px 12px;width:max-content;
-    max-width:100%;background:var(--note-bg);border:1px solid var(--glass-line);
-    border-radius:99px;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
-  .spin{width:11px;height:11px;border-radius:50%;border:2px solid var(--glass-line);
+    font-size:12px;color:var(--ink-2);margin:0 auto 12px;padding:5px 12px;width:max-content;
+    max-width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:99px}
+  .spin{width:11px;height:11px;border-radius:50%;border:2px solid var(--line-2);
     border-top-color:var(--ink-3);animation:sp .7s linear infinite;flex:none}
   @keyframes sp{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.spin{animation:none}}
 
-  .lessons{display:grid;gap:12px}
-  @media(min-width:620px){.lessons{grid-template-columns:1fr 1fr}}
-  .lsn{display:flex;gap:14px;align-items:center;text-align:left;width:100%;
-    background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;padding:14px;
-    box-shadow:var(--shadow);pointer-events:none;
-    -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
-  .lsn .per{width:44px;flex:none;text-align:center}
-  .lsn .per b{display:block;font-family:var(--display);font-size:22px;letter-spacing:-.03em;line-height:1}
-  .lsn .per span{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .lessons{display:grid;gap:9px}
+  @media(min-width:640px){.lessons{grid-template-columns:1fr 1fr}}
+  .lsn{display:flex;gap:12px;align-items:center;text-align:left;width:100%;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:11px 13px;
+    box-shadow:var(--shadow);pointer-events:none;color:var(--ink);font-family:inherit}
+  .lsn .per{width:42px;height:42px;flex:none;border-radius:var(--r-sm);background:var(--surface-2);
+    border:1px solid var(--line);display:grid;place-content:center;text-align:center}
+  .lsn .per b{display:block;font-size:18px;font-weight:700;letter-spacing:-.03em;line-height:1;
+    font-variant-numeric:tabular-nums}
+  .lsn .per span{display:block;font-size:9px;font-weight:700;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--ink-3);margin-top:2px}
   .lsn .mid{flex:1;min-width:0}
-  .lsn .mid .t{font-weight:600;font-size:15.5px;letter-spacing:-.01em}
-  .lsn .mid .s{font-size:12.5px;color:var(--ink-2);margin-top:2px}
-  .lsn .end{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+  .lsn .mid .t{font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .lsn .mid .s{font-size:12.5px;color:var(--ink-2);margin-top:1px}
+  /* Grid items default to min-width:auto, so a card whose chip will not wrap grows
+     past its own track instead of shrinking. Same rule as App.html. */
+  .lessons>*{min-width:0}
+  .lsn .end{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none;
+    min-width:0;max-width:58%}
+  .lsn .end .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis}
   .lsn .end .n{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
-  .lsn.leave{opacity:.72}
-  .chip{font-size:12px;font-weight:600;border-radius:99px;padding:4px 10px;white-space:nowrap;
-    border:1px solid transparent}
-  .chip.ok{background:rgba(6,122,85,.12);border-color:rgba(6,122,85,.22);color:#046b4b}
-  .chip.todo{background:rgba(43,68,255,.12);border-color:rgba(43,68,255,.24);color:#1b31d8}
-  .chip.bad{background:rgba(180,35,24,.12);border-color:rgba(180,35,24,.24);color:#a01e14}
-  .chip.leave{background:rgba(184,80,10,.13);border-color:rgba(184,80,10,.24);color:#9b4408}
-  .chip.wait{background:var(--note-bg);border-color:var(--glass-line);color:var(--ink-3)}
-  .chip.queued{background:rgba(43,68,255,.14);border-color:rgba(43,68,255,.26);color:#1b31d8}
+  .lsn.leave{opacity:.7}
+  .lsn.leave .per{background:var(--low-soft);border-color:var(--low-line)}
+
+  .chip{font-size:12px;font-weight:600;border-radius:99px;padding:3px 9px;white-space:nowrap;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2)}
+  .chip.ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
+  .chip.todo{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+  .chip.bad{background:var(--full-soft);border-color:var(--full-line);color:var(--full)}
+  .chip.leave{background:var(--low-soft);border-color:var(--low-line);color:var(--low)}
+  .chip.wait{background:var(--surface-2);border-color:var(--line);color:var(--ink-3)}
+  .chip.queued{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 
   /* ---- taking a register before the app is up ---- */
-  .lsn.tap{pointer-events:auto;cursor:pointer;text-align:left}
-  .lsn.tap:active{transform:scale(.995)}
-  .qbar{display:flex;align-items:center;gap:12px;padding:2px 4px 14px}
-  .qbar b{font-family:var(--display);font-size:19px;letter-spacing:-.02em;flex:1;min-width:0}
-  .qback{background:var(--card);border:1px solid var(--glass-line);border-radius:10px;
-    width:36px;height:36px;flex:none;cursor:pointer;font-size:17px;line-height:1;color:var(--ink)}
-  .qsub{font-size:12.5px;color:var(--ink-2);padding:0 4px 12px}
+  .lsn.tap{pointer-events:auto;cursor:pointer;text-align:left;
+    transition:border-color .12s ease,background .12s ease,transform .08s ease}
+  .lsn.tap:hover{border-color:var(--line-2);background:var(--surface-2)}
+  .lsn.tap:active{transform:scale(.99)}
+  .qbar{display:flex;align-items:center;gap:12px;padding:2px 0 12px}
+  .qbar b{font-size:19px;font-weight:700;letter-spacing:-.02em;flex:1;min-width:0}
+  .qback{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
+    width:36px;height:36px;flex:none;cursor:pointer;font-size:17px;line-height:1;color:var(--ink);
+    box-shadow:var(--shadow)}
+  .qsub{font-size:12.5px;color:var(--ink-2);padding:0 0 12px}
   /* The same tile grid the app uses, and the same P -> A -> L cycle on tap, so the
      register a teacher takes here is the one they already know rather than a second
-     way of doing it that happens to live in the shell. */
-  .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
-  .qtile{position:relative;background:var(--card);border:1px solid var(--glass-line);
-    border-radius:12px;padding:13px 8px 11px;text-align:center;overflow:hidden;
-    box-shadow:var(--shadow);cursor:pointer;font-family:inherit;color:var(--ink);
-    transition:background .14s ease,border-color .14s ease,transform .1s ease}
-  .qtile:active{transform:scale(.97)}
-  .qtile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent}
-  .qtile .av{width:42px;height:42px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;
-    background:var(--note-bg);border:1px solid var(--glass-line);color:var(--ink-2);
-    font-weight:600;font-size:14px}
-  .qtile .nm{font-size:12.5px;line-height:1.3;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;
-    -webkit-box-orient:vertical;overflow:hidden;min-height:32px}
-  .qtile .st{margin-top:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-    font-weight:700;color:var(--ink-3)}
-  .qtile[data-s="L"]{background:var(--late-soft);border-color:var(--late-line)}
-  .qtile[data-s="L"]::before{background:var(--late)}
-  .qtile[data-s="L"] .av{background:var(--late);border-color:var(--late);color:#fff}
-  .qtile[data-s="L"] .st{color:var(--late)}
-  .qtile[data-s="A"]{background:var(--absent-soft);border-color:var(--absent-line)}
-  .qtile[data-s="A"]::before{background:var(--absent)}
-  .qtile[data-s="A"] .av{background:var(--absent);border-color:var(--absent);color:#fff}
-  .qtile[data-s="A"] .st{color:var(--absent)}
-  .qlegend{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--ink-2);margin-bottom:10px}
-  .qlegend i{width:8px;height:8px;border-radius:3px;display:inline-block;margin-right:5px}
+     way of doing it that happens to live in the shell. The initials circle is hidden
+     rather than removed for the same reason it is in the app: the tap handler writes
+     the absent glyph into it. */
+  .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px}
+  .qtile{position:relative;display:flex;flex-direction:column;justify-content:center;
+    text-align:left;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r-md);padding:8px 10px 8px 14px;overflow:hidden;box-shadow:var(--shadow);
+    cursor:pointer;font-family:inherit;color:var(--ink);
+    transition:background .12s ease,border-color .12s ease,transform .08s ease}
+  .qtile:active{transform:scale(.98)}
+  .qtile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line-2)}
+  .qtile .av{display:none}
+  .qtile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    font-size:13.5px;line-height:1.3;font-weight:600;letter-spacing:-.01em}
+  .qtile .st{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+    font-weight:700;color:var(--ink-3);margin-top:2px}
+  .qtile[data-s="L"]{background:var(--low-soft);border-color:var(--low-line)}
+  .qtile[data-s="L"]::before{background:var(--low)}
+  .qtile[data-s="L"] .st{color:var(--low)}
+  .qtile[data-s="A"]{background:var(--full-soft);border-color:var(--full-line)}
+  .qtile[data-s="A"]::before{background:var(--full)}
+  .qtile[data-s="A"] .st{color:var(--full)}
+  .qlegend{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--ink-2);margin-bottom:9px}
+  .qlegend i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px}
 
   /* ---- a student's cached summary ---- */
-  .stot{background:var(--card);border:1px solid var(--card-line);border-radius:18px;
-    padding:18px;text-align:center;margin-bottom:12px;box-shadow:var(--shadow);
-    -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
-  .stot b{display:block;font-family:var(--display);font-size:34px;letter-spacing:-.03em;line-height:1}
+  .stot{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:18px;text-align:center;margin-bottom:9px;box-shadow:var(--shadow)}
+  .stot b{display:block;font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;
+    font-variant-numeric:tabular-nums}
   .stot span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:6px}
-  .srow{display:flex;align-items:center;gap:10px;padding:12px 15px;background:var(--card);
-    border:1px solid var(--card-line);border-radius:14px;margin-bottom:8px;box-shadow:var(--shadow);
-    -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+  .srow{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:8px;box-shadow:var(--shadow)}
   .srow.past{opacity:.55}
   .slab{flex:1;min-width:0;font-size:14.5px;font-weight:600;overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap}
   .sfig{font-size:12.5px;color:var(--ink-3);flex:none}
-  .spct{font-family:var(--display);font-weight:700;font-size:16px;flex:none;min-width:52px;text-align:right}
-  .qacts{display:flex;gap:10px;margin:14px 0 4px;position:sticky;bottom:0;
+  .spct{font-weight:700;font-size:16px;flex:none;min-width:52px;text-align:right;
+    font-variant-numeric:tabular-nums}
+
+  .qacts{display:flex;gap:9px;margin:14px 0 4px;position:sticky;bottom:0;
     padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
-  .qbtn{flex:1;padding:15px;border:0;border-radius:13px;background:#12283F;color:#fff;
-    font-size:15.5px;font-weight:600;cursor:pointer;font-family:inherit}
-  .qbtn.alt{background:var(--card);color:var(--ink);border:1px solid var(--glass-line)}
+  .qbtn{flex:1;padding:14px;border:1px solid var(--accent);border-radius:var(--r-md);
+    background:var(--accent);color:var(--accent-ink);font-size:15px;font-weight:600;cursor:pointer;
+    font-family:inherit;box-shadow:var(--shadow);
+    transition:background .12s ease,transform .08s ease}
+  .qbtn:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+  .qbtn:active{transform:scale(.985)}
+  .qbtn.alt{background:var(--surface);color:var(--ink);border-color:var(--line-2)}
+  .qbtn.alt:hover{background:var(--surface-2)}
   .qnote{font-size:12px;color:var(--ink-2);text-align:center;padding:8px 0 0}
 
   /* ---- first-ever open: ask for the code ---- */
   .ask{position:fixed;inset:0;z-index:3;display:grid;place-items:center;padding:24px}
   .box{width:100%;max-width:320px;text-align:center}
-  .box h1{font-size:19px;margin:0 0 6px;color:var(--ink)}
+  .box h1{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px;color:var(--ink)}
   .box p{font-size:13.5px;color:var(--ink-2);margin:0 0 18px;line-height:1.5}
-  .box input{width:100%;padding:13px;border:1px solid var(--glass-line);border-radius:12px;font-size:16px;
-    text-align:center;letter-spacing:.05em;background:var(--card);color:var(--ink)}
-  .box button{width:100%;margin-top:10px;padding:14px;border:0;border-radius:12px;background:var(--dot);
-    color:var(--ground);font-size:15.5px;font-weight:600;cursor:pointer}
+  .box input{width:100%;-webkit-appearance:none;appearance:none;padding:13px;
+    border:1px solid var(--line);border-radius:var(--r-md);font-size:16px;font-family:inherit;
+    text-align:center;letter-spacing:.05em;background:var(--surface);color:var(--ink)}
+  .box input:focus{border-color:var(--line-2);outline:2px solid var(--accent);outline-offset:2px}
+  .box button{width:100%;margin-top:10px;padding:14px;border:1px solid var(--accent);
+    border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-size:15px;
+    font-weight:600;cursor:pointer;font-family:inherit;box-shadow:var(--shadow)}
+  .box button:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important}
+  }
 </style>
 </head>
 <body>
@@ -250,10 +281,10 @@
 <div class="ph" id="shell" aria-hidden="true">
   <div class="inner">
     <div class="sbar"><span class="slogo">Attendance</span><span class="spill"></span><span class="sdot"></span></div>
-    <div class="sblock h44" style="width:70%;margin:0 auto 16px"></div>
-    <div class="sblock h76"></div>
-    <div class="sblock h76"></div>
-    <div class="sblock h76"></div>
+    <div class="sblock hday" style="width:70%;margin:0 auto 14px"></div>
+    <div class="sblock hlsn"></div>
+    <div class="sblock hlsn"></div>
+    <div class="sblock hlsn"></div>
   </div>
 </div>
 
@@ -444,7 +475,7 @@
     return !!(fresh && l.students && l.students.length && !l.leave);
   }
   function card(l, admin, live, i, fresh, queued){
-    var sub = [ (l.start ? l.start + '\u2013' + l.end : ''), l.room, (admin ? l.teacher : '') ]
+    var sub = [ (l.start ? l.start + '-' + l.end : ''), l.room, (admin ? l.teacher : '') ]
       .filter(Boolean).join(' \u00b7 ');
     var count = queued ? 'register ready'
               : (live && l.taken) ? (l.flagged + '/' + l.total + ' flagged')
@@ -522,7 +553,7 @@
       '<div class="dhead"><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
         esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
       '<div class="note"><span class="spin"></span>' +
-        (anyTap ? 'Ready \u2014 tap a lesson to take the register'
+        (anyTap ? 'Ready. Tap a lesson to take the register'
                 : live ? 'Your last view \u00b7 updating' : 'Your usual timetable \u00b7 checking today') +
       '</div>';
 
@@ -533,7 +564,7 @@
         }).join('') +
         '</div>';
     } else {
-      html += '<div class="sblock h76"></div><div class="sblock h76"></div><div class="sblock h76"></div>';
+      html += '<div class="sblock hlsn"></div><div class="sblock hlsn"></div><div class="sblock hlsn"></div>';
     }
 
     $('instantInner').innerHTML = html;
@@ -596,7 +627,7 @@
 
   function renderQuick(){
     var l = QS.lesson;
-    var sub = [ (l.start ? l.start + '\u2013' + l.end : ''), l.room ].filter(Boolean).join(' \u00b7 ');
+    var sub = [ (l.start ? l.start + '-' + l.end : ''), l.room ].filter(Boolean).join(' \u00b7 ');
 
     $('quickInner').innerHTML =
       '<div class="qbar"><button type="button" class="qback" id="qb" aria-label="Back to lessons">&#8249;</button>' +
