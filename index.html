@@ -9,13 +9,17 @@
 <title>Attendance</title>
 
 <script>
-/* Settle the theme before anything paints. No stamp means follow the system, which
-   is the default; an explicit choice made in the app is stored here and wins. */
+/* Settle the theme before anything paints, RESOLVING the system preference to an
+   explicit stamp so the stylesheet describes dark once rather than once per source.
+   data-theme is always set; data-theme-by says whether the person or the OS decided. */
 (function(){
-  try{
-    var t = localStorage.getItem('attendance-theme');
-    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
-  }catch(e){}
+  var t = '';
+  try { t = localStorage.getItem('attendance-theme') || ''; } catch (e) {}
+  var chosen = (t === 'dark' || t === 'light') ? t : '';
+  var dark = chosen ? chosen === 'dark'
+    : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme-by', chosen ? 'user' : 'system');
 })();
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -56,22 +60,6 @@
     --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     --display:"Bricolage Grotesque","Inter",-apple-system,sans-serif;
   }
-  @media (prefers-color-scheme:dark){
-    :root:not([data-theme="light"]){
-      --ink:#E9ECF2; --ink-2:#A3ADBE; --ink-3:#78828F;
-      --glass:rgba(255,255,255,.07); --glass-line:rgba(255,255,255,.12);
-      --shadow:0 1px 1px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
-      --ground:#0D1015;
-      --card:rgba(255,255,255,.07); --card-line:rgba(255,255,255,.12);
-      --sheen:rgba(255,255,255,.10); --dot:rgba(233,236,242,.85);
-      --note-bg:rgba(255,255,255,.06);
-      --field:radial-gradient(30% 34% at 12% 14%, rgba(86,120,255,.24), transparent 66%),
-              radial-gradient(28% 30% at 90% 10%, rgba(255,120,190,.16), transparent 66%),
-              radial-gradient(34% 36% at 80% 86%, rgba(48,214,200,.16), transparent 66%),
-              radial-gradient(30% 34% at 14% 90%, rgba(255,190,90,.13), transparent 66%),
-              linear-gradient(180deg,#0E1219 0%,#0A0D13 100%);
-    }
-  }
   :root[data-theme="dark"]{
     --ink:#E9ECF2; --ink-2:#A3ADBE; --ink-3:#78828F;
     --glass:rgba(255,255,255,.07); --glass-line:rgba(255,255,255,.12);
@@ -91,9 +79,14 @@
   /* the same colour field the app sits on, so the shell and the app are continuous */
   body::before{content:"";position:fixed;inset:-25%;z-index:0;pointer-events:none;filter:blur(56px);
     background:var(--field)}
+  /* pointer-events is the load-bearing half of this rule, not opacity.
+     The frame is fixed at inset:0 above the cached screen, so at opacity:0 it is
+     invisible AND still swallows every tap — the cards underneath render correctly,
+     read as tappable, and simply never receive a finger. It must not take input
+     until it is the thing on screen. */
   iframe{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2;opacity:0;
-    transition:opacity .25s ease}
-  iframe.ready{opacity:1}
+    pointer-events:none;transition:opacity .25s ease}
+  iframe.ready{opacity:1;pointer-events:auto}
 
   /* ---- placeholder layer: either the skeleton or the cached cards ---- */
   .ph{position:fixed;inset:0;z-index:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
@@ -391,10 +384,29 @@
     var day = s.days && s.days[iso];
     var live = !!day;
     var at = day ? day.savedAt : 0;
+    var key = SHORT[d.getDay()];
+    var proto = (s.dow && s.dow[key]) || [];
     if (!day) {
-      var key = SHORT[d.getDay()];
-      var proto = s.dow && s.dow[key];
-      if (proto && proto.length) { day = { lessons: proto }; at = (s.dowAt && s.dowAt[key]) || 0; }
+      if (proto.length) { day = { lessons: proto }; at = (s.dowAt && s.dowAt[key]) || 0; }
+    } else if (day.lessons && day.lessons.length && proto.length) {
+      /* Today's snapshot wins on WHICH lessons there are and on the chips, but it may
+         carry no class lists — it was written by an older build, or before the offline
+         register was switched on. The weekday grid may hold the names for those same
+         lessons. Graft them across rather than making the teacher wait out a cold start
+         for a roster the device already has. This is what a deploy looks like from the
+         inside: real cards that were mysteriously not tappable until the app had run
+         once more. */
+      var borrowed = false;
+      day.lessons.forEach(function (l) {
+        if (l.students && l.students.length) return;
+        for (var i = 0; i < proto.length; i++) {
+          var p = proto[i];
+          if (p.classId === l.classId && String(p.period) === String(l.period) &&
+              p.students && p.students.length) { l.students = p.students; borrowed = true; return; }
+        }
+      });
+      // Borrowed names are only as fresh as the grid they came from.
+      if (borrowed) at = Math.min(at || 0, (s.dowAt && s.dowAt[key]) || 0);
     }
     // Old enough that someone may have joined or left the class since.
     var fresh = !!at && (Date.now() - at) < ROSTER_DAYS * 864e5;
