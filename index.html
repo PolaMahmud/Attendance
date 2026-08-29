@@ -26,7 +26,17 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="robots" content="noindex, nofollow">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2312283F'/><text x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='Arial'>A</text></svg>">
+<!-- Home-screen icon. All relative, because Pages may serve this from a project
+     subpath (yourname.github.io/attendance/) rather than the domain root.
+
+     iOS wants a PNG here; it ignores SVG for apple-touch-icon, which is what the
+     placeholder used to be. It also applies its OWN rounded mask, so the file is
+     full bleed: navy right to the edges, no corners of its own. make-icons.ps1
+     builds these from icon.png. -->
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="KS5 Attendance">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="manifest" href="./manifest.webmanifest">
 
 <!-- Start the DNS lookup and TLS handshake for Apps Script now, in parallel with
      parsing this page, rather than when the iframe is created a moment later. -->
