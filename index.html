@@ -31,9 +31,14 @@
 
      iOS wants a PNG here; it ignores SVG for apple-touch-icon, which is what the
      placeholder used to be. It also applies its OWN rounded mask, so the file is
-     full bleed: navy right to the edges, no corners of its own. make-icons.ps1
-     builds these from icon.png. -->
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+     full bleed: navy right to the edges, no corners of its own, and no alpha at all
+     because iOS composites transparency against black. make-icons.ps1 builds these
+     from icon.png.
+
+     sizes is declared because WebKit sorts candidate touch icons by their DECLARED
+     size and scores an undeclared one as 60px, so an unsized 180 can lose to a
+     smaller rival that did declare itself. -->
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="KS5 Attendance">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -71,10 +76,8 @@
        both themes rather than aliased to --low / --full: an alias resolves against
        whichever value wins on :root, which is correct but easy to break silently. */
     --late:#9A5407; --absent:#A81E17;
-    --ground:#EEF0F4;
 
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-    --display:var(--sans);
   }
   :root[data-theme="dark"]{
     --bg:#0F1218; --surface:#171B22; --surface-2:#1E232B; --surface-3:#262C36;
@@ -89,7 +92,6 @@
     --ok:#5CC79B;   --ok-soft:#0F2A20;   --ok-line:#1E4B38;
 
     --late:#E3AA63; --absent:#F58A7E;
-    --ground:#0F1218;
 
     --shadow:0 1px 2px rgba(0,0,0,.4);
     --sheen:rgba(255,255,255,.06);
@@ -115,6 +117,21 @@
     padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 24px);
     transition:opacity .25s ease}
   .ph.gone{opacity:0;pointer-events:none}
+  /* Above the iframe (z-index 2) so it can be tapped, and anchored to the bottom so it
+     never covers the app's header or a register tile. */
+  .notif{position:fixed;z-index:5;left:12px;right:12px;
+    bottom:calc(env(safe-area-inset-bottom) + 12px);
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.35;
+    box-shadow:0 8px 30px rgba(10,12,18,.18)}
+  .notif[hidden]{display:none}
+  .notif span{flex:1 1 160px;min-width:0}
+  .notif button{flex:0 0 auto;border:0;border-radius:10px;padding:9px 14px;
+    font:inherit;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;
+    min-height:40px}
+  .notif button.alt{background:transparent;color:var(--ink-2);
+    border:1px solid var(--line);font-weight:500}
   .inner{max-width:880px;margin:0 auto}
 
   .sbar{display:flex;align-items:center;gap:10px;padding:10px 0 14px}
@@ -175,7 +192,6 @@
     background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2)}
   .chip.ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
   .chip.todo{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
-  .chip.bad{background:var(--full-soft);border-color:var(--full-line);color:var(--full)}
   .chip.leave{background:var(--low-soft);border-color:var(--low-line);color:var(--low)}
   .chip.wait{background:var(--surface-2);border-color:var(--line);color:var(--ink-3)}
   .chip.queued{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
@@ -300,6 +316,22 @@
 
 <div class="ph" id="instant" aria-hidden="true" style="display:none"><div class="inner" id="instantInner"></div></div>
 <div class="ph" id="quick" style="display:none"><div class="inner" id="quickInner"></div></div>
+<!-- The opt-in lives out here, not in the app, and neither half could do it alone.
+
+     The service worker and the push subscription belong to THIS origin, not to the
+     Apps Script iframe. And Notification.requestPermission() needs transient user
+     activation, which does not cross a frame boundary — a button inside the app asking
+     the wrapper to prompt would simply be refused on iOS.
+
+     But only the app can talk to the server, over google.script.run, with no CORS in
+     the way. So the wrapper gets permission and the subscription; the app registers it.
+     It appears only when notifications are possible and unanswered, and never twice. -->
+<div class="notif" id="notifBar" hidden>
+  <span id="notifText">Get told when you have a register outstanding.</span>
+  <button type="button" id="notifYes">Turn on</button>
+  <button type="button" class="alt" id="notifNo">Not now</button>
+</div>
+
 <div id="slot"></div>
 
 <script>
@@ -323,7 +355,7 @@
   function p2(n){ return (n < 10 ? '0' : '') + n; }
   function esc(s){
     return String(s == null ? '' : s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function stored(){ try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
   function keep(t){ try { localStorage.setItem(KEY, t); } catch (e) {} }
@@ -467,9 +499,12 @@
   function todayIso(){ var d = new Date(); return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
   // midday avoids any daylight-saving edge shifting the day by one
   function asDate(iso){ return new Date(iso + 'T12:00:00'); }
+  // Must match ini() in App.html exactly: first word + LAST word. When these two
+  // disagreed the avatar letters changed the instant the real app faded in, which
+  // is the one thing this cached screen exists to prevent.
   function initials(n){
-    return String(n||'').trim().split(/\s+/).slice(0,2)
-      .map(function(w){ return w.charAt(0).toUpperCase(); }).join('');
+    var p=String(n||'').trim().split(/\s+/);
+    return ((p[0]||'?')[0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase();
   }
 
   function chip(l, live, queued){
@@ -692,6 +727,14 @@
      never our own iframe's contentWindow — that iframe is Google's shim page, and
      the app runs in a sandbox frame one level below it. Posting to the shim drops
      the message silently. */
+  /* Same target rule as flushQueue: the window that talked to US, never our own
+     iframe, which is Google's shim page one level above where the app runs. */
+  function toApp(msg){
+    var target = QS.app || (QS.frame && QS.frame.contentWindow);
+    if (!target) return false;
+    try { target.postMessage(msg, '*'); return true; } catch (e) { return false; }
+  }
+
   function flushQueue(){
     var target = QS.app || (QS.frame && QS.frame.contentWindow);
     if (!QS.ready || !target) return;
@@ -789,6 +832,10 @@
         return;
       }
       if (!m || m.v !== 1) return;
+      // The app has booted and is telling us the application server key.
+      if (m.type === 'attendance:push-ready') { try { pushReady(m.vapid, t); } catch (err) {} return; }
+      // ...and has just written a subscription to the sheet.
+      if (m.type === 'attendance:push-registered') { try { pushRegistered(m.key); } catch (err) {} return; }
       if (m.type === 'attendance:snapshot') {
         try { absorbSnap(t, m); } catch (err) {}
         return;
@@ -856,6 +903,158 @@
       $('shell').classList.add('gone');
       $('instant').classList.add('gone');
     }, 15000);
+  }
+
+  /* ------------------------------------------------------------------ push
+
+     Best-effort throughout. This app's job is to take a register in the first sixty
+     seconds of a lesson; notifications sit on top of that, so every failure path here
+     ends in "carry on without them" and none of it can block boot. */
+  var PUSHKEY = 'attendance-push:';
+  var PUSH = { reg: null, vapid: '', token: '' };
+
+  function pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  }
+  function b64ToBytes(b64) {
+    var pad = new Array((4 - b64.length % 4) % 4 + 1).join('=');
+    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  /* Tell the worker where to fetch a notification's text and who to say it is. Repeated
+     on every load, not only at subscribe time: a worker can be evicted and reinstalled,
+     and one with no config falls back to "open the app" instead of the real message. */
+  function tellWorker(key) {
+    if (!PUSH.reg || !key) return;
+    var target = PUSH.reg.active || navigator.serviceWorker.controller;
+    if (!target) return;
+    try {
+      target.postMessage({ type: 'attendance:push-config', url: WEBAPP_URL, key: key,
+                           app: location.pathname });
+    } catch (e) {}
+  }
+
+  /* Ask the browser for a subscription and hand it to the app, which is the only half
+     of this pair that can reach the server. */
+  function subscribeAndRegister() {
+    if (!PUSH.reg || !PUSH.vapid) return;
+    PUSH.reg.pushManager.getSubscription()
+      .then(function (existing) {
+        return existing || PUSH.reg.pushManager.subscribe({
+          userVisibleOnly: true,        // required, and iOS refuses silent pushes outright
+          applicationServerKey: b64ToBytes(PUSH.vapid)
+        });
+      })
+      .then(function (sub) {
+        var device = (/iPhone|iPad|iPod/.test(navigator.userAgent) ? 'iOS'
+          : /Android/.test(navigator.userAgent) ? 'Android' : 'desktop');
+        toApp({ type: 'attendance:push-subscribe', v: 1,
+                sub: JSON.parse(JSON.stringify(sub)), device: device });
+      })
+      .catch(function () {});
+  }
+
+  /* The app has loaded and told us the application server key. */
+  /* Why the offer is not on screen.
+
+     Every branch below used to be a bare `return`, and `register().catch` swallowed the
+     rest — six silent exits and a shrug. That is fine on an ordinary load, where nobody
+     wants an explanation of a button they were not looking for. It is useless to the
+     person who has been told to turn notifications on and cannot see how.
+
+     So: silent as before by default, but with ?notify=1 on the address the bar appears
+     anyway and states the reason. One link diagnoses it, on the device that has the
+     problem, without anyone reading a console. */
+  function pushWhyNot(reason) {
+    if (!/[?&]notify=1/.test(location.search)) return;
+    var bar = $('notifBar');
+    if (!bar) return;
+    $('notifText').textContent = reason;
+    $('notifYes').hidden = true;
+    $('notifNo').textContent = 'Close';
+    $('notifNo').onclick = function () { bar.hidden = true; };
+    bar.hidden = false;
+  }
+
+  function pushReady(vapid, token) {
+    if (!('serviceWorker' in navigator)) {
+      return pushWhyNot('This browser cannot show notifications (no service worker support).');
+    }
+    if (!('PushManager' in window) || !('Notification' in window)) {
+      return pushWhyNot('This browser has no Push API. On an iPhone the app must be opened ' +
+        'from its home-screen icon, not a Safari tab.');
+    }
+    if (!vapid) {
+      return pushWhyNot('The app did not send a notification key. The office needs to redeploy ' +
+        'the web app, then run Attendance > Notifications > Check notifications can work.');
+    }
+    PUSH.vapid = vapid;
+    PUSH.token = token || '';
+
+    /* iOS grants the Push API to an INSTALLED app only. Offering a button that cannot
+       work, to exactly the people most likely to tap it, is worse than staying quiet. */
+    var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                    navigator.standalone === true;
+    if (iOS && !installed) {
+      return pushWhyNot('On an iPhone, notifications only work once this is installed. ' +
+        'Tap Share, then "Add to Home Screen", and open it from the icon.');
+    }
+
+    navigator.serviceWorker.register('./sw.js').then(function (reg) {
+      PUSH.reg = reg;
+      var known = '';
+      try { known = localStorage.getItem(PUSHKEY + PUSH.token) || ''; } catch (e) {}
+      tellWorker(known);
+
+      if (Notification.permission === 'granted') {
+        /* Re-subscribe on every load. iOS quietly drops subscriptions after a reinstall
+           or a long gap, and from in here a dead one looks exactly like a live one. */
+        subscribeAndRegister();
+        return pushWhyNot('Notifications are already on for this device. Nothing to do.');
+      }
+      if (Notification.permission === 'denied') {
+        return pushWhyNot('Notifications are blocked for this app in your device settings. ' +
+          'Turn them back on there — a web page is not allowed to ask again.');
+      }
+      /* "Not now" is remembered so the bar stops nagging — but it was remembered
+         FOREVER, with nothing anywhere to bring it back. Someone who dismissed it once
+         could never turn notifications on again. ?notify=1 is the way back: send the
+         teacher their normal link with it on the end. */
+      if (/[?&]notify=1/.test(location.search)) {
+        try { localStorage.removeItem(PUSHKEY + 'declined'); } catch (e) {}
+      } else {
+        try { if (localStorage.getItem(PUSHKEY + 'declined')) return; } catch (e) {}
+      }
+
+      var bar = $('notifBar');
+      if (!bar) return;
+      bar.hidden = false;
+      $('notifNo').onclick = function () {
+        bar.hidden = true;
+        try { localStorage.setItem(PUSHKEY + 'declined', '1'); } catch (e) {}
+      };
+      $('notifYes').onclick = function () {
+        // Straight from the tap. The permission prompt needs that user activation.
+        Notification.requestPermission().then(function (p) {
+          bar.hidden = true;
+          if (p === 'granted') subscribeAndRegister();
+        });
+      };
+    }).catch(function (err) {
+      pushWhyNot('The notification helper (sw.js) did not load: ' + (err && err.message || err) +
+        '. It must sit on the website beside index.html — open /sw.js in a browser to check.');
+    });
+  }
+
+  /* The app wrote the subscription to the sheet and sent back the device key. */
+  function pushRegistered(key) {
+    if (!key) return;
+    try { localStorage.setItem(PUSHKEY + PUSH.token, key); } catch (e) {}
+    tellWorker(key);
   }
 
   var extra = passthrough();
