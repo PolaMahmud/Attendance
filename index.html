@@ -332,6 +332,16 @@
   <button type="button" class="alt" id="notifNo">Not now</button>
 </div>
 
+<!-- Shown only when Google served something that is not our app: the frame loaded, but
+     the app inside it never said it had painted. Without this a teacher gets Google's own
+     error page — in whatever language their account is set to, inside a frame that crops
+     it — and no idea that the cause is their own browser. -->
+<div class="notif" id="stuckBar" hidden>
+  <span id="stuckText"></span>
+  <button type="button" id="stuckGo">Try again</button>
+  <button type="button" class="alt" id="stuckNo">Close</button>
+</div>
+
 <div id="slot"></div>
 
 <script>
@@ -799,6 +809,42 @@
 
     var shown = false;
     var f = null;
+    var stuckTimer = null;
+
+    /* Google refused, and only the browser can explain why.
+
+       When the account router will not serve the app — most often because this browser
+       is signed in to several Google accounts and it resolved the wrong one — the frame
+       still loads, and what appears is a Drive error page in the account's own language,
+       squeezed into a frame. From the teacher's side the app has simply broken. Nothing
+       on the page said the fault was local to their browser or that a private tab walks
+       straight past it, so the honest thing is to say both. */
+    function stuck() {
+      if (QS.ready || QS.editing) return;
+      if (!navigator.onLine) return;          // offline is a different problem, already handled
+      /* One retry with an ordinary frame before saying anything.
+
+         If some future Chrome needs the Google cookies to serve the app at all, the
+         cookie-free frame would break it for everyone — so this is the way back, and it
+         costs a single reload of a page that is already showing nothing. */
+      if (credOK && !triedPlain) {
+        triedPlain = true;
+        mark('no paint from the cookie-free frame — retrying the ordinary way');
+        swapFrame(false);
+        return;
+      }
+      var b = $('stuckBar');
+      if (!b || !b.hidden) return;
+      $('notifBar').hidden = true;            // one bar at a time
+      $('stuckText').textContent = 'Google would not open the app. This is nearly always ' +
+        'the browser, not the app: if it is signed in to more than one Google account, ' +
+        'Google can pick the wrong one. Try a private tab, or sign out of the spare ' +
+        'accounts. It also opens in Firefox.';
+      $('stuckGo').onclick = function () { location.reload(); };
+      $('stuckNo').onclick = function () { b.hidden = true; };
+      b.hidden = false;
+      mark('app never painted — showed the account explanation');
+    }
     function reveal(){
       if (shown) return;
       // Never swap the app in over a half-marked register. closeQuick calls back.
@@ -827,6 +873,9 @@
       if (m === 'attendance:ready') {
         mark('app painted (attendance:ready)');
         QS.ready = true;
+        // It did paint, just slowly. Call off the explanation, and clear it if it landed.
+        if (stuckTimer) { clearTimeout(stuckTimer); stuckTimer = null; }
+        var sb = $('stuckBar'); if (sb) sb.hidden = true;
         flushQueue();                       // anything marked while it was loading
         reveal();
         return;
@@ -865,36 +914,76 @@
       }
     });
 
+    /* Ask Google for the app as nobody in particular.
+
+       This shell is all GitHub serves. The frame inside it goes straight from the phone
+       to script.google.com, carrying whatever Google sessions the browser happens to
+       hold — and signed in to more than one account, Google's router picks the wrong one
+       and answers with a Drive error instead of the app. We cannot influence that choice.
+       We can decline to offer one: a credentialless frame loads in an ephemeral,
+       cookie-free partition, so the request arrives anonymous and there is no account to
+       get wrong. It is the same reason the identical URL has always opened in Firefox,
+       and the same reason the WebView APK works — neither was ever signed in to anything.
+
+       Chrome 110+ only. Everywhere else the attribute is ignored and nothing changes, so
+       there is nothing to detect against and nothing to fall back from — but stuck()
+       retries once without it anyway, in case Google ever starts needing the cookies.
+
+       What it costs: the frame's own storage is ephemeral. The app keeps exactly one
+       thing there, the theme, and this page owns that already and passes it on the URL.
+       Nothing else in the frame is persistent, so there is nothing else to lose. */
+    var credOK = false;
+    try { credOK = 'credentialless' in HTMLIFrameElement.prototype; } catch (e) {}
+    var triedPlain = false;
+
     // Built fresh with its src already set, so the only load event is the app's own —
     // an iframe that starts empty fires one for about:blank and hides the shell too early.
-    f = document.createElement('iframe');
-    f.id = 'app';
-    f.title = 'Attendance';
-    f.setAttribute('allow', 'clipboard-write');
+    function buildFrame(anon) {
+      var el = document.createElement('iframe');
+      el.id = 'app';
+      el.title = 'Attendance';
+      el.setAttribute('allow', 'clipboard-write');
+      if (anon) { try { el.credentialless = true; } catch (e) {} }
+      el.onload = function () {
+        mark('iframe document loaded' + (anon ? ' (cookie-free)' : ''));
+        // Second line of defence. Only fires if attendance:ready never lands; when it
+        // does, reveal has already run and this is a no-op.
+        setTimeout(reveal, 3500);
+        /* Long, deliberately. A cold Apps Script container can take the best part of ten
+           seconds on a bad morning, and telling someone their browser is broken when it
+           is merely slow would be worse than saying nothing. */
+        if (stuckTimer) clearTimeout(stuckTimer);
+        stuckTimer = setTimeout(stuck, 14000);
+      };
+      /* Hand the app the theme on its URL. It runs in a sandbox frame with no query
+         string of its own, so this is the only way it can know before its first paint;
+         anything later shows as a flash of the wrong theme. */
+      var themed = '';
+      try {
+        var pref = localStorage.getItem('attendance-theme');
+        if (pref === 'dark' || pref === 'light') themed = '&theme=' + pref;
+      } catch (e) {}
+      el.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '') + themed;
+      return el;
+    }
+
+    function swapFrame(anon) {
+      var el = buildFrame(anon);
+      if (f && f.parentNode) f.parentNode.removeChild(f);
+      f = el;
+      QS.frame = f;
+      // If the shell has already been swapped away, the replacement must not fade in.
+      if (shown) f.classList.add('ready');
+      $('slot').appendChild(f);
+      mark('iframe requested' + (anon ? ' (cookie-free)' : ''));
+    }
 
     // Hard stop, in case an older build is deployed that doesn't post the message.
     // This used to be the normal path rather than the exception: the app was posting
     // to the wrong window, so nothing ever arrived and every open sat here for the
     // full 12 seconds while the app itself had been ready for nine of them.
     setTimeout(reveal, 12000);
-    f.onload = function () {
-      mark('iframe document loaded');
-      // Second line of defence. Only fires if attendance:ready never lands; when it
-      // does, reveal has already run and this is a no-op.
-      setTimeout(reveal, 3500);
-    };
-    /* Hand the app the theme on its URL. It runs in a sandbox frame with no query
-       string of its own, so this is the only way it can know before its first paint;
-       anything later shows as a flash of the wrong theme. */
-    var themed = '';
-    try {
-      var pref = localStorage.getItem('attendance-theme');
-      if (pref === 'dark' || pref === 'light') themed = '&theme=' + pref;
-    } catch (e) {}
-    f.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '') + themed;
-    QS.frame = f;
-    $('slot').appendChild(f);
-    mark('iframe requested');
+    swapFrame(credOK);
 
     // never leave a placeholder up forever if something goes wrong
     setTimeout(function () {
@@ -910,6 +999,11 @@
      Best-effort throughout. This app's job is to take a register in the first sixty
      seconds of a lesson; notifications sit on top of that, so every failure path here
      ends in "carry on without them" and none of it can block boot. */
+  /* Bumped whenever this file changes in a way anyone needs to see. An installed PWA
+     holds on to its start page hard, so "I uploaded it and nothing changed" is usually
+     a cached copy — and there was no way to tell that from a real fault. ?notify=1
+     prints this. */
+  var WRAPPER_BUILD = '2026-09-10a';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
@@ -927,26 +1021,80 @@
   /* Tell the worker where to fetch a notification's text and who to say it is. Repeated
      on every load, not only at subscribe time: a worker can be evicted and reinstalled,
      and one with no config falls back to "open the app" instead of the real message. */
+  /* Wait for an ACTIVE worker before posting to it.
+
+     reg.active is null on a first registration — the worker is still installing — and
+     navigator.serviceWorker.controller is null until it takes control of the page. So
+     the very first run posted to nothing, silently, and the worker woke with no idea
+     where to fetch a notification's text. serviceWorker.ready resolves only once there
+     is an active worker, which is exactly the guarantee needed. */
   function tellWorker(key) {
-    if (!PUSH.reg || !key) return;
-    var target = PUSH.reg.active || navigator.serviceWorker.controller;
-    if (!target) return;
-    try {
+    if (!key || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.ready.then(function (reg) {
+      var target = reg.active || navigator.serviceWorker.controller;
+      if (!target) return;
       target.postMessage({ type: 'attendance:push-config', url: WEBAPP_URL, key: key,
-                           app: location.pathname });
-    } catch (e) {}
+                          app: location.pathname });
+    }).catch(function () {});
+  }
+
+  /* Does this device show notifications AT ALL?
+
+     A push that the service accepted (201) and that never appears has two very different
+     causes — the notification was never delivered to the worker, or the device refused to
+     display it (Focus, Do Not Disturb, notifications off for the installed app in system
+     settings). Those need opposite fixes and look identical from the outside. This draws
+     one locally, with no push involved: if it appears, delivery is the problem; if it
+     does not, nothing is wrong with the server and the phone's own settings are. */
+  function pushLocalTest() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.showNotification('Test notification', {
+        body: 'If you can see this, this device can show notifications. ' +
+              'Anything missing after this is a delivery problem, not a settings one.',
+        icon: './icon-192.png', tag: 'attendance-test'
+      });
+    }).catch(function (err) {
+      $('notifText').textContent = 'This device refused to show even a local notification: ' +
+        (err && err.message || err) + '. Check notifications for this app in your phone settings.';
+    });
   }
 
   /* Ask the browser for a subscription and hand it to the app, which is the only half
      of this pair that can reach the server. */
+  /* Is this subscription still granted to the key we are actually sending with?
+
+     A subscription belongs to ONE application server key. After "New push keys" on the
+     sheet, the browser goes on holding the old one; getSubscription() hands it straight
+     back, we re-register it, and every push to it is refused for the rest of time — and
+     invisibly, because re-registering a dead subscription looks exactly like a healthy
+     one from in here. The person would have had to clear site data to escape, which is
+     not a thing you can ask a teacher to do. */
+  function keyStillOurs(sub) {
+    try {
+      var was = sub.options && sub.options.applicationServerKey;
+      if (!was) return true;            // browser will not tell us: leave well alone
+      var a = new Uint8Array(was), b = b64ToBytes(PUSH.vapid);
+      if (a.length !== b.length) return false;
+      for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+      return true;
+    } catch (e) { return true; }
+  }
+
   function subscribeAndRegister() {
     if (!PUSH.reg || !PUSH.vapid) return;
+    function fresh() {
+      return PUSH.reg.pushManager.subscribe({
+        userVisibleOnly: true,          // required, and iOS refuses silent pushes outright
+        applicationServerKey: b64ToBytes(PUSH.vapid)
+      });
+    }
     PUSH.reg.pushManager.getSubscription()
       .then(function (existing) {
-        return existing || PUSH.reg.pushManager.subscribe({
-          userVisibleOnly: true,        // required, and iOS refuses silent pushes outright
-          applicationServerKey: b64ToBytes(PUSH.vapid)
-        });
+        if (!existing) return fresh();
+        if (keyStillOurs(existing)) return existing;
+        // Stale: drop it and take a new one, which needs no permission prompt.
+        return existing.unsubscribe().catch(function () {}).then(fresh);
       })
       .then(function (sub) {
         var device = (/iPhone|iPad|iPod/.test(navigator.userAgent) ? 'iOS'
@@ -972,7 +1120,7 @@
     if (!/[?&]notify=1/.test(location.search)) return;
     var bar = $('notifBar');
     if (!bar) return;
-    $('notifText').textContent = reason;
+    $('notifText').textContent = reason + '  [wrapper ' + WRAPPER_BUILD + ']';
     $('notifYes').hidden = true;
     $('notifNo').textContent = 'Close';
     $('notifNo').onclick = function () { bar.hidden = true; };
@@ -1000,8 +1148,26 @@
     var installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
                     navigator.standalone === true;
     if (iOS && !installed) {
-      return pushWhyNot('On an iPhone, notifications only work once this is installed. ' +
-        'Tap Share, then "Add to Home Screen", and open it from the icon.');
+      /* Not silent, and not a dead button either. Apple grants the Push API only to an
+         installed app, so "Turn on" here could not work — but installing is the single
+         step that makes it work, the teacher cannot possibly guess it, and they are
+         holding the app open right now. Telling them IS the feature. It still respects
+         "Not now", so it asks once and then stops. */
+      var seen = false;
+      try { seen = !!localStorage.getItem(PUSHKEY + 'ios-told'); } catch (e) {}
+      if (seen && !/[?&]notify=1/.test(location.search)) return;
+      var ib = $('notifBar');
+      if (!ib) return;
+      $('notifText').textContent = 'To get reminders on an iPhone, add this to your Home ' +
+        'Screen first: tap Share, then "Add to Home Screen". Then open it from the icon.';
+      $('notifYes').hidden = true;
+      $('notifNo').textContent = 'Got it';
+      $('notifNo').onclick = function () {
+        ib.hidden = true;
+        try { localStorage.setItem(PUSHKEY + 'ios-told', '1'); } catch (e) {}
+      };
+      ib.hidden = false;
+      return;
     }
 
     navigator.serviceWorker.register('./sw.js').then(function (reg) {
@@ -1014,7 +1180,18 @@
         /* Re-subscribe on every load. iOS quietly drops subscriptions after a reinstall
            or a long gap, and from in here a dead one looks exactly like a live one. */
         subscribeAndRegister();
-        return pushWhyNot('Notifications are already on for this device. Nothing to do.');
+        if (!/[?&]notify=1/.test(location.search)) return;
+        var gb = $('notifBar');
+        if (!gb) return;
+        $('notifText').textContent = 'Notifications are on for this device  [wrapper ' +
+          WRAPPER_BUILD + ']. Not receiving them? Draw one here without any push involved:';
+        $('notifYes').hidden = false;
+        $('notifYes').textContent = 'Show a test';
+        $('notifYes').onclick = pushLocalTest;
+        $('notifNo').textContent = 'Close';
+        $('notifNo').onclick = function () { gb.hidden = true; };
+        gb.hidden = false;
+        return;
       }
       if (Notification.permission === 'denied') {
         return pushWhyNot('Notifications are blocked for this app in your device settings. ' +
