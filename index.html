@@ -20,6 +20,20 @@
     : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   document.documentElement.setAttribute('data-theme-by', chosen ? 'user' : 'system');
+
+  /* Make the status bar follow the theme the PERSON picked, not the one the phone is in.
+
+     The two theme-color tags above are matched on prefers-color-scheme, which is the OS
+     setting. With the phone in light mode and the app set to dark, the light tag matched:
+     Android painted a white band above a black app, and the clock and battery in it went
+     white-on-white. Replacing both with one already-resolved value is the fix, because by
+     here we know which theme actually won. setTheme keeps it honest after a toggle. */
+  var old = document.querySelectorAll('meta[name="theme-color"]');
+  for (var i = old.length - 1; i >= 0; i--) old[i].parentNode.removeChild(old[i]);
+  var mt = document.createElement('meta');
+  mt.setAttribute('name', 'theme-color');
+  mt.setAttribute('content', dark ? '#171B22' : '#FFFFFF');
+  document.head.appendChild(mt);
 })();
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -902,6 +916,9 @@
         if (m.theme === 'dark' || m.theme === 'light') {
           try { localStorage.setItem('attendance-theme', m.theme); } catch (err) {}
           document.documentElement.setAttribute('data-theme', m.theme);
+          // ...and the status bar with it, or the toggle leaves a white strip behind.
+          var mc = document.querySelector('meta[name="theme-color"]');
+          if (mc) mc.setAttribute('content', m.theme === 'dark' ? '#171B22' : '#FFFFFF');
         }
         return;
       }
@@ -1003,7 +1020,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-10a';
+  var WRAPPER_BUILD = '2026-09-10b';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
@@ -1046,6 +1063,31 @@
      settings). Those need opposite fixes and look identical from the outside. This draws
      one locally, with no push involved: if it appears, delivery is the problem; if it
      does not, nothing is wrong with the server and the phone's own settings are. */
+  /* Read the worker's note about the last push.
+
+     The worker cannot report to anyone — no console, no screen. When a notification
+     arrives with nothing useful in it, the cause is one of three, and they looked
+     identical: it never had its config, the fetch was refused, or nothing was waiting.
+     It now writes down which, and this is where that comes back out. */
+  function pushLastResult(done) {
+    if (!('caches' in window)) return done('');
+    caches.open('push-config-v1')
+      .then(function (c) { return c.match('last'); })
+      .then(function (r) { return r ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.why) return done('');
+        var mins = Math.round((Date.now() - (j.at || 0)) / 60000);
+        var said = {
+          'ok': 'the last push arrived complete',
+          'no-config': 'the last push came before this device had finished setting up',
+          'nothing-waiting': 'the last push arrived, but the server had no message saved',
+          'not-json': 'the last push arrived, but the reply was not readable'
+        }[j.why] || ('the last push could not fetch its text (' + j.why + ')');
+        done('  ' + said + ', ' + (mins < 1 ? 'just now' : mins + ' min ago') + '.');
+      })
+      .catch(function () { done(''); });
+  }
+
   function pushLocalTest() {
     if (!('serviceWorker' in navigator)) return;
     navigator.serviceWorker.ready.then(function (reg) {
@@ -1185,6 +1227,9 @@
         if (!gb) return;
         $('notifText').textContent = 'Notifications are on for this device  [wrapper ' +
           WRAPPER_BUILD + ']. Not receiving them? Draw one here without any push involved:';
+        pushLastResult(function (extra) {
+          if (extra) $('notifText').textContent += extra;
+        });
         $('notifYes').hidden = false;
         $('notifYes').textContent = 'Show a test';
         $('notifYes').onclick = pushLocalTest;
