@@ -362,7 +362,7 @@
 (function () {
   'use strict';
 
-  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxtkE0-FzD5YCp5yweSo4pP2EEtZdVfEl7mW_VTa7hnEkCx41gqpfLj6IonJtCksQHh/exec';
+  var WEBAPP_URL = 'https://script.google.com/macros/s/PASTE_YOUR_EXEC_URL_HERE/exec';
   var KEY   = 'attendance-code';
   var SNAP  = 'attendance-snap:';     // one entry per token, so a shared device cannot mix people up
   var QUEUE = 'attendance-queue:';    // registers marked before the app was up
@@ -1020,7 +1020,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-10b';
+  var WRAPPER_BUILD = '2026-09-10c';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
@@ -1117,6 +1117,12 @@
       var was = sub.options && sub.options.applicationServerKey;
       if (!was) return true;            // browser will not tell us: leave well alone
       var a = new Uint8Array(was), b = b64ToBytes(PUSH.vapid);
+      /* Only ever act on a key we are sure of. An uncompressed P-256 point is 65 bytes
+         and nothing else is; if what we hold is not one — truncated, still arriving,
+         mangled in transit — then every comparison below would come out "different" and
+         we would throw away a perfectly good subscription on every single load, quietly,
+         forever. Saying "leave it alone" when unsure costs nothing by comparison. */
+      if (b.length !== 65) return true;
       if (a.length !== b.length) return false;
       for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
       return true;
