@@ -34,30 +34,68 @@ function config() {
     .catch(function () { return null; });
 }
 
+/* Leave a note about how the last push went.
+
+   A worker has nowhere to report to: no console anyone will read, no screen of its own.
+   So when a notification arrives saying nothing useful, there was no way to tell whether
+   it never had its config, or the fetch was refused, or the server simply had nothing
+   waiting — three different faults that looked identical from the outside. This is
+   written to the same cache the config lives in, and ?notify=1 reads it back out. */
+function note(why) {
+  return caches.open(CFG).then(function (c) {
+    return c.put('last', new Response(JSON.stringify({ at: Date.now(), why: why })));
+  }).catch(function () {});
+}
+
 self.addEventListener('push', function (e) {
   e.waitUntil(config().then(function (cfg) {
     /* A push MUST end in a visible notification. If it does not, the browser posts its
        own "This site has been updated in the background", which is worse than anything
        we would have said. So every path below shows something. */
     if (!cfg || !cfg.url || !cfg.key) {
-      return self.registration.showNotification('Attendance', {
-        body: 'Open the app to see what changed.', icon: './icon-192.png', tag: 'attendance'
+      return note('no-config').then(function () {
+        return self.registration.showNotification('Attendance', {
+          body: 'This device has not finished setting up — open the app once.',
+          icon: './icon-192.png', tag: 'attendance'
+        });
       });
     }
     return fetch(cfg.url + (cfg.url.indexOf('?') === -1 ? '?' : '&') +
                  'push=1&k=' + encodeURIComponent(cfg.key), { redirect: 'follow' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; })
+      .then(function (r) {
+        if (!r.ok) return { __why: 'http-' + r.status };
+        return r.json().catch(function () { return { __why: 'not-json' }; });
+      })
+      .catch(function (err) {
+        // Nearly always CORS or the network. Either way we never saw a response.
+        return { __why: 'blocked: ' + String((err && err.message) || err).slice(0, 60) };
+      })
       .then(function (msg) {
-        var m = msg && msg.title ? msg : { title: 'Attendance', body: 'Open the app to see what changed.' };
-        return self.registration.showNotification(m.title, {
-          body: m.body || '',
-          icon: './icon-192.png',
-          badge: './favicon-32.png',
-          // One tag, so an unread reminder is replaced rather than stacked three deep.
-          tag: 'attendance',
-          renotify: true,
-          data: { open: (cfg.app || './') + (m.url || '') }
+        var why = msg && msg.title ? 'ok' : (msg && msg.__why) || 'nothing-waiting';
+        var m = msg && msg.title ? msg : {
+          title: 'Attendance',
+          body: why === 'nothing-waiting'
+            ? 'Open the app to see what changed.'
+            : 'Could not fetch the message — open the app.'
+        };
+        return note(why).then(function () {
+          return self.registration.showNotification(m.title, {
+            body: m.body || '',
+            icon: './icon-192.png',
+            badge: './favicon-32.png',
+            // One tag, so an unread reminder is replaced rather than stacked three deep.
+            tag: 'attendance',
+            renotify: true,
+            /* Two short buzzes, so this is recognisable in a pocket without looking.
+               There is no way to ask for a custom SOUND: the Notification API's `sound`
+               option was dropped from the spec and no browser implements it, a service
+               worker has no audio API, and the tone that plays belongs to the browser's
+               own notification channel, which a web page cannot configure. Vibration is
+               the one part of how this feels that we are allowed to choose. Android
+               honours it; iOS ignores it rather than failing. */
+            vibrate: [120, 60, 120],
+            data: { open: (cfg.app || './') + (m.url || '') }
+          });
         });
       });
   }));
