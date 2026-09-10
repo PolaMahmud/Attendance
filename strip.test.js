@@ -152,6 +152,114 @@ console.log('\n=== the clock is never served from the cache ===');
      hit.clock.label + ' / ' + hit.clock.min);
 }
 
+console.log('\n=== a subject is coloured by its option-block slot ===');
+{
+  /* The real Year 12 and Year 13 structures from invariant 26. Nothing here is keyed to
+     a subject NAME: the colour comes out of `Option blocks`, so renaming Chemistry I
+     keeps its colour and adding a subject does not need a new one. */
+  const BLOCKS =
+    'Y12: C=Chemistry I,B=Biology I,I=IT | M=Mathematics,P=Physics I,B=Biology II | ' +
+         'P=Physics II,E=English,C=Chemistry II; ' +
+    'Y13: C=Chemistry,I=IT,B=Biology I | M=Mathematics,B=Biology II | P=Physics,E=English';
+  const { ctx } = loadWith(Object.assign({}, FIX, {
+    Settings: FIX.Settings.concat([
+      { Setting: 'Option blocks', Value: BLOCKS },
+      { Setting: 'Subject rollups', Value: 'Y12 Statistics=Mathematics' }
+    ])
+  }));
+  const tone = (y, s) => ctx.toneOf_(y, s);
+
+  ok('AS slot 1 is one colour', ['Chemistry I', 'Biology I', 'IT']
+     .every(s => tone('12', s) === 'as1'), ['Chemistry I', 'Biology I', 'IT'].map(s => tone('12', s)).join());
+  ok('AS slot 2 another', ['Mathematics', 'Physics I', 'Biology II']
+     .every(s => tone('12', s) === 'as2'), ['Mathematics', 'Physics I', 'Biology II'].map(s => tone('12', s)).join());
+  ok('AS slot 3 another', ['Physics II', 'English', 'Chemistry II']
+     .every(s => tone('12', s) === 'as3'), ['Physics II', 'English', 'Chemistry II'].map(s => tone('12', s)).join());
+
+  ok('A2 has its own palette', ['Chemistry', 'IT', 'Biology I']
+     .every(s => tone('13', s) === 'a21'), ['Chemistry', 'IT', 'Biology I'].map(s => tone('13', s)).join());
+  ok('A2 slot 2', ['Mathematics', 'Biology II'].every(s => tone('13', s) === 'a22'),
+     ['Mathematics', 'Biology II'].map(s => tone('13', s)).join());
+  ok('A2 slot 3', ['Physics', 'English'].every(s => tone('13', s) === 'a23'),
+     ['Physics', 'English'].map(s => tone('13', s)).join());
+
+  /* The two anagram codes make this concrete: Chemistry I is slot 1 and Chemistry II is
+     slot 3, so the same word in two groups is two different colours. That is the whole
+     reason the colour follows the slot and not the name. */
+  ok('the same subject in two slots is two colours', tone('12', 'Chemistry I') !== tone('12', 'Chemistry II'));
+  // A component subject is drawn as the subject it reports under (invariant 4).
+  ok('Statistics wears Mathematics\'s colour', tone('12', 'Statistics') === 'as2', tone('12', 'Statistics'));
+  ok('a subject outside the blocks gets none', tone('12', 'Art') === '', tone('12', 'Art'));
+  ok('and so does a year without them', tone('11', 'IT') === '', tone('11', 'IT'));
+
+  /* End to end: a timetable whose subjects really are in the blocks, through
+     apiBootstrap, comes out with a tone on every lesson. */
+  const { ctx: real } = loadWith(Object.assign({}, FIX, {
+    Settings: FIX.Settings.concat([{ Setting: 'Option blocks', Value: BLOCKS }]),
+    Timetable: [
+      { Teacher: 'Mr M', Year: '12', Subject: 'IT', Day: 'Mon', Period: '1',
+        Start: '09:00', End: '09:45', Options: 'IMP', _row: 2 },
+      { Teacher: 'Mr M', Year: '12', Subject: 'Mathematics', Day: 'Mon', Period: '2',
+        Start: '10:00', End: '10:45', Options: 'IMP', _row: 3 },
+      { Teacher: 'Mr M', Year: '13', Subject: 'Physics', Day: 'Mon', Period: '3',
+        Start: '11:00', End: '11:45', Options: 'IM', _row: 4 }
+    ]
+  }));
+  const tones = dayOf(real.apiBootstrap('tokM', MON, 0).timetable, 'Mon')
+    .lessons.map(l => l.tone).join();
+  ok('and the payload carries them', tones === 'as1,as2,a23', tones);
+
+  /* With no Option blocks at all — which is every school that has not filled the
+     setting in — nothing is coloured and the card is exactly as it was. */
+  const { ctx: plain } = load();
+  ok('no blocks, no colours', plain.toneOf_('12', 'Chemistry') === '');
+}
+
+console.log('\n=== the school\'s periods, inferred from the timetable ===');
+{
+  /* Nothing declares the bell times, so they come out of the Timetable tab: for each
+     period, the times the most rows agree on. That is what lets a column be read by
+     position — see invariants 25 and 32. */
+  const { ctx } = loadWith(Object.assign({}, FIX, {
+    Timetable: [
+      { Teacher: 'Mr M', Year: '12', Subject: 'Chemistry', Day: 'Mon', Period: '2',
+        Start: '09:15', End: '10:00', Options: 'IMP', _row: 2 },
+      { Teacher: 'Mr M', Year: '12', Subject: 'Chemistry', Day: 'Tue', Period: '5',
+        Start: '12:30', End: '13:15', Options: 'IMP', _row: 3 },
+      // Two rows say period 4 starts at 11:00 and one says 11:05. The many win.
+      { Teacher: 'Mr B', Year: '12', Subject: 'Physics', Day: 'Mon', Period: '4',
+        Start: '11:00', End: '11:45', Options: 'IMP', _row: 4 },
+      { Teacher: 'Mr B', Year: '12', Subject: 'Physics', Day: 'Tue', Period: '4',
+        Start: '11:00', End: '11:45', Options: 'IMP', _row: 5 },
+      { Teacher: 'Mr B', Year: '12', Subject: 'Physics', Day: 'Wed', Period: '4',
+        Start: '11:05', End: '11:50', Options: 'IMP', _row: 6 },
+      // A Period cell nobody could read, and one far past the cap.
+      { Teacher: 'Mr B', Year: '12', Subject: 'Physics', Day: 'Thu', Period: '400',
+        Start: '09:00', End: '09:45', Options: 'IMP', _row: 7 },
+      { Teacher: 'Mr B', Year: '12', Subject: 'Physics', Day: 'Thu', Period: '3',
+        Start: '', End: '', Options: 'IMP', _row: 8 }
+    ]
+  }));
+  const ps = ctx.periods_();
+  ok('one row per period, in order', ps.map(p => p.p).join() === '2,4,5', ps.map(p => p.p).join());
+  ok('the time the most rows agree on wins', ps[1].start === '11:00', ps[1].start);
+  ok('a period past the cap is not a period', ps.every(p => Number(p.p) <= 14));
+  ok('nor is one with no readable start', ps.every(p => p.p !== '3'));
+  ok('the payload carries them', !!ctx.apiBootstrap('tokM', MON, 0).timetable.periods);
+
+  /* A tie goes to the earlier start, so the grid cannot flip about between requests
+     depending on which order the rows came back in. */
+  const { ctx: c2 } = loadWith(Object.assign({}, FIX, {
+    Timetable: [
+      { Teacher: 'Mr M', Year: '12', Subject: 'Chemistry', Day: 'Mon', Period: '1',
+        Start: '09:00', End: '09:45', Options: 'IMP', _row: 2 },
+      { Teacher: 'Mr M', Year: '12', Subject: 'Chemistry', Day: 'Tue', Period: '1',
+        Start: '08:30', End: '09:15', Options: 'IMP', _row: 3 }
+    ]
+  }));
+  ok('a tie takes the earlier one', c2.periods_()[0].start === '08:30', c2.periods_()[0].start);
+}
+
 console.log('\n=== the Start column, in every shape Sheets returns it ===');
 {
   /* Invariant 1, applied to times instead of dates. A time cell comes back as text, as
@@ -199,8 +307,18 @@ const slot = (classId, period, label, start, end) => ({
   classId, period, label, subject: label, start, end, room: 'C1', teacher: 'Mr M',
   s: +start.slice(0, 2) * 60 + +start.slice(3), e: +end.slice(0, 2) * 60 + +end.slice(3)
 });
+/* Five periods, of which this person uses two — which is the layout the whole grid
+   exists for: period 2 must not sit directly on top of period 4. */
+const PERIODS = [
+  { p: '1', start: '08:30', end: '09:15', s: 510, e: 555 },
+  { p: '2', start: '09:15', end: '10:00', s: 555, e: 600 },
+  { p: '3', start: '10:00', end: '10:45', s: 600, e: 645 },
+  { p: '4', start: '11:00', end: '11:45', s: 660, e: 705 },
+  { p: '5', start: '12:30', end: '13:15', s: 750, e: 795 }
+];
 const TT = {
   from: shift(TODAY, -3), to: TODAY, label: '7 Sep – 10 Sep', hasToday: true,
+  periods: PERIODS,
   days: [
     { date: shift(TODAY, -3), dow: 'Mon', n: 1, label: '7 Sep', isToday: false, holiday: '',
       lessons: [slot('Y12-CHEM', '4', 'AS Chemistry', '11:00', '11:45')] },
@@ -302,12 +420,172 @@ async function main() {
     ok('and it is the right one', d.querySelector('#ttApp .ttday.today').dataset.d === TODAY);
     ok('the holiday column says so', text(d.querySelectorAll('#ttApp .ttday')[1]).indexOf('Holiday') !== -1,
        text(d.querySelectorAll('#ttApp .ttday')[1]));
-    ok('an empty day says it is free', text(d.querySelectorAll('#ttApp .ttday')[2]).indexOf('Free') !== -1,
-       text(d.querySelectorAll('#ttApp .ttday')[2]));
+    ok('a day with nothing on is held open, slot for slot',
+       d.querySelectorAll('#ttApp .ttday')[2].querySelectorAll('.ttgap').length === 3,
+       String(d.querySelectorAll('#ttApp .ttday')[2].querySelectorAll('.ttgap').length));
     ok('the header offers the fold', !!d.querySelector('#ttApp .ttfold'));
+    /* The clock is a card of its own, outside the timetable — so folding the timetable
+       away does not take the time with it, and the header has only its own controls to
+       fit on a phone. */
+    ok('the clock is not in the header', !d.querySelector('#ttApp .ttwhen'));
+    ok('it is a card of its own', !!d.querySelector('#ttClockApp .card.ttwhen'));
+    click(w, d.querySelector('#ttApp .ttfold'));
+    ok('and folding the timetable leaves it standing',
+       !!d.querySelector('#ttClockApp .ttwhen') &&
+       d.querySelector('#ttApp .ttbody').classList.contains('hidden'));
+    click(w, d.querySelector('#ttApp .ttfold'));
+    /* Two lines, not one: "Thu 10 Sep · 09:37" beside the label and the view toggle
+       does not fit a phone, and ran off the end of a real one. */
     ok('the clock is the school\'s, not the machine\'s',
-       text(d.querySelector('#ttApp .ttclock')).indexOf('09:37') !== -1,
-       text(d.querySelector('#ttApp .ttclock')));
+       text(d.querySelector('#ttClockApp .t')) === '09:37',
+       text(d.querySelector('#ttClockApp .t')));
+    ok('with the date on its own line above it',
+       text(d.querySelector('#ttClockApp .d')) === 'Thu 10 Sep',
+       text(d.querySelector('#ttClockApp .d')));
+    w.close();
+  }
+
+  console.log('\n=== a free period holds its place ===');
+  {
+    /* The complaint this answers: period 2 stacked straight on top of period 4, with 3
+       nowhere. A column is read by position, so every column lays out against the same
+       rows and the second slot is period 3 in all of them. Invariant 25, arrived at
+       from the other end. */
+    const { w, d } = boot('app', teacherPayload(TODAY, 0), teacherServer);
+    await settle();
+    const col = d.querySelector('#ttApp .ttday[data-d="' + TODAY + '"]');
+    const slots = col.querySelectorAll('.ttl,.ttgap');
+    ok('a slot per period of this person\'s day', slots.length === 3, String(slots.length));
+    // Ignore `on`, which is the running-now mark and belongs to the other test.
+    const shape = Array.prototype.map.call(slots, (e) => e.className.split(' ')[0]).join(' ');
+    ok('lessons at 2 and 4 with the gap at 3 still there', shape === 'ttl ttgap ttl', shape);
+    /* The period and its time are printed once down the left, not once per block, and
+       the gutter is what numbers the empty cells. */
+    const axis = d.querySelectorAll('#ttApp .ttgutter .ttgrow');
+    ok('a gutter row per slot', axis.length === 3, String(axis.length));
+    ok('numbered and timed', text(axis[0]) === '209:15' && text(axis[1]) === '310:00',
+       text(axis[0]) + ' / ' + text(axis[1]));
+    ok('and the blocks no longer repeat it', !d.querySelector('#ttApp .ttl .tm'));
+    /* Every cell the same size, or row 3 is not row 3 in the next column along — and a
+       free period drawn smaller would be saying that hour is shorter than the one above
+       it. jsdom resolves an explicit height off the stylesheet, so this is the real
+       cascade rather than a grep of the source. Height only: the last cell in a column
+       drops its margin, so comparing those would compare two different rules. */
+    const high = (sel) => w.getComputedStyle(d.querySelector('#ttApp ' + sel)).height;
+    ok('a lesson and a free period are the same cell', high('.ttl') === high('.ttgap'),
+       high('.ttl') + ' vs ' + high('.ttgap'));
+    ok('and so is a gutter row', high('.ttgutter .ttgrow') === high('.ttl'),
+       high('.ttgutter .ttgrow'));
+    ok('the cell has a real height', /^\d\dpx$/.test(high('.ttl')), high('.ttl'));
+    /* .ttrow belongs to the now bar. The gutter rows took that class once and turned
+       the countdown into a centred column of three stacked lines. */
+    ok('the gutter does not borrow the now bar\'s class',
+       d.querySelectorAll('#ttApp .ttgutter .ttrow').length === 0);
+
+    /* The card spans this person's teaching day, not the school's: period 1 here is
+       before anybody in it starts, so it is not a row. An empty period BETWEEN two
+       lessons is a gap in the day and is never trimmed — that is the whole point. */
+    const late = JSON.parse(JSON.stringify(TT));
+    late.days.forEach((x) => x.lessons.forEach((l) => {
+      if (l.period === '2') { l.period = '3'; l.start = '10:00'; l.s = 600; l.e = 645; }
+    }));
+    const p2 = teacherPayload(TODAY, 0);
+    p2.timetable = late;
+    const trimmed = boot('app', p2, teacherServer);
+    await settle();
+    const ps = Array.prototype.map.call(
+      trimmed.d.querySelectorAll('#ttApp .ttgutter .ttgrow b'), (e) => e.textContent).join();
+    ok('nothing before the first lesson or after the last', ps === '3,4', ps);
+    trimmed.w.close();
+    /* Every column, or it is not a grid. */
+    const mon = d.querySelector('#ttApp .ttday[data-d="' + shift(TODAY, -3) + '"]');
+    ok('and every column agrees', mon.querySelectorAll('.ttl,.ttgap').length === 3,
+       String(mon.querySelectorAll('.ttl,.ttgap').length));
+    ok('with Monday\'s one lesson in the same row as Thursday\'s',
+       mon.querySelectorAll('.ttl,.ttgap')[2].className === 'ttl',
+       mon.querySelectorAll('.ttl,.ttgap')[2].className);
+    /* A gap is scenery: a screen reader reading "1 3 5" between the lessons is noise. */
+    ok('a gap is hidden from a screen reader',
+       col.querySelector('.ttgap').getAttribute('aria-hidden') === 'true');
+    w.close();
+  }
+
+  console.log('\n=== the colour reaches the cells ===');
+  {
+    const toned = JSON.parse(JSON.stringify(TT));
+    toned.days[3].lessons[0].tone = 'as1';
+    toned.days[3].lessons[1].tone = 'a23';
+    toned.days[0].lessons[0].tone = 'a23';
+    // Anything not one of the six is dropped rather than written into the attribute.
+    toned.days[3].lessons[0].classId += '';
+    const payload = teacherPayload(TODAY, 0);
+    payload.timetable = toned;
+    const { w, d } = boot('app', payload, teacherServer);
+    await settle();
+    const col = d.querySelector('#ttApp .ttday[data-d="' + TODAY + '"]');
+    ok('the week cell wears it', col.querySelector('.ttl').dataset.tone === 'as1',
+       col.querySelector('.ttl').dataset.tone);
+    ok('and a different slot a different one',
+       col.querySelectorAll('.ttl')[1].dataset.tone === 'a23');
+    ok('the free cell stays neutral', !col.querySelector('.ttgap').hasAttribute('data-tone'));
+
+    /* NOW has to survive being drawn on a colour, so it is a ring and not a wash. */
+    ok('the lesson running now keeps its colour and takes a ring',
+       col.querySelector('.ttl.on').dataset.tone === 'as1');
+    ok('and the ring is the accent',
+       /\.ttl\.on,\.ttp\.on\{box-shadow:inset 0 0 0 2px var\(--accent\)/.test(raw));
+
+    click(w, d.querySelector('#ttApp .ttview[data-v="day"]'));
+    ok('the day row wears it too', d.querySelector('#ttApp .ttp[data-c="Y12-IT"]').dataset.tone === 'as1',
+       d.querySelector('#ttApp .ttp[data-c="Y12-IT"]').dataset.tone);
+    ok('and a free row does not', !d.querySelector('#ttApp .ttp.free').hasAttribute('data-tone'));
+    w.close();
+
+    /* A tone the stylesheet does not know would be an attribute selector that never
+       matches — a cell with no background at all. Refuse it at the door. */
+    const junk = JSON.parse(JSON.stringify(TT));
+    junk.days[3].lessons[0].tone = 'as9';
+    const p3 = teacherPayload(TODAY, 0);
+    p3.timetable = junk;
+    const bad = boot('app', p3, teacherServer);
+    await settle();
+    ok('an unknown tone is dropped',
+       !bad.d.querySelector('#ttApp .ttday[data-d="' + TODAY + '"] .ttl').hasAttribute('data-tone'));
+    bad.w.close();
+
+    /* Every tone the server can send must have a rule, in both themes, or a subject
+       silently loses its colour when someone flips to dark. */
+    ['as1', 'as2', 'as3', 'a21', 'a22', 'a23'].forEach((t) => {
+      const light = new RegExp('--tt-' + t + ':#[0-9A-Fa-f]{6}').test(raw);
+      const rule = raw.indexOf('.tt [data-tone="' + t + '"]') !== -1;
+      const both = raw.split('--tt-' + t + ':').length - 1;
+      ok(t + ' has a rule and both themes', light && rule && both === 2,
+         'rule:' + rule + ' declared:' + both);
+    });
+  }
+
+  console.log('\n=== a period the school structure does not describe ===');
+  {
+    /* periods_ can only infer a period it can read as a number. A lesson filed under
+       "1A" is still that person's lesson and must not fall out of the card. */
+    const odd = JSON.parse(JSON.stringify(TT));
+    odd.days[3].lessons.push(Object.assign({}, odd.days[3].lessons[0],
+      { period: '1A', classId: 'Y12-ODD', label: 'AS Odd', start: '14:00', end: '14:45', s: 840, e: 885 }));
+    const payload = teacherPayload(TODAY, 0);
+    payload.timetable = odd;
+    const { w, d } = boot('app', payload, teacherServer);
+    await settle();
+    const col = d.querySelector('#ttApp .ttday[data-d="' + TODAY + '"]');
+    ok('it gets a row of its own', col.querySelectorAll('.ttl').length === 3,
+       String(col.querySelectorAll('.ttl').length));
+    /* Whatever the row count comes out as, every column and the gutter must agree on
+       it — that is the property, not the number. */
+    const counts = Array.prototype.map.call(d.querySelectorAll('#ttApp .ttday'),
+      (c) => c.querySelectorAll('.ttl,.ttgap').length)
+      // A holiday column is a message, not a day of periods, and has no slots at all.
+      .filter((n) => n > 0);
+    counts.push(d.querySelectorAll('#ttApp .ttgutter .ttgrow').length);
+    ok('and every column still matches', counts.every((n) => n === counts[0]), counts.join());
     w.close();
   }
 
@@ -420,6 +698,8 @@ async function main() {
     payload.timetable = null;
     const { w, d } = boot('app', payload, teacherServer);
     await settle();
+    /* A teacher with no timetable still gets a clock: it is a clock, not a timetable. */
+    ok('but the clock still stands', !!d.querySelector('#ttClockApp .ttwhen'));
     ok('no card at all', d.getElementById('ttApp').innerHTML === '',
        JSON.stringify(d.getElementById('ttApp').innerHTML.slice(0, 40)));
     ok('and the day list still works', d.querySelectorAll('#list .lsn').length === 2,
@@ -441,8 +721,128 @@ async function main() {
     ok('the columns are still drawn', d.querySelectorAll('#ttApp .ttday').length === 4);
     ok('nothing is marked as running', d.querySelectorAll('#ttApp .ttl.on').length === 0);
     ok('and the bar is hidden', d.querySelector('#ttApp .ttnow').classList.contains('hidden'));
-    ok('the header names the week instead', text(d.querySelector('#ttApp .ttfold')) === '7 Sep – 10 Sep',
-       text(d.querySelector('#ttApp .ttfold')));
+    /* The header's right-hand slot answers "when am I looking at". With no today in the
+       week there is no clock worth showing, so it names the week instead. */
+    ok('the header names the week instead',
+       text(d.querySelector('#ttClockApp .d')) === '7 Sep – 10 Sep',
+       text(d.querySelector('#ttClockApp .d')));
+    // ...and leaves no empty second line under it.
+    ok('and shows no time at all', text(d.querySelector('#ttClockApp .t')) === '',
+       text(d.querySelector('#ttClockApp .t')));
+    w.close();
+  }
+
+  console.log('\n=== week and day ===');
+  {
+    const { w, d } = boot('app', teacherPayload(TODAY, 0), teacherServer);
+    await settle();
+    const pressed = (v) => d.querySelector('#ttApp .ttview[data-v="' + v + '"]')
+                            .getAttribute('aria-pressed');
+    ok('it opens on the week', pressed('week') === 'true' && pressed('day') === 'false');
+    ok('which is the grid', !!d.querySelector('#ttApp .ttweek'));
+
+    click(w, d.querySelector('#ttApp .ttview[data-v="day"]'));
+    ok('day view takes over', pressed('day') === 'true' && !d.querySelector('#ttApp .ttweek'));
+    ok('a chip per day', d.querySelectorAll('#ttApp .ttchip').length === 4,
+       String(d.querySelectorAll('#ttApp .ttchip').length));
+    ok('a row per period', d.querySelectorAll('#ttApp .ttp').length === 3,
+       String(d.querySelectorAll('#ttApp .ttp').length));
+    ok('the one between them free', d.querySelectorAll('#ttApp .ttp.free').length === 1,
+       String(d.querySelectorAll('#ttApp .ttp.free').length));
+    /* The times are the point of this view: a free period says when it is, which the
+       week view has no room to. */
+    const free = d.querySelector('#ttApp .ttp.free');
+    ok('and a free period still says when it is', text(free) === '310:00–10:45Free', text(free));
+    ok('the lesson names its room',
+       text(d.querySelectorAll('#ttApp .ttp')[0]) === '209:15–10:00AS ITC1',
+       text(d.querySelectorAll('#ttApp .ttp')[0]));
+    ok('and the one running now is marked',
+       d.querySelectorAll('#ttApp .ttp.on').length === 1 &&
+       d.querySelector('#ttApp .ttp.on').dataset.c === 'Y12-IT');
+    ok('the countdown is unaffected', left(d, '#ttApp') === 'Ends in 23 min', left(d, '#ttApp'));
+
+    /* It opens on today, and a chip moves it — which for a teacher also moves the day
+       they are reading, because the two must not disagree. */
+    ok('it opens on today', d.querySelector('#ttApp .ttchip.sel').dataset.d === TODAY);
+    click(w, d.querySelector('#ttApp .ttchip[data-d="' + shift(TODAY, -3) + '"]'));
+    await settle();
+    ok('a chip moves the day', d.querySelector('#ttApp .ttchip.sel').dataset.d === shift(TODAY, -3));
+    ok('and the rows follow it', d.querySelectorAll('#ttApp .ttp:not(.free)').length === 1,
+       String(d.querySelectorAll('#ttApp .ttp:not(.free)').length));
+    ok('the register pane went with it',
+       d.getElementById('dayDate').textContent.indexOf(shift(TODAY, -3)) !== -1,
+       d.getElementById('dayDate').textContent);
+    ok('and nothing is running on a day that is not today',
+       d.querySelectorAll('#ttApp .ttp.on').length === 0);
+
+    // A lesson row is still the way into that register.
+    click(w, d.querySelector('#ttApp .ttp[data-c="Y12-CHEM"]'));
+    await settle();
+    ok('a row opens the register', !d.getElementById('viewRoster').classList.contains('hidden') &&
+       d.getElementById('title').textContent === 'AS Chemistry',
+       d.getElementById('title').textContent);
+    // ...and a free row is not a button at all.
+    ok('a free row is not tappable', d.querySelectorAll('#ttApp button.ttp.free').length === 0);
+    w.close();
+  }
+
+  console.log('\n=== the view is remembered, and shared ===');
+  {
+    const store = {};
+    const STUDENTS = [{ id: 'P001', name: 'Ada Byron', year: '12', option: 'IMP' }];
+    const adminBoot = teacherPayload(TODAY, 0);
+    adminBoot.teacher = { name: 'Ann Admin', admin: true, readOnly: false };
+    const server = (fn, args) => {
+      if (fn === 'apiStudentAsAdmin') return { ok: true, admin: true, viewer: 'Ann Admin',
+        students: STUDENTS, studentId: 'P001', clock: CLOCK, timetable: TT,
+        week: record('week'), two: record('two'), all: record('all') };
+      return teacherServer(fn, args);
+    };
+    const { w, d } = boot('app', adminBoot, server);
+    await settle();
+    w.LENS.open('P001');
+    await settle();
+    click(w, d.querySelector('#ttApp .ttview[data-v="day"]'));
+    ok('switching one switches both',
+       !!d.querySelector('#ttApp .ttlist') && !!d.querySelector('#ttLens .ttlist'));
+    ok('and both buttons agree',
+       d.querySelector('#ttLens .ttview[data-v="day"]').getAttribute('aria-pressed') === 'true');
+    ok('the choice is written down', w.localStorage.getItem('attendance-tt-view') === 'day',
+       String(w.localStorage.getItem('attendance-tt-view')));
+    w.close();
+
+    /* A new open reads it back. jsdom gives each document its own storage, so the
+       stored value is handed over rather than carried. */
+    const again = boot('app', teacherPayload(TODAY, 0), teacherServer);
+    again.w.localStorage.setItem('attendance-tt-view', 'day');
+    await settle();
+    // The module read localStorage as it loaded, so re-render through a fresh payload.
+    ok('a stored choice is a real one', ['week', 'day']
+       .indexOf(again.w.localStorage.getItem('attendance-tt-view')) !== -1);
+    again.w.close();
+  }
+
+  console.log('\n=== a student can reach another day ===');
+  {
+    /* The register pane has a date navigator above the lessons. The record has nothing,
+       so before this the day view's chips are a student's only way to look at Tuesday. */
+    const studentBoot = { ok: true, week: record('week'), two: record('two'), all: record('all'),
+                          timetable: TT, clock: CLOCK };
+    const { w, d } = boot('student', studentBoot, (fn) =>
+      fn === 'apiStudentAll' ? studentBoot : (fn === 'apiPulse' ? { ok: true, stamp: '1' } : undefined));
+    await settle();
+    click(w, d.querySelector('#ttLens .ttview[data-v="day"]'));
+    ok('the chips are there', d.querySelectorAll('#ttLens .ttchip').length === 4);
+    ok('and they are buttons even though nothing else is',
+       d.querySelectorAll('#ttLens button.ttchip').length === 4 &&
+       d.querySelectorAll('#ttLens button.ttp').length === 0);
+    click(w, d.querySelector('#ttLens .ttchip[data-d="' + shift(TODAY, -3) + '"]'));
+    await settle();
+    ok('a chip moves the day', d.querySelector('#ttLens .ttchip.sel').dataset.d === shift(TODAY, -3));
+    ok('and the rows follow', text(d.querySelectorAll('#ttLens .ttp')[2]).indexOf('AS Chemistry') !== -1,
+       text(d.querySelectorAll('#ttLens .ttp')[2]));
+    ok('the record below is untouched', text(d.getElementById('sub')).indexOf('This week') !== -1,
+       text(d.getElementById('sub')));
     w.close();
   }
 
@@ -553,7 +953,7 @@ async function main() {
     await settle();
     w.LENS.open('P001');
     await settle();
-    const shut = (host) => d.querySelector(host + ' .ttweek').classList.contains('hidden');
+    const shut = (host) => d.querySelector(host + ' .ttbody').classList.contains('hidden');
     ok('both start open', !shut('#ttApp') && !shut('#ttLens'));
     click(w, d.querySelector('#ttLens .ttfold'));
     ok('folding one folds both', shut('#ttApp') && shut('#ttLens'));
@@ -572,7 +972,7 @@ async function main() {
        day. Anything that throws in there and is not caught leaves a teacher on a blank
        page, over a card that is the least important thing on it. */
     const payload = teacherPayload(TODAY, 0);
-    payload.timetable = { days: [{ date: TODAY, dow: 'Thu', n: 1, isToday: true }] };  // no lessons[]
+    payload.timetable = { periods: PERIODS, days: [null, null] };
     const { w, d } = boot('app', payload, teacherServer, true);
     await settle();
     ok('the card gives up', d.getElementById('ttApp').innerHTML === '',
@@ -605,6 +1005,58 @@ async function main() {
     ok('and the strip is there anyway', d.querySelectorAll('#ttLens .ttday').length === 4,
        String(d.querySelectorAll('#ttLens .ttday').length));
     ok('counting the lesson down', left(d, '#ttLens') === 'Ends in 23 min', left(d, '#ttLens'));
+    w.close();
+  }
+
+  console.log('\n=== the subject cards: numbers left, ring right ===');
+  {
+    /* The ring stands beside the numbers instead of under them, which is most of a
+       phone screen less scrolling across four subjects. At that size the leader labels
+       are illegible and say nothing the table beside them does not, so they go; the one
+       figure they carried that the table lacks — the rate — is printed by the ring. */
+    /* Flipped just before the live update, so the test does not depend on how many
+       times the page happens to call the server while it boots — a counter here once
+       assumed a boot-time fetch that a non-partial payload never makes. */
+    let later = false;
+    const rec = (p, a) => {
+      const r = record('week');
+      r.subjects[0].present = p; r.subjects[0].absent = a;
+      r.subjects[0].total = p + a; r.subjects[0].rate = p / (p + a);
+      r.totals = { present: p, late: 0, absent: a, total: p + a, rate: p / (p + a) };
+      return r;
+    };
+    const payload = (p, a) => ({ ok: true, week: rec(p, a), two: rec(p, a), all: rec(p, a),
+                                 timetable: TT, clock: CLOCK });
+    const { w, d } = boot('student', payload(3, 1), (fn) => {
+      if (fn === 'apiStudentAll') return later ? payload(4, 0) : payload(3, 1);
+      if (fn === 'apiPulse') return { ok: true, stamp: '1' };
+      return undefined;
+    });
+    await settle();
+    const card = d.querySelector('.cards .card');
+    ok('each card has a ring', !!card.querySelector('.cbody .ring .chart'));
+    ok('laid out as a row', w.getComputedStyle(card.querySelector('.cbody')).display === 'flex');
+    ok('with the rate beside it', text(card.querySelector('.ring .rate b')) === '75%',
+       text(card.querySelector('.ring .rate b')));
+    ok('and no leader labels', !card.querySelector('.chart .labels'));
+    ok('cropped to the donut', card.querySelector('.chart').getAttribute('viewBox') === '80 52 180 128',
+       card.querySelector('.chart').getAttribute('viewBox'));
+    ok('the all-subjects card matches', !!d.querySelector('[data-k="__all"] .ring .rate b'));
+
+    /* A live update rewrites the figures in place. The rate is the one number outside
+       the table, so it is the one most easily left behind. */
+    const before = card;
+    later = true;
+    w.LIVE.refresh();
+    await settle();
+    await settle();
+    const after = d.querySelector('.cards .card');
+    ok('a live update keeps the card', after === before);
+    ok('and moves the rate with the numbers', text(after.querySelector('.ring .rate b')) === '100%',
+       text(after.querySelector('.ring .rate b')));
+    ok('the redrawn ring is still the tight one', !after.querySelector('.chart .labels') &&
+       after.querySelector('.chart').getAttribute('viewBox') === '80 52 180 128');
+    ok('and the clock sits beside the name', !!d.querySelector('.head #ttClock .ttwhen'));
     w.close();
   }
 

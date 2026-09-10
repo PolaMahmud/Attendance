@@ -348,7 +348,9 @@
 
      But only the app can talk to the server, over google.script.run, with no CORS in
      the way. So the wrapper gets permission and the subscription; the app registers it.
-     It appears only when notifications are possible and unanswered, and never twice. -->
+     It appears when notifications are possible and this person is reachable on no device
+     yet. "Not now" snoozes it for the rest of the day, not forever; it stops for good once
+     a device says yes. -->
 <div class="notif" id="notifBar" hidden>
   <span id="notifText">Get told when you have a register outstanding.</span>
   <button type="button" id="notifYes">Turn on</button>
@@ -371,7 +373,7 @@
 (function () {
   'use strict';
 
-  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxtkE0-FzD5YCp5yweSo4pP2EEtZdVfEl7mW_VTa7hnEkCx41gqpfLj6IonJtCksQHh/exec';
+  var WEBAPP_URL = 'https://script.google.com/macros/s/PASTE_YOUR_EXEC_URL_HERE/exec';
   var KEY   = 'attendance-code';
   var SNAP  = 'attendance-snap:';     // one entry per token, so a shared device cannot mix people up
   var QUEUE = 'attendance-queue:';    // registers marked before the app was up
@@ -918,7 +920,12 @@
       }
       if (!m || m.v !== 1) return;
       // The app has booted and is telling us the application server key.
-      if (m.type === 'attendance:push-ready') { try { pushReady(m.vapid, t); } catch (err) {} return; }
+      if (m.type === 'attendance:push-ready') {
+        // Whether this person is already reachable on another device — see pushReady.
+        PUSH.reachable = !!m.reachable;
+        try { pushReady(m.vapid, t); } catch (err) {}
+        return;
+      }
       // ...and has just written a subscription to the sheet.
       if (m.type === 'attendance:push-registered') { try { pushRegistered(m.key); } catch (err) {} return; }
       if (m.type === 'attendance:snapshot') {
@@ -1042,7 +1049,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-10c';
+  var WRAPPER_BUILD = '2026-09-11a';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
@@ -1212,6 +1219,35 @@
     PUSH.vapid = vapid;
     PUSH.token = token || '';
 
+    /* One day's snooze, not a life sentence. "Not now" used to be remembered forever, so
+       a single tap made someone unreachable for good. Now it holds for the rest of the
+       day and the bar asks again tomorrow — every day, until the answer is yes. Once this
+       device has said yes its permission is 'granted', and that branch below returns
+       before any of this is consulted, so the bar never shows again.
+
+       The device's own date, on purpose: the device that writes the snooze is the only
+       one that reads it, so it only has to agree with itself. A value written by an older
+       build ('1', meaning never) is not today, so it asks again rather than inheriting the
+       old permanent refusal. */
+    var now = new Date();
+    var today = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' +
+                ('0' + now.getDate()).slice(-2);
+    var diag = /[?&]notify=1/.test(location.search);
+    var snoozed = function (kind) {
+      if (diag) return false;
+      try { return localStorage.getItem(PUSHKEY + kind) === today; } catch (e) { return false; }
+    };
+    var snooze = function (kind) {
+      try { localStorage.setItem(PUSHKEY + kind, today); } catch (e) {}
+    };
+    /* Reachable on ANOTHER device already: the server says this person has a live
+       subscription somewhere. Enabling once is enough — asking again on every laptop and
+       tablet they happen to open this on is nagging someone who already said yes. The
+       server keeps it honest: every send deletes a device its push service reports gone,
+       so a person whose only device has died stops counting as reachable, and is asked
+       again on their next open. */
+    var elsewhere = !!PUSH.reachable && !diag;
+
     /* iOS grants the Push API to an INSTALLED app only. Offering a button that cannot
        work, to exactly the people most likely to tap it, is worse than staying quiet. */
     var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -1221,11 +1257,10 @@
       /* Not silent, and not a dead button either. Apple grants the Push API only to an
          installed app, so "Turn on" here could not work — but installing is the single
          step that makes it work, the teacher cannot possibly guess it, and they are
-         holding the app open right now. Telling them IS the feature. It still respects
-         "Not now", so it asks once and then stops. */
-      var seen = false;
-      try { seen = !!localStorage.getItem(PUSHKEY + 'ios-told'); } catch (e) {}
-      if (seen && !/[?&]notify=1/.test(location.search)) return;
+         holding the app open right now. Telling them IS the feature. "Got it" holds for
+         the day, exactly like "Not now": an iPhone in a browser tab is the one device that
+         can never be reached, so it is the one most worth reminding. */
+      if (elsewhere || snoozed('ios-told')) return;
       var ib = $('notifBar');
       if (!ib) return;
       $('notifText').textContent = 'To get reminders on an iPhone, add this to your Home ' +
@@ -1234,7 +1269,7 @@
       $('notifNo').textContent = 'Got it';
       $('notifNo').onclick = function () {
         ib.hidden = true;
-        try { localStorage.setItem(PUSHKEY + 'ios-told', '1'); } catch (e) {}
+        snooze('ios-told');
       };
       ib.hidden = false;
       return;
@@ -1270,22 +1305,18 @@
         return pushWhyNot('Notifications are blocked for this app in your device settings. ' +
           'Turn them back on there — a web page is not allowed to ask again.');
       }
-      /* "Not now" is remembered so the bar stops nagging — but it was remembered
-         FOREVER, with nothing anywhere to bring it back. Someone who dismissed it once
-         could never turn notifications on again. ?notify=1 is the way back: send the
-         teacher their normal link with it on the end. */
-      if (/[?&]notify=1/.test(location.search)) {
+      // ?notify=1 still offers it on demand, and clears today's snooze so it stays offered.
+      if (diag) {
         try { localStorage.removeItem(PUSHKEY + 'declined'); } catch (e) {}
-      } else {
-        try { if (localStorage.getItem(PUSHKEY + 'declined')) return; } catch (e) {}
       }
+      if (elsewhere || snoozed('declined')) return;
 
       var bar = $('notifBar');
       if (!bar) return;
       bar.hidden = false;
       $('notifNo').onclick = function () {
         bar.hidden = true;
-        try { localStorage.setItem(PUSHKEY + 'declined', '1'); } catch (e) {}
+        snooze('declined');
       };
       $('notifYes').onclick = function () {
         // Straight from the tap. The permission prompt needs that user activation.
