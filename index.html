@@ -161,6 +161,14 @@
   /* Measured off the live app: .lsn is 68px on a 9px grid, .datebar is 47px. If those
      change in App.html they change here, or the skeleton resizes under the teacher. */
   .hlsn{height:68px}.hday{height:47px}
+  /* The week strip, which the app paints above everything else. This page cannot draw
+     it — it holds today's lessons, not a timetable, and has no server clock to run a
+     countdown against — so it holds the space open instead, and the card lands in it
+     rather than shoving the day down the screen a moment after the teacher has started
+     reading it. The height comes from the app, which measured its own card on the last
+     open; this is only the fallback for the bare skeleton and for a snapshot written
+     before the strip existed. */
+  .htt{height:240px}
 
   /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
   .name{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -321,6 +329,7 @@
 <div class="ph" id="shell" aria-hidden="true">
   <div class="inner">
     <div class="sbar"><span class="slogo">Attendance</span><span class="spill"></span><span class="sdot"></span></div>
+    <div class="sblock htt"></div>
     <div class="sblock hday" style="width:70%;margin:0 auto 14px"></div>
     <div class="sblock hlsn"></div>
     <div class="sblock hlsn"></div>
@@ -362,7 +371,7 @@
 (function () {
   'use strict';
 
-  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxtkE0-FzD5YCp5yweSo4pP2EEtZdVfEl7mW_VTa7hnEkCx41gqpfLj6IonJtCksQHh/exec';
+  var WEBAPP_URL = 'https://script.google.com/macros/s/PASTE_YOUR_EXEC_URL_HERE/exec';
   var KEY   = 'attendance-code';
   var SNAP  = 'attendance-snap:';     // one entry per token, so a shared device cannot mix people up
   var QUEUE = 'attendance-queue:';    // registers marked before the app was up
@@ -386,6 +395,16 @@
 
   /* ---- the device-side snapshot ------------------------------------------ */
 
+  /* The gap the app's week strip will land in, at the size it measured itself last
+     time. A missing or silly number falls back to the stylesheet rather than writing
+     an inline height nobody can override. */
+  function stripGap(px){
+    var n = Number(px);
+    return '<div class="sblock htt"' +
+      (isFinite(n) && n > 0 && n < 600 ? ' style="height:' + Math.round(n) + 'px"' : '') +
+      '></div>';
+  }
+
   function readSnap(token){
     try {
       var raw = localStorage.getItem(SNAP + token);
@@ -404,7 +423,7 @@
      structure is reused and every chip is reset. */
   function absorbSnap(token, msg){
     var s = readSnap(token) || { v:1, days:{}, dow:{} };
-    s.meta = { school: msg.school, teacher: msg.teacher };
+    s.meta = { school: msg.school, teacher: msg.teacher, strip: msg.strip };
     s.days = s.days || {}; s.dow = s.dow || {}; s.dowAt = s.dowAt || {};
     if (msg.day && msg.day.date) {
       msg.day.savedAt = Date.now();
@@ -476,6 +495,7 @@
         esc(['Year ' + (s.year || ''), s.option, s.rangeLabel].filter(Boolean).join(' · ')) +
       '</span></div>' +
       '<div class="note"><span class="spin"></span>' + seenNote(s) + '</div>' +
+      stripGap(s.strip) +
       '<div class="stot"><b>' + pct(t.rate) + '</b><span>' + (t.present || 0) + ' present · ' +
         (t.late || 0) + ' late · ' + (t.absent || 0) + ' absent</span></div>' +
       (s.subjects || []).map(function (x) { return row(x.label, x, x.dropped); }).join('');
@@ -619,6 +639,8 @@
       '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'Attendance') + '</span>' +
       '<span class="name"><span class="nm">' + esc(name) + '</span>' +
       '<span class="avatar">' + esc(initials(name)) + '</span></span></div>' +
+      // Where the app paints the week strip: held open, never guessed at.
+      stripGap(s.meta.strip) +
       '<div class="dhead"><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
         esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
       '<div class="note"><span class="spin"></span>' +
