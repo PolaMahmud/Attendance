@@ -135,6 +135,9 @@
      never covers the app's header or a register tile. */
   .notif{position:fixed;z-index:5;left:12px;right:12px;
     bottom:calc(env(safe-area-inset-bottom) + 12px);
+    /* ...and above the app's own bottom tabs when it has them; --tabs is their height,
+       posted by the app (attendance:tabs). */
+    bottom:max(calc(env(safe-area-inset-bottom) + 12px), calc(var(--tabs, 0px) + 10px));
     display:flex;gap:8px;align-items:center;flex-wrap:wrap;
     background:var(--surface);color:var(--ink);border:1px solid var(--line);
     border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.35;
@@ -935,6 +938,12 @@
       }
       // ...and has just written a subscription to the sheet.
       if (m.type === 'attendance:push-registered') { try { pushRegistered(m.key); } catch (err) {} return; }
+      // The app's tab bar came or went; keep the notification bar clear of it.
+      if (m.type === 'attendance:tabs') {
+        var th = Math.max(0, Math.min(200, +m.h || 0));
+        document.documentElement.style.setProperty('--tabs', th + 'px');
+        return;
+      }
       if (m.type === 'attendance:snapshot') {
         try { absorbSnap(t, m); } catch (err) {}
         return;
@@ -1056,7 +1065,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-11b';
+  var WRAPPER_BUILD = '2026-09-11c';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
