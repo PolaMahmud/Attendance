@@ -91,6 +91,17 @@
        whichever value wins on :root, which is correct but easy to break silently. */
     --late:#9A5407; --absent:#A81E17;
 
+    /* Subject tones, by option-block slot — the six App.html knows, and not one more.
+       Copied rather than derived: this page paints the timetable card on the first
+       screen, and a tone missing here would land as a white cell that changes colour
+       the moment the app arrives. */
+    --tt-as1:#FAF0C8; --tt-as1-line:#E7D68C;
+    --tt-as2:#FBE3C4; --tt-as2-line:#EDC489;
+    --tt-as3:#FADAD4; --tt-as3-line:#EEB2A7;
+    --tt-a21:#D6E4FA; --tt-a21-line:#A6C2EC;
+    --tt-a22:#D5EEDC; --tt-a22-line:#A2D2B1;
+    --tt-a23:#E3DBF8; --tt-a23-line:#BEAEEA;
+
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   }
   :root[data-theme="dark"]{
@@ -109,6 +120,13 @@
 
     --shadow:0 1px 2px rgba(0,0,0,.4);
     --sheen:rgba(255,255,255,.06);
+
+    --tt-as1:#332E17; --tt-as1-line:#4E4526;
+    --tt-as2:#362919; --tt-as2-line:#523E23;
+    --tt-as3:#39231E; --tt-as3-line:#56332C;
+    --tt-a21:#1B2841; --tt-a21-line:#2A3D5E;
+    --tt-a22:#1A3125; --tt-a22-line:#284936;
+    --tt-a23:#282142; --tt-a23-line:#3B3161;
   }
 
   /* App.html has this in its shared block and this file never did, so anything with
@@ -172,6 +190,113 @@
      open; this is only the fallback for the bare skeleton and for a snapshot written
      before the strip existed. */
   .htt{height:240px}
+
+  /* ---- the timetable card, painted from the copy the app left behind ----
+     Same class names and same sizes as App.html's own .tt block, so the real card
+     lands on top of this one without a pixel moving. Static: no countdown, no taps
+     and no time of day — this page has a device clock and no school one, and making
+     up the difference is what invariant 31 forbids. These styles are a mirror, like
+     .lsn above: change the timetable in App.html and change it here too. */
+  .ttc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    box-shadow:var(--shadow)}
+  .tt{padding:9px 11px 10px;margin-bottom:10px}
+  .tthead{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .ttlab{display:flex;align-items:center;gap:6px;flex:none;font-size:11px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .ttlab svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .ttviews{display:flex;gap:2px;flex:none;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:99px;padding:2px}
+  .ttview{padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;
+    color:var(--ink-2)}
+  .ttview.on{background:var(--surface-3);color:var(--ink);box-shadow:var(--shadow)}
+  .ttfold{width:26px;height:26px;flex:none;display:grid;place-items:center;color:var(--ink-3)}
+  .ttfold svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;
+    stroke-linecap:round;stroke-linejoin:round}
+  .ttfold.shut svg{transform:rotate(-90deg)}
+  @media(max-width:359px){.ttlab .w{display:none}}
+
+  /* The clock card carries the DATE only. The app fills in the time from the school's
+     clock a second later, and .t:empty is what keeps a gap from showing until then. */
+  .ttwhenwrap{display:flex;justify-content:flex-end;margin-bottom:10px}
+  /* min-height, because the app fills in a second line (the time) that this page
+     leaves empty — without it the card grows by 17px the moment the app lands. */
+  .ttwhen{display:flex;align-items:center;gap:9px;padding:8px 12px;min-height:50px;
+    font-variant-numeric:tabular-nums;line-height:1.2}
+  .ttwhen svg{width:15px;height:15px;flex:none;color:var(--ink-3);fill:none;
+    stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ttwhen .d{display:block;font-size:11px;font-weight:600;color:var(--ink-3);white-space:nowrap}
+  .ttwhen .t{display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+  .ttwhen .t:empty{display:none}
+
+  .ttweek{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:52px;padding:6px 4px 6px 0;
+    border:1px solid transparent;background:var(--surface)}
+  .ttgutter .ttdn{visibility:hidden}
+  .ttgrow{height:32px;margin-bottom:3px;display:flex;flex-direction:column;
+    justify-content:center;align-items:flex-end;text-align:right;
+    font-variant-numeric:tabular-nums;line-height:1.15}
+  .ttgrow:last-child{margin-bottom:0}
+  .ttgrow b{font-size:11px;font-weight:700;color:var(--ink-2)}
+  .ttgrow span{font-size:9.5px;font-weight:600;color:var(--ink-3)}
+  .ttday{flex:1 0 96px;min-width:96px;padding:6px;border:1px solid var(--line);
+    border-radius:var(--r-md);background:var(--surface-2)}
+  .ttday.today{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
+  .ttdn{height:26px;display:flex;align-items:center;gap:5px;width:100%;text-align:left;
+    padding:0 1px 4px}
+  .ttdn b{font-size:13px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .ttdn span{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--ink-3)}
+  .ttday.today .ttdn b,.ttday.today .ttdn span{color:var(--accent)}
+  .ttl,.ttgap{height:32px;margin-bottom:3px;border-radius:var(--r-sm)}
+  .ttl:last-child,.ttgap:last-child{margin-bottom:0}
+  .ttl{display:flex;align-items:center;width:100%;text-align:left;padding:0 6px;
+    background:var(--surface);border:1px solid var(--line)}
+  .ttl .sj{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    font-size:11.5px;font-weight:600;line-height:1.2;letter-spacing:-.01em}
+  .tt [data-tone="as1"]{background:var(--tt-as1);border-color:var(--tt-as1-line)}
+  .tt [data-tone="as2"]{background:var(--tt-as2);border-color:var(--tt-as2-line)}
+  .tt [data-tone="as3"]{background:var(--tt-as3);border-color:var(--tt-as3-line)}
+  .tt [data-tone="a21"]{background:var(--tt-a21);border-color:var(--tt-a21-line)}
+  .tt [data-tone="a22"]{background:var(--tt-a22);border-color:var(--tt-a22-line)}
+  .tt [data-tone="a23"]{background:var(--tt-a23);border-color:var(--tt-a23-line)}
+  .ttgap{box-shadow:inset 0 0 0 1px var(--line)}
+  .ttempty{font-size:11px;color:var(--ink-3);padding:3px 2px}
+  .ttempty.tall{padding:16px 2px;text-align:center;font-size:13px}
+
+  .ttchips{display:flex;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;padding-bottom:2px;margin-bottom:8px}
+  .ttchip{flex:none;min-width:46px;display:flex;flex-direction:column;align-items:center;
+    gap:1px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--r-md);
+    background:var(--surface-2);font-variant-numeric:tabular-nums}
+  .ttchip b{font-size:13px;font-weight:700;letter-spacing:-.02em}
+  .ttchip span{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--ink-3)}
+  .ttchip.today{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
+  .ttchip.today b,.ttchip.today span{color:var(--accent)}
+  .ttchip.sel{background:var(--surface-3);border-color:var(--line-2)}
+  .ttlist{display:flex;flex-direction:column;gap:3px}
+  .ttp{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:6px 10px;
+    border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+  .ttp .pn{width:18px;flex:none;font-size:11px;font-weight:700;color:var(--ink-3);
+    font-variant-numeric:tabular-nums}
+  .ttp .tm{width:86px;flex:none;font-size:11.5px;color:var(--ink-2);
+    font-variant-numeric:tabular-nums}
+  .ttp .nm{flex:1;min-width:0;font-size:13.5px;font-weight:600;letter-spacing:-.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ttp .rm{flex:none;font-size:11.5px;color:var(--ink-3)}
+  .ttp.free{background:transparent}
+  .ttp.free .nm{font-weight:500;color:var(--ink-3)}
+
+  /* The one part of the strip this page genuinely cannot draw: which lesson is running
+     and how long is left. Its card is held at the height the app's own will be, with a
+     single quiet bar where that answer goes. */
+  .nolsn{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    box-shadow:var(--shadow);padding:26px 18px;text-align:center;font-size:14px;
+    font-weight:600;color:var(--ink-2)}
+  .ttnow{padding:9px 11px 10px;margin-bottom:12px}
+  .ttnow .sblock{height:44px;border-radius:var(--r-sm)}
 
   /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
   .name{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -415,6 +540,127 @@
       '></div>';
   }
 
+  /* ---- the timetable card, drawn from the app's own copy of the week ----
+
+     The gap above is the fallback, and it used to be all there was: a shimmering
+     slab the height of a teacher's timetable, filling the first screen with nothing.
+     The app now leaves the shape of the week behind (TIMETABLE.cache), which is
+     enough to draw the card for real — the same markup its own module emits, so what
+     is on screen at 200ms and what arrives at 4s are the same picture.
+
+     What is NOT drawn: the countdown, the ring around the lesson running now, and the
+     time of day. All three need the school's clock, which lives on the server; the
+     device's own clock is not a substitute (invariant 31). Nothing here is tappable
+     either — the week is a picture until the app is ready to act on a tap. */
+  var TT_CAL = '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
+    '<path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+  var TT_CHEV = '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+  var TT_TONES = { as1:1, as2:1, as3:1, a21:1, a22:1, a23:1 };
+
+  function ttTone(l){ return (l && TT_TONES[l.tone]) ? ' data-tone="' + l.tone + '"' : ''; }
+  function ttAt(day){
+    var m = {};
+    ((day && day.lessons) || []).forEach(function (l) { m[l.period] = l; });
+    return m;
+  }
+  function ttSpan(l){ return l && l.start ? l.start + (l.end ? '\u2013' + l.end : '') : ''; }
+  /* Today is decided here, off the device date, and not read from the cached week:
+     the copy was written on some other day and its own flag has been wrong since
+     midnight. */
+  function ttDayOf(tt, iso){
+    var days = (tt && tt.days) || [];
+    for (var i = 0; i < days.length; i++) if (days[i].date === iso) return days[i];
+    return null;
+  }
+
+  function ttWeek(tt, iso){
+    var rs = tt.periods || [];
+    var gutter = '<div class="ttgutter"><div class="ttdn"></div><div class="ttslots">' +
+      rs.map(function (r) {
+        return '<div class="ttgrow"><b>' + esc(r.p) + '</b><span>' + esc(r.start || '') + '</span></div>';
+      }).join('') + '</div></div>';
+    return '<div class="ttweek">' + gutter + (tt.days || []).map(function (day) {
+      var have = ttAt(day);
+      var cells = day.holiday
+        ? '<div class="ttempty">' + esc(day.holiday) + '</div>'
+        : rs.map(function (r) {
+            var l = have[r.p];
+            return l ? '<div class="ttl"' + ttTone(l) + '><span class="sj">' + esc(l.label) + '</span></div>'
+                     : '<div class="ttgap"></div>';
+          }).join('');
+      return '<div class="ttday' + (day.date === iso ? ' today' : '') + '">' +
+        '<div class="ttdn"><b>' + esc(day.n) + '</b><span>' + esc(String(day.dow).toUpperCase()) + '</span></div>' +
+        '<div class="ttslots">' + cells + '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  function ttDayView(tt, iso){
+    var rs = tt.periods || [];
+    var cur = ttDayOf(tt, iso) || (tt.days || [])[0];
+    var chips = '<div class="ttchips">' + (tt.days || []).map(function (day) {
+      return '<div class="ttchip' + (day.date === iso ? ' today' : '') +
+        (cur && day.date === cur.date ? ' sel' : '') + '"><b>' + esc(day.n) + '</b><span>' +
+        esc(String(day.dow).toUpperCase()) + '</span></div>';
+    }).join('') + '</div>';
+    if (!cur) return chips;
+    if (cur.holiday) return chips + '<div class="ttempty tall">' + esc(cur.holiday) + '</div>';
+    var have = ttAt(cur);
+    return chips + '<div class="ttlist">' + rs.map(function (r) {
+      var l = have[r.p];
+      return '<div class="ttp' + (l ? '' : ' free') + '"' + (l ? ttTone(l) : '') + '>' +
+        '<span class="pn">' + esc(r.p) + '</span>' +
+        '<span class="tm">' + esc(ttSpan(l || r)) + '</span>' +
+        '<span class="nm">' + (l ? esc(l.label) : 'Free') + '</span>' +
+        (l && l.room ? '<span class="rm">' + esc(l.room) + '</span>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  /* The clock card, the timetable, and a held-open card for the countdown — the same
+     three the app paints, in the same order. Falls back to the plain reserved gap for
+     a snapshot written before any of this existed. */
+  function ttCard(tt, strip, iso, d){
+    if (!tt || !(tt.days || []).length) return stripGap(strip);
+    var when = '<div class="ttwhenwrap"><div class="ttc ttwhen">' + TT_CAL +
+      '<span><span class="d">' + esc(SHORT[d.getDay()] + ' ' + d.getDate() + ' ' +
+        MONTHS[d.getMonth()]) + '</span><b class="t"></b></span></div></div>';
+    var body = tt.open === false ? '' :
+      '<div class="ttbody">' + (tt.view === 'day' ? ttDayView(tt, iso) : ttWeek(tt, iso)) + '</div>';
+    return when +
+      '<section class="ttc tt">' +
+        '<div class="tthead">' +
+          '<span class="ttlab">' + TT_CAL + '<span class="w">Timetable</span></span>' +
+          '<div class="ttviews">' +
+            '<span class="ttview' + (tt.view === 'day' ? '' : ' on') + '">Week</span>' +
+            '<span class="ttview' + (tt.view === 'day' ? ' on' : '') + '">Day</span>' +
+          '</div>' +
+          '<span class="ttfold' + (tt.open === false ? ' shut' : '') + '">' + TT_CHEV + '</span>' +
+        '</div>' + body +
+      '</section>' +
+      '<div class="ttc ttnow"><div class="sblock"></div></div>';
+  }
+
+  /* What the cached week says about a day with no lessons in the snapshot.
+
+     Three shimmering blocks were the only answer here, which on a Saturday is a
+     teacher watching a page pretend to load lessons that are never coming. The week
+     is matched by date first and by weekday second — a timetable repeats, so last
+     Saturday answers for this one — and a weekday with no column at all is a weekday
+     this teacher does not teach. Only ever said when the week is known; with no
+     snapshot to go on the skeleton stands, because "nothing today" and "nothing
+     cached" are different things and only one of them is news.
+     It stays hedged: the line below it still says the app is checking. */
+  function ttNothing(tt, iso, d){
+    if (!tt || !(tt.days || []).length) return '';
+    var dow = SHORT[d.getDay()], col = null;
+    (tt.days || []).forEach(function (x) {
+      if (x.date === iso) col = x;
+      else if (!col && x.dow === dow) col = x;
+    });
+    if (col && (col.lessons || []).length) return '';   // it has lessons: not this case
+    var why = (col && col.holiday) ? col.holiday : 'No lessons on ' + DAYS[d.getDay()];
+    return '<div class="nolsn">' + esc(why) + '</div>';
+  }
+
   function readSnap(token){
     try {
       var raw = localStorage.getItem(SNAP + token);
@@ -433,7 +679,11 @@
      structure is reused and every chip is reset. */
   function absorbSnap(token, msg){
     var s = readSnap(token) || { v:1, days:{}, dow:{} };
-    s.meta = { school: msg.school, teacher: msg.teacher, strip: msg.strip };
+    // tt is the shape of the week, for the card this page now draws itself; strip is
+    // still kept as the fallback height for snapshots written before it, and for the
+    // gap when a teacher has no timetable at all.
+    s.meta = { school: msg.school, teacher: msg.teacher, strip: msg.strip,
+               tt: msg.tt || (s.meta && s.meta.tt) || null };
     s.days = s.days || {}; s.dow = s.dow || {}; s.dowAt = s.dowAt || {};
     if (msg.day && msg.day.date) {
       msg.day.savedAt = Date.now();
@@ -649,8 +899,9 @@
       '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'Attendance') + '</span>' +
       '<span class="name"><span class="nm">' + esc(name) + '</span>' +
       '<span class="avatar">' + esc(initials(name)) + '</span></span></div>' +
-      // Where the app paints the week strip: held open, never guessed at.
-      stripGap(s.meta.strip) +
+      // The week, drawn from the app's own copy of it; a plain held-open gap when
+      // there is no copy to draw.
+      ttCard(s.meta.tt, s.meta.strip, iso, d) +
       '<div class="dhead"><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
         esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
       '<div class="note"><span class="spin"></span>' +
@@ -665,7 +916,9 @@
         }).join('') +
         '</div>';
     } else {
-      html += '<div class="sblock hlsn"></div><div class="sblock hlsn"></div><div class="sblock hlsn"></div>';
+      var nothing = ttNothing(s.meta.tt, iso, d);
+      html += nothing ||
+        '<div class="sblock hlsn"></div><div class="sblock hlsn"></div><div class="sblock hlsn"></div>';
     }
 
     $('instantInner').innerHTML = html;
@@ -1065,7 +1318,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-11c';
+  var WRAPPER_BUILD = '2026-09-12a';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
