@@ -169,6 +169,27 @@
     border:1px solid var(--line);font-weight:500}
   .inner{max-width:880px;margin:0 auto}
 
+  /* ---- the bottom tabs: a MIRROR of App.html's .tabs block (invariant 35) ----
+     Copied rule for rule so the app's bar fades in exactly on top of this one. Tokens
+     only, so both themes follow. Change one, change both — tabs.test.js compares them. */
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:28;background:var(--surface);
+    border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  .tabs-in{max-width:880px;margin:0 auto;display:flex}
+  .tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:7px 4px 8px;font-size:11.5px;font-weight:600;color:var(--ink-3);
+    white-space:nowrap;transition:color .12s ease}
+  .tab .ic{display:grid;place-items:center;width:52px;height:28px;border-radius:99px;
+    transition:background .12s ease}
+  .tab svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+  .tab[aria-current="page"]{color:var(--ink)}
+  .tab[aria-current="page"] .ic{background:var(--surface-3)}
+  /* The app's tabs are <button>s, which do not inherit line-height: their labels sit at
+     the font's `normal`, so the copy must too (1.5 made it 1px taller). And no taps until
+     the app can act on them. */
+  .ph .tabs{line-height:normal;pointer-events:none}
+  .ph.hastabs{padding-bottom:calc(env(safe-area-inset-bottom) + 96px)}
+
   .sbar{display:flex;align-items:center;gap:10px;padding:10px 0 14px}
   .slogo{font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--ink)}
   .spill{width:74px;height:26px;border-radius:99px;background:var(--surface-3)}
@@ -295,8 +316,12 @@
   .nolsn{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
     box-shadow:var(--shadow);padding:26px 18px;text-align:center;font-size:14px;
     font-weight:600;color:var(--ink-2)}
-  .ttnow{padding:9px 11px 10px;margin-bottom:12px}
-  .ttnow .sblock{height:44px;border-radius:var(--r-sm)}
+  /* 75px in every state, the same as the app's, so the handover does not jump. It says
+     what the app will say before it knows the time — never a time of its own (inv. 31). */
+  .ttnow{padding:9px 11px 10px;margin-bottom:12px;min-height:75px;display:flex;
+    flex-direction:column;justify-content:center}
+  .ttmsg{display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+  .ttmsg .spin{margin:3px}
 
   /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
   .name{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -618,7 +643,7 @@
   /* The clock card, the timetable, and a held-open card for the countdown — the same
      three the app paints, in the same order. Falls back to the plain reserved gap for
      a snapshot written before any of this existed. */
-  function ttCard(tt, strip, iso, d){
+  function ttCard(tt, strip, iso, d, hint){
     if (!tt || !(tt.days || []).length) return stripGap(strip);
     var when = '<div class="ttwhenwrap"><div class="ttc ttwhen">' + TT_CAL +
       '<span><span class="d">' + esc(SHORT[d.getDay()] + ' ' + d.getDate() + ' ' +
@@ -636,7 +661,8 @@
           '<span class="ttfold' + (tt.open === false ? ' shut' : '') + '">' + TT_CHEV + '</span>' +
         '</div>' + body +
       '</section>' +
-      '<div class="ttc ttnow"><div class="sblock"></div></div>';
+      '<div class="ttc ttnow"><div class="ttmsg"><span class="spin"></span><span>' +
+        esc(hint || '') + '</span></div></div>';
   }
 
   /* What the cached week says about a day with no lessons in the snapshot.
@@ -648,7 +674,7 @@
      this teacher does not teach. Only ever said when the week is known; with no
      snapshot to go on the skeleton stands, because "nothing today" and "nothing
      cached" are different things and only one of them is news.
-     It stays hedged: the line below it still says the app is checking. */
+     It stays hedged: the card above it still says the app is checking. */
   function ttNothing(tt, iso, d){
     if (!tt || !(tt.days || []).length) return '';
     var dow = SHORT[d.getDay()], col = null;
@@ -659,6 +685,33 @@
     if (col && (col.lessons || []).length) return '';   // it has lessons: not this case
     var why = (col && col.holiday) ? col.holiday : 'No lessons on ' + DAYS[d.getDay()];
     return '<div class="nolsn">' + esc(why) + '</div>';
+  }
+
+  /* ---- the bottom tabs, from the set the app left behind ----
+     Paths copied from App.html's <nav class="tabs">. Every open lands on Home. */
+  var TAB_BAR = {
+    home:   ['Home', '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h4.5v-5.5h4V20h4.5V9.5"/>'],
+    plan:   ['Weekly Plan', '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13.5h4M7.5 16.5h7"/>'],
+    grades: ['Gradebook', '<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5z"/><path d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19v3H7.5"/><path d="M9 7.5h6M9 11h4"/>']
+  };
+  function tabList(v){
+    if (!Array.isArray(v)) return null;
+    var out = ['home', 'plan', 'grades'].filter(function (n) { return v.indexOf(n) !== -1; });
+    return out.length ? out : null;
+  }
+  function tabBar(v){
+    var list = tabList(v);
+    return !list ? '' : '<div class="tabs" id="instantTabs"><div class="tabs-in">' +
+      list.map(function (n) {
+        return '<span class="tab"' + (n === 'home' ? ' aria-current="page"' : '') + '><span class="ic">' +
+          '<svg viewBox="0 0 24 24">' + TAB_BAR[n][1] + '</svg></span>' + TAB_BAR[n][0] + '</span>';
+      }).join('') + '</div></div>';
+  }
+  // Room under the last card, and the notification bar lifted clear, before the app says so.
+  function tabRoom(v){
+    var on = !!tabList(v), bar = $('instantTabs');
+    $('instant').classList.toggle('hastabs', on);
+    if (on && bar && bar.offsetHeight) document.documentElement.style.setProperty('--tabs', bar.offsetHeight + 'px');
   }
 
   function readSnap(token){
@@ -683,7 +736,9 @@
     // still kept as the fallback height for snapshots written before it, and for the
     // gap when a teacher has no timetable at all.
     s.meta = { school: msg.school, teacher: msg.teacher, strip: msg.strip,
-               tt: msg.tt || (s.meta && s.meta.tt) || null };
+               tt: msg.tt || (s.meta && s.meta.tt) || null,
+               // Absent (not null) from an older app build, so paintCached can tell the two apart.
+               tabs: msg.tabs === undefined ? undefined : tabList(msg.tabs) };
     s.days = s.days || {}; s.dow = s.dow || {}; s.dowAt = s.dowAt || {};
     if (msg.day && msg.day.date) {
       msg.day.savedAt = Date.now();
@@ -758,9 +813,11 @@
       stripGap(s.strip) +
       '<div class="stot"><b>' + pct(t.rate) + '</b><span>' + (t.present || 0) + ' present · ' +
         (t.late || 0) + ' late · ' + (t.absent || 0) + ' absent</span></div>' +
-      (s.subjects || []).map(function (x) { return row(x.label, x, x.dropped); }).join('');
+      (s.subjects || []).map(function (x) { return row(x.label, x, x.dropped); }).join('') +
+      tabBar(s.tabs);
 
     $('instant').style.display = 'block';
+    tabRoom(s.tabs);
     $('shell').classList.add('gone');
     return true;
   }
@@ -894,6 +951,9 @@
     QS.live = live;
     QS.fresh = fresh;
     QS.iso = iso;
+    var hint = anyTap ? 'Ready. Tap a lesson to take the register'
+             : live ? 'Your last view · updating' : 'Your usual timetable · checking today';
+    var ttHtml = ttCard(s.meta.tt, s.meta.strip, iso, d, hint);
 
     var html =
       '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'Attendance') + '</span>' +
@@ -901,13 +961,11 @@
       '<span class="avatar">' + esc(initials(name)) + '</span></span></div>' +
       // The week, drawn from the app's own copy of it; a plain held-open gap when
       // there is no copy to draw.
-      ttCard(s.meta.tt, s.meta.strip, iso, d) +
+      ttHtml +
       '<div class="dhead"><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
         esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
-      '<div class="note"><span class="spin"></span>' +
-        (anyTap ? 'Ready. Tap a lesson to take the register'
-                : live ? 'Your last view \u00b7 updating' : 'Your usual timetable \u00b7 checking today') +
-      '</div>';
+      // The card above says it when there is one; the pill is only for the bare gap.
+      (ttHtml.indexOf('ttnow') === -1 ? '<div class="note"><span class="spin"></span>' + esc(hint) + '</div>' : '');
 
     if (lessons.length) {
       html += '<div class="lessons">' +
@@ -921,8 +979,11 @@
         '<div class="sblock hlsn"></div><div class="sblock hlsn"></div><div class="sblock hlsn"></div>';
     }
 
-    $('instantInner').innerHTML = html;
+    // An older snapshot has no set, but still knows the role: a non-admin teacher has all three.
+    var tabs = s.meta.tabs !== undefined ? s.meta.tabs : (admin ? null : ['home', 'plan', 'grades']);
+    $('instantInner').innerHTML = html + tabBar(tabs);
     $('instant').style.display = 'block';
+    tabRoom(tabs);
     $('shell').classList.add('gone');
     return true;
   }
@@ -1172,6 +1233,8 @@
       if (m === 'attendance:ready') {
         mark('app painted (attendance:ready)');
         QS.ready = true;
+        // The cached bar lifted the notification bar; if the app has no bar, it never says so.
+        if (!QS.tabsHeard) document.documentElement.style.removeProperty('--tabs');
         // It did paint, just slowly. Call off the explanation, and clear it if it landed.
         if (stuckTimer) { clearTimeout(stuckTimer); stuckTimer = null; }
         var sb = $('stuckBar'); if (sb) sb.hidden = true;
@@ -1193,6 +1256,7 @@
       if (m.type === 'attendance:push-registered') { try { pushRegistered(m.key); } catch (err) {} return; }
       // The app's tab bar came or went; keep the notification bar clear of it.
       if (m.type === 'attendance:tabs') {
+        QS.tabsHeard = true;
         var th = Math.max(0, Math.min(200, +m.h || 0));
         document.documentElement.style.setProperty('--tabs', th + 'px');
         return;
@@ -1220,6 +1284,19 @@
         }
         return;
       }
+      if (m.type === 'attendance:tt') {
+        // Same deal as the theme: the app owns the control, this page keeps the choice —
+        // the frame's own storage is thrown away — and the cached card follows it now
+        // rather than at the next snapshot.
+        try {
+          var tv2 = m.view === 'day' ? 'day' : 'week', to2 = m.open !== false;
+          localStorage.setItem('attendance-tt-view', tv2);
+          localStorage.setItem('attendance-tt-open', to2 ? '1' : '0');
+          var sn = readSnap(t);
+          if (sn && sn.meta && sn.meta.tt) { sn.meta.tt.view = tv2; sn.meta.tt.open = to2; writeSnap(t, sn); }
+        } catch (err) {}
+        return;
+      }
       if (m.type === 'attendance:saved') {
         // Only drop it once the server has confirmed; a failure keeps it queued so
         // the next open tries again rather than losing the register.
@@ -1245,8 +1322,9 @@
        retries once without it anyway, in case Google ever starts needing the cookies.
 
        What it costs: the frame's own storage is ephemeral. The app keeps exactly one
-       thing there, the theme, and this page owns that already and passes it on the URL.
-       Nothing else in the frame is persistent, so there is nothing else to lose. */
+       thing there that matters — the theme and the timetable's Day/Week and fold — and this
+       page owns those already and passes them on the URL. Nothing else in the frame needs
+       to persist, so there is nothing else to lose. */
     var credOK = false;
     try { credOK = 'credentialless' in HTMLIFrameElement.prototype; } catch (e) {}
     var triedPlain = false;
@@ -1277,6 +1355,10 @@
       try {
         var pref = localStorage.getItem('attendance-theme');
         if (pref === 'dark' || pref === 'light') themed = '&theme=' + pref;
+        // The timetable's Day/Week and fold, for the same reason: see attendance:tt.
+        var tv = localStorage.getItem('attendance-tt-view'), to = localStorage.getItem('attendance-tt-open');
+        if (tv === 'day' || tv === 'week') themed += '&ttv=' + tv;
+        if (to === '0' || to === '1') themed += '&tto=' + to;
       } catch (e) {}
       el.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '') + themed;
       return el;
@@ -1318,7 +1400,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-12a';
+  var WRAPPER_BUILD = '2026-09-15a';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
