@@ -185,9 +185,12 @@
   .tab[aria-current="page"]{color:var(--ink)}
   .tab[aria-current="page"] .ic{background:var(--surface-3)}
   /* The app's tabs are <button>s, which do not inherit line-height: their labels sit at
-     the font's `normal`, so the copy must too (1.5 made it 1px taller). And no taps until
-     the app can act on them. */
-  .ph .tabs{line-height:normal;pointer-events:none}
+     the font's `normal`, so the copy must too (1.5 made it 1px taller).
+     And the copy TAKES taps. It used to be pointer-events:none, which did not make it
+     inert — it let the tap fall through to the cached lesson card underneath, so reaching
+     for Gradebook opened a register. A tap here is held and handed to the app when it is up. */
+  .ph .tabs{line-height:normal}
+  .ph .tab{cursor:pointer;-webkit-tap-highlight-color:transparent}
   .ph.hastabs{padding-bottom:calc(env(safe-area-inset-bottom) + 96px)}
 
   .sbar{display:flex;align-items:center;gap:10px;padding:10px 0 14px}
@@ -692,18 +695,19 @@
   var TAB_BAR = {
     home:   ['Home', '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h4.5v-5.5h4V20h4.5V9.5"/>'],
     plan:   ['Weekly Plan', '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13.5h4M7.5 16.5h7"/>'],
+    res:    ['Resources', '<path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h3.6l2 2.2h7.4a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>'],
     grades: ['Gradebook', '<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5z"/><path d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19v3H7.5"/><path d="M9 7.5h6M9 11h4"/>']
   };
   function tabList(v){
     if (!Array.isArray(v)) return null;
-    var out = ['home', 'plan', 'grades'].filter(function (n) { return v.indexOf(n) !== -1; });
+    var out = ['home', 'plan', 'res', 'grades'].filter(function (n) { return v.indexOf(n) !== -1; });
     return out.length ? out : null;
   }
   function tabBar(v){
     var list = tabList(v);
     return !list ? '' : '<div class="tabs" id="instantTabs"><div class="tabs-in">' +
       list.map(function (n) {
-        return '<span class="tab"' + (n === 'home' ? ' aria-current="page"' : '') + '><span class="ic">' +
+        return '<span class="tab" data-tab="' + n + '"' + (n === 'home' ? ' aria-current="page"' : '') + '><span class="ic">' +
           '<svg viewBox="0 0 24 24">' + TAB_BAR[n][1] + '</svg></span>' + TAB_BAR[n][0] + '</span>';
       }).join('') + '</div></div>';
   }
@@ -1219,8 +1223,22 @@
 
     // Tapping a cached lesson opens the register, before the app is anywhere near up.
     $('instant').addEventListener('click', function (e) {
+      // A tab on the cached bar: mark it, and pass it on once the app can open it.
+      var b = e.target.closest ? e.target.closest('#instantTabs .tab') : null;
+      if (b) {
+        e.preventDefault();
+        e.stopPropagation();
+        QS.tab = b.getAttribute('data-tab') || '';
+        var all = $('instantTabs').querySelectorAll('.tab');
+        for (var i = 0; i < all.length; i++) {
+          if (all[i] === b) all[i].setAttribute('aria-current', 'page');
+          else all[i].removeAttribute('aria-current');
+        }
+        return;
+      }
       var c = e.target.closest ? e.target.closest('.lsn.tap') : null;
       if (!c) return;
+      QS.tab = '';                          // they chose a register instead
       openQuick(Number(c.getAttribute('data-i')));
     });
 
@@ -1239,6 +1257,9 @@
         if (stuckTimer) { clearTimeout(stuckTimer); stuckTimer = null; }
         var sb = $('stuckBar'); if (sb) sb.hidden = true;
         flushQueue();                       // anything marked while it was loading
+        // A tab tapped on the cached bar: the app opens it before it is shown.
+        if (QS.tab && QS.tab !== 'home') toApp({ type: 'attendance:tab', v: 1, tab: QS.tab });
+        QS.tab = '';
         reveal();
         return;
       }
@@ -1400,7 +1421,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-15a';
+  var WRAPPER_BUILD = '2026-09-17a';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
