@@ -1318,6 +1318,11 @@
         } catch (err) {}
         return;
       }
+      if (m.type === 'attendance:plan') {
+        // The weekly plan's Day/Week, kept here for the same reason as the timetable's.
+        try { localStorage.setItem('attendance-plan-view', m.view === 'day' ? 'day' : 'week'); } catch (err) {}
+        return;
+      }
       if (m.type === 'attendance:saved') {
         // Only drop it once the server has confirmed; a failure keeps it queued so
         // the next open tries again rather than losing the register.
@@ -1380,6 +1385,9 @@
         var tv = localStorage.getItem('attendance-tt-view'), to = localStorage.getItem('attendance-tt-open');
         if (tv === 'day' || tv === 'week') themed += '&ttv=' + tv;
         if (to === '0' || to === '1') themed += '&tto=' + to;
+        // ...and the weekly plan's Day/Week: see attendance:plan.
+        var pv = localStorage.getItem('attendance-plan-view');
+        if (pv === 'day' || pv === 'week') themed += '&pv=' + pv;
       } catch (e) {}
       el.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '') + themed;
       return el;
@@ -1421,7 +1429,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-17a';
+  var WRAPPER_BUILD = '2026-09-17b';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
