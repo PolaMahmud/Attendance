@@ -586,6 +586,150 @@
     }
   }
 
+  /* ---- the kept app (invariant 41) ----------------------------------------
+     Apps Script takes seconds to serve the app, and until it had, all this page could show
+     was a picture of it: the tabs lit up under a finger and did nothing. So this page keeps
+     the app itself — the page Apps Script served this person last time, with three slots
+     left open (the theme, the timetable's views, the first payload) — and runs it the
+     moment it opens, in a sandboxed frame, on last time's payload. Its calls to the server
+     go through the bridge, a page with nothing in it but google.script.run, which is up
+     long before the whole app would be; until it is, they wait here. The copy is replaced
+     whenever the bridge reports a newer build. */
+  var SHELLS = 'attendance-shell:', BOOTS = 'attendance-boot:', SHELL_BAD = 'attendance-shell-bad';
+  var SLOT_BOOT = '__ATTENDANCE_BOOT__', SLOT_THEME = '__ATTENDANCE_THEME__', SLOT_TT = '__ATTENDANCE_TTPREF__';
+  var OFFLINE = 'No connection. Check your signal and try again.';
+  function readJSON(k){ try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function readShell(token){
+    var s = readJSON(SHELLS + token);
+    return (s && s.v === 1 && typeof s.html === 'string' && typeof s.build === 'string' &&
+            (s.mode === 'app' || s.mode === 'student') && s.html.indexOf(SLOT_BOOT) !== -1) ? s : null;
+  }
+  function writeShell(token, m){
+    if (!m || typeof m.html !== 'string' || typeof m.build !== 'string' || !m.build || m.html.length > 2500000 ||
+        m.html.indexOf(SLOT_BOOT) === -1 || (m.mode !== 'app' && m.mode !== 'student')) return false;
+    // A shared device keeps two people's copies at most, not one for everyone ever signed in.
+    try {
+      var others = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(SHELLS) === 0 && k !== SHELLS + token) others.push(k);
+      }
+      others.sort(function (a, b) { return ((readJSON(a) || {}).at || 0) - ((readJSON(b) || {}).at || 0); });
+      while (others.length > 1) localStorage.removeItem(others.shift());
+    } catch (e) {}
+    try {
+      localStorage.setItem(SHELLS + token, JSON.stringify({ v: 1, build: m.build, mode: m.mode, html: m.html, at: Date.now() }));
+      return true;
+    } catch (e) { try { localStorage.removeItem(SHELLS + token); } catch (e2) {} return false; }
+  }
+  function readBoot(token){
+    var b = readJSON(BOOTS + token);
+    return (b && b.v === 1 && b.boot && typeof b.boot === 'object' && b.boot.ok) ? b : null;
+  }
+  function writeBoot(token, boot){
+    if (!boot || typeof boot !== 'object' || !boot.ok) return;
+    var rec = JSON.stringify({ v: 1, at: Date.now(), boot: boot });
+    if (rec.length > 1500000) return;
+    try { localStorage.setItem(BOOTS + token, rec); } catch (e) {}
+  }
+  // A copy that once failed to paint is not tried again until a newer one replaces it.
+  function shellBad(build){ try { return localStorage.getItem(SHELL_BAD) === build; } catch (e) { return false; } }
+  function markShellBad(build){ try { localStorage.setItem(SHELL_BAD, build); } catch (e) {} }
+  function canKeep(){
+    try {
+      var x = document.createElement('iframe');
+      return typeof Proxy === 'function' && 'srcdoc' in x && 'sandbox' in x;
+    } catch (e) { return false; }
+  }
+  function fill(html, slot, value){
+    var i = html.indexOf(slot);
+    return i === -1 ? html : html.slice(0, i) + value + html.slice(i + slot.length);
+  }
+  /* google.script.run, for the kept copy: every call is posted up here, and its answer
+     posted back down, to the same success or failure handler the page gave it. */
+  var SHIM = '<script>(function(){' +
+    'window.__SHELL__={v:1};var n=0,wait={};' +
+    'function send(fn,args,ok,fail,uo){var id="r"+(++n)+"."+Date.now().toString(36);wait[id]={ok:ok,fail:fail,uo:uo};' +
+      'try{parent.postMessage({type:"attendance:rpc",v:1,id:id,fn:fn,args:args},"*");}' +
+      'catch(e){delete wait[id];if(fail)setTimeout(function(){fail(new Error("The app could not reach the server."),uo);},0);}}' +
+    'window.addEventListener("message",function(e){var m=e&&e.data;' +
+      'if(!m||m.v!==1||m.type!=="attendance:rpc-done"||e.source!==parent)return;' +
+      'var w=wait[m.id];if(!w)return;delete wait[m.id];' +
+      'if(m.ok){if(w.ok)w.ok(m.value,w.uo);}else if(w.fail){w.fail(new Error(m.error||"Something went wrong."),w.uo);}});' +
+    'function runner(ok,fail,uo){return new Proxy({},{get:function(_,k){' +
+      'if(typeof k!=="string"||k==="then")return undefined;' +
+      'if(k==="withSuccessHandler")return function(f){return runner(f,fail,uo);};' +
+      'if(k==="withFailureHandler")return function(f){return runner(ok,f,uo);};' +
+      'if(k==="withUserObject")return function(o){return runner(ok,fail,o);};' +
+      'return function(){send(k,Array.prototype.slice.call(arguments),ok,fail,uo);};}});}' +
+    'window.google={script:{get run(){return runner(null,null,undefined);},' +
+      'host:{origin:"",close:function(){},setHeight:function(){},setWidth:function(){},editor:{focus:function(){}}}}};' +
+    '})();<\/script>';
+  /* The kept page with its slots filled: last time's payload, marked cached and with no
+     clock in it (invariant 31: a time of day from a copy is a made-up time), and the
+     theme and views this page already holds for the ordinary frame's URL. */
+  function keptDoc(sh, boot){
+    var b = JSON.parse(JSON.stringify(boot));
+    b.cached = true;
+    delete b.clock;
+    var json = JSON.stringify(b).replace(/</g, '\\u003c')
+      .replace(new RegExp(String.fromCharCode(0x2028), 'g'), '\\u2028')
+      .replace(new RegExp(String.fromCharCode(0x2029), 'g'), '\\u2029');   // line breaks JSON allows and a script does not
+    var theme = '', tv = '', to = '', pv = '';
+    try {
+      theme = localStorage.getItem('attendance-theme') || '';
+      tv = localStorage.getItem('attendance-tt-view') || '';
+      to = localStorage.getItem('attendance-tt-open') || '';
+      pv = localStorage.getItem('attendance-plan-view') || '';
+    } catch (e) {}
+    var html = fill(sh.html, SLOT_BOOT, json);
+    html = fill(html, SLOT_THEME, (theme === 'dark' || theme === 'light') ? theme : '');
+    html = fill(html, SLOT_TT, ((tv === 'day' || tv === 'week') ? tv : '') + ',' +
+      ((to === '0' || to === '1') ? to : '') + ',' + ((pv === 'day' || pv === 'week') ? pv : ''));
+    // The shim runs before any of the page's own scripts.
+    var h = html.search(/<head[^>]*>/i);
+    if (h === -1) return SHIM + html;
+    var end = html.indexOf('>', h) + 1;
+    return html.slice(0, end) + SHIM + html.slice(end);
+  }
+  function keptFrame(sh, boot){
+    var el = document.createElement('iframe');
+    el.id = 'app';
+    el.title = 'Attendance';
+    el.setAttribute('allow', 'clipboard-write');
+    // Scripts, but no origin of its own: nothing in it can reach this page's storage.
+    el.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox ' +
+      'allow-downloads allow-top-navigation-by-user-activation');
+    el.srcdoc = keptDoc(sh, boot);
+    return el;
+  }
+
+  /* ---- files out (invariant 42) --------------------------------------------
+     The app hands its spreadsheets and printouts up here: this is the top of the page,
+     where no sandbox stands between it and a download or a print dialog. Only ever a CSV,
+     whatever name it asks for, and a printout is shown in a frame that runs no script. */
+  function saveFile(name, text){
+    var base = String(name || 'Export').replace(/\.[A-Za-z0-9]{1,5}$/, '').replace(/[\\\/:*?"<>|]+/g, ' ').trim().slice(0, 90) || 'Export';
+    var url = URL.createObjectURL(new Blob([String(text || '')], { type: 'text/csv;charset=utf-8' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = base + '.csv'; a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); if (a.parentNode) a.parentNode.removeChild(a); }, 4000);
+  }
+  function printDoc(html){
+    var old = $('printer');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var el = document.createElement('iframe');
+    el.id = 'printer';
+    el.setAttribute('aria-hidden', 'true');
+    el.setAttribute('sandbox', 'allow-same-origin allow-modals');
+    el.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none';
+    el.onload = function () { try { el.contentWindow.focus(); el.contentWindow.print(); } catch (e) {} };
+    el.srcdoc = String(html || '');
+    document.body.appendChild(el);
+  }
+
   /* A notification can ask for a tab: ?tab=grades. It is held like a tab tapped on the
      cached bar, and handed over when the app is up. */
   var WANT_TAB = (location.search.match(/[?&]tab=(plan|res|grades)(?:&|$)/) || [])[1] || '';
@@ -1193,6 +1337,7 @@
   function open(t, extra){
     $('ask').style.display = 'none';
     mark('script start');
+    QS.token = t;
     if (WANT_TAB) QS.tab = WANT_TAB;
 
     // Only preview the register when the link is asking for the register. A link
@@ -1218,6 +1363,17 @@
     var f = null;
     var stuckTimer = null;
 
+    /* The kept app, when this device has one for this person (invariant 41): a copy of the
+       page, and a first payload to open it on. A link asking for another screen
+       (view=students, s=P014) goes the ordinary way. */
+    var keptShell = !extra && canKeep() ? readShell(t) : null;
+    var keptBoot = keptShell ? readBoot(t) : null;
+    if (keptShell && (!keptBoot || shellBad(keptShell.build) ||
+        keptShell.mode !== (keptBoot.boot.teacher ? 'app' : 'student'))) keptShell = null;
+    var K = { on: !!keptShell, frame: null, next: null, sh: keptShell, readyTimer: null, swapTab: '', updating: false };
+    var BR = { frame: null, win: null, up: false, down: false, build: '', q: [], wait: {}, timer: null, deadline: null,
+               triedPlain: false };
+
     /* Google refused, and only the browser can explain why.
 
        When the account router will not serve the app — most often because this browser
@@ -1240,6 +1396,9 @@
         swapFrame(false);
         return;
       }
+      explain();
+    }
+    function explain() {
       var b = $('stuckBar');
       if (!b || !b.hidden) return;
       $('notifBar').hidden = true;            // one bar at a time
@@ -1285,14 +1444,184 @@
       openQuick(Number(c.getAttribute('data-i')));
     });
 
+    /* ---- the kept app's half of this page ---- */
+    function keptWin(src) {
+      return !!src && ((K.frame && src === K.frame.contentWindow) || (K.next && src === K.next.contentWindow));
+    }
+    // An answer, back to the frame that asked — or to this page, for a call of its own.
+    function rpcOut(item, ok, value, error) {
+      if (item.saved && ok) queueDrop(t, item.saved);      // it reached the server; a lost line keeps it
+      if (item.own) { try { item.own(ok, value, error); } catch (e) {} return; }
+      try { item.to.postMessage({ type: 'attendance:rpc-done', v: 1, id: item.id, ok: ok, value: value, error: error || '' }, '*'); }
+      catch (e) {}
+    }
+    function toBridge(item) {
+      BR.wait[item.id] = item;
+      try { BR.win.postMessage({ type: 'attendance:rpc', v: 1, id: item.id, fn: item.fn, args: item.args }, '*'); }
+      catch (e) { delete BR.wait[item.id]; rpcOut(item, false, null, OFFLINE); }
+    }
+    /* A register saved before the server can be reached is kept on the device too, exactly
+       like one taken on the cached screen: if the app is closed first, it goes next time. */
+    function keepRegister(item) {
+      var p = item.args[1] || {};
+      if (!p.classId || !p.date || !p.statuses) return;
+      item.saved = { classId: String(p.classId), date: String(p.date), period: String(p.period) };
+      queueAdd(t, { classId: item.saved.classId, date: item.saved.date, period: item.saved.period,
+                    statuses: p.statuses, label: '', at: Date.now() });
+    }
+    function rpcIn(e, m) {
+      var item = { id: String(m.id || ''), fn: String(m.fn || ''), args: Array.isArray(m.args) ? m.args : [], to: e.source };
+      if (!item.id) return;
+      if (!/^api[A-Z][A-Za-z0-9]{0,60}$/.test(item.fn)) { rpcOut(item, false, null, 'Unknown call'); return; }
+      if (BR.up) { toBridge(item); return; }
+      if (item.fn === 'apiSave') { keepRegister(item); BR.q.push(item); return; }
+      if (BR.down) { rpcOut(item, false, null, OFFLINE); return; }
+      BR.q.push(item);
+    }
+    // No line to the server after all: say so to everything waiting — except registers,
+    // which stay saved on the device and go when it can.
+    function failQueued() {
+      var keep = [];
+      BR.q.forEach(function (item) {
+        if (item.fn === 'apiSave' || item.own) keep.push(item); else rpcOut(item, false, null, OFFLINE);
+      });
+      BR.q = keep;
+    }
+    function startBridge(anon) {
+      var el = document.createElement('iframe');
+      el.id = 'bridge';
+      el.title = 'Attendance connection';
+      el.setAttribute('aria-hidden', 'true');
+      el.tabIndex = -1;
+      el.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;border:0;opacity:0;visibility:hidden;pointer-events:none';
+      if (anon) { try { el.credentialless = true; } catch (e) {} }
+      el.onload = function () {
+        mark('bridge loaded' + (anon ? ' (cookie-free)' : ''));
+        if (BR.timer) clearTimeout(BR.timer);
+        BR.timer = setTimeout(bridgeStuck, 12000);
+      };
+      el.src = WEBAPP_URL + '?bridge=1';
+      if (BR.frame && BR.frame.parentNode) BR.frame.parentNode.removeChild(BR.frame);
+      BR.frame = el;
+      BR.win = null;
+      document.body.appendChild(el);
+      mark('bridge requested' + (anon ? ' (cookie-free)' : ''));
+    }
+    function bridgeStuck() {
+      if (BR.up || !K.on || !navigator.onLine) return;
+      if (credOK && !BR.triedPlain) {
+        BR.triedPlain = true;
+        mark('no answer from the cookie-free bridge — retrying the ordinary way');
+        startBridge(false);
+        return;
+      }
+      BR.down = true;
+      failQueued();
+      explain();
+    }
+    function bridgeUp(e, m) {
+      if (BR.up && e.source === BR.win) return;
+      BR.win = e.source; BR.up = true; BR.down = false; BR.build = String(m.build || '');
+      if (BR.timer) { clearTimeout(BR.timer); BR.timer = null; }
+      if (BR.deadline) { clearTimeout(BR.deadline); BR.deadline = null; }
+      var sb = $('stuckBar'); if (sb) sb.hidden = true;
+      mark('bridge up (' + BR.build + ')');
+      var q = BR.q; BR.q = [];
+      q.forEach(toBridge);
+      checkBuild();
+    }
+    function bridgeDone(e, m) {
+      if (e.source !== BR.win) return;
+      var item = BR.wait[m.id];
+      if (!item) return;
+      delete BR.wait[m.id];
+      rpcOut(item, !!m.ok, m.value, m.error);
+    }
+    /* A newer build is deployed than the page kept here: fetch it through the bridge, keep
+       it, and tell the page — which says when it can be swapped without losing anything. */
+    function checkBuild() {
+      if (!K.sh || !BR.build || BR.build === K.sh.build || K.updating) return;
+      K.updating = true;
+      mark('newer app deployed (' + BR.build + ') — fetching it');
+      toBridge({ id: 'w' + Date.now().toString(36), fn: 'apiShell', args: [t], own: function (ok, r) {
+        if (!ok || !r || !r.ok || !writeShell(t, r)) { K.updating = false; return; }
+        K.sh = readShell(t);
+        toApp({ type: 'attendance:update', v: 1 });
+      } });
+    }
+    function swapKept(tab) {
+      var sh = readShell(t), bt = readBoot(t);
+      if (!sh || !bt || K.next) return;
+      var el = keptFrame(sh, bt.boot);
+      K.next = el;
+      K.swapTab = /^(plan|res|grades)$/.test(String(tab || '')) ? tab : '';
+      $('slot').appendChild(el);
+      mark('opening the newer app');
+      // Never painted: keep the one on screen, and do not try this copy again.
+      setTimeout(function () {
+        if (K.next !== el) return;
+        K.next = null;
+        if (el.parentNode) el.parentNode.removeChild(el);
+        markShellBad(sh.build);
+      }, 10000);
+    }
+    function swapDone() {
+      var el = K.next, old = K.frame;
+      K.next = null; K.frame = el; f = el; QS.frame = el; QS.app = el.contentWindow;
+      toApp({ type: 'attendance:cached', v: 1, entries: readTabCache(t) });
+      if (K.swapTab) toApp({ type: 'attendance:tab', v: 1, tab: K.swapTab });
+      el.classList.add('ready');
+      setTimeout(function () { if (old && old.parentNode) old.parentNode.removeChild(old); }, 300);
+      mark('newer app on screen');
+    }
+    function startKept() {
+      var el = keptFrame(K.sh, keptBoot.boot);
+      K.frame = el; f = el; QS.frame = el;
+      $('slot').appendChild(el);
+      QS.app = el.contentWindow;
+      mark('kept app started (' + K.sh.build + ')');
+      startBridge(credOK);
+      // Nothing to wait for forever: calls fail with a reason after this, registers excepted.
+      BR.deadline = setTimeout(function () { if (!BR.up) { BR.down = true; failQueued(); } }, 20000);
+      // A copy that does not paint is dropped for the ordinary way, and not tried again.
+      K.readyTimer = setTimeout(function () {
+        if (QS.ready) return;
+        mark('kept app did not paint — opening the ordinary way');
+        markShellBad(K.sh.build);
+        K.on = false;
+        if (K.frame && K.frame.parentNode) K.frame.parentNode.removeChild(K.frame);
+        if (BR.frame && BR.frame.parentNode) BR.frame.parentNode.removeChild(BR.frame);
+        if (BR.deadline) clearTimeout(BR.deadline);
+        if (BR.timer) clearTimeout(BR.timer);
+        K.frame = null; BR.frame = null; f = null; QS.frame = null; QS.app = null;
+        ordinary();
+      }, 8000);
+    }
+    window.addEventListener('online', function () {
+      if (K.on && !BR.up && BR.down) { BR.down = false; startBridge(credOK && !BR.triedPlain); }
+    });
+
     // Store every snapshot the app sends, for this open and all the ones after.
     window.addEventListener('message', function (e) {
       var m = e && e.data;
-      // Remember which window the app actually speaks from; it is not our iframe.
-      if (e.source && e.source !== window &&
+      // The kept app's line to the server, both ways. Nothing else may use it.
+      if (m && m.v === 1 && (m.type === 'attendance:bridge' || m.type === 'attendance:rpc-done')) {
+        if (!K.on || !e.source || keptWin(e.source)) return;
+        if (m.type === 'attendance:bridge') bridgeUp(e, m); else bridgeDone(e, m);
+        return;
+      }
+      if (m && m.v === 1 && m.type === 'attendance:rpc') { if (K.on && keptWin(e.source)) rpcIn(e, m); return; }
+      // A newer kept app has painted, behind the one on screen: bring it forward.
+      if (m === 'attendance:ready' && K.next && e.source === K.next.contentWindow) { swapDone(); return; }
+      // Remember which window the app actually speaks from; it is not our iframe. Settled
+      // once it says it is ready: after that, nobody else can take its place. The kept
+      // app's window is known from the start, and the bridge must never be taken for it.
+      if (!K.on && !QS.ready && e.source && e.source !== window &&
           (m === 'attendance:ready' || (m && m.v === 1))) QS.app = e.source;
+      if (K.on && e.source && !keptWin(e.source)) return;
       if (m === 'attendance:ready') {
         mark('app painted (attendance:ready)');
+        if (K.readyTimer) { clearTimeout(K.readyTimer); K.readyTimer = null; }
         QS.ready = true;
         // The cached bar lifted the notification bar; if the app has no bar, it never says so.
         if (!QS.tabsHeard) document.documentElement.style.removeProperty('--tabs');
@@ -1305,10 +1634,18 @@
         // A tab tapped on the cached bar: the app opens it before it is shown.
         if (QS.tab && QS.tab !== 'home') toApp({ type: 'attendance:tab', v: 1, tab: QS.tab });
         QS.tab = '';
+        // The ordinary app hands over a copy of itself to keep, when this page has none as
+        // new as it (invariant 41).
+        if (!K.on) { var have = readShell(t); toApp({ type: 'attendance:want-shell', v: 1, have: have ? have.build : '' }); }
         reveal();
         return;
       }
       if (!m || m.v !== 1) return;
+      if (m.type === 'attendance:shell') { if (!K.on && e.source === QS.app) writeShell(t, m); return; }
+      if (m.type === 'attendance:boot') { if (e.source === QS.app) writeBoot(t, m.boot); return; }
+      if (m.type === 'attendance:swap-ok') { if (K.on && e.source === QS.app) swapKept(m.tab); return; }
+      if (m.type === 'attendance:download') { if (e.source === QS.app) { try { saveFile(m.name, m.text); } catch (err) {} } return; }
+      if (m.type === 'attendance:print') { if (e.source === QS.app) { try { printDoc(m.html); } catch (err) {} } return; }
       // The app has booted and is telling us the application server key.
       if (m.type === 'attendance:push-ready') {
         // Whether this person is already reachable on another device, and which "Ask
@@ -1453,20 +1790,25 @@
       mark('iframe requested' + (anon ? ' (cookie-free)' : ''));
     }
 
-    // Hard stop, in case an older build is deployed that doesn't post the message.
-    // This used to be the normal path rather than the exception: the app was posting
-    // to the wrong window, so nothing ever arrived and every open sat here for the
-    // full 12 seconds while the app itself had been ready for nine of them.
-    setTimeout(reveal, 12000);
-    swapFrame(credOK);
+    /* The ordinary way: Apps Script serves the whole app into the frame. The first open on
+       a device, a link asking for another screen, and the fallback when a kept copy fails. */
+    function ordinary() {
+      // Hard stop, in case an older build is deployed that doesn't post the message.
+      // This used to be the normal path rather than the exception: the app was posting
+      // to the wrong window, so nothing ever arrived and every open sat here for the
+      // full 12 seconds while the app itself had been ready for nine of them.
+      setTimeout(reveal, 12000);
+      swapFrame(credOK);
 
-    // never leave a placeholder up forever if something goes wrong
-    setTimeout(function () {
-      if (QS.editing) return;                 // unless they are mid-register
-      f.classList.add('ready');
-      $('shell').classList.add('gone');
-      $('instant').classList.add('gone');
-    }, 15000);
+      // never leave a placeholder up forever if something goes wrong
+      setTimeout(function () {
+        if (QS.editing || !f) return;           // unless they are mid-register
+        f.classList.add('ready');
+        $('shell').classList.add('gone');
+        $('instant').classList.add('gone');
+      }, 15000);
+    }
+    if (K.on) startKept(); else ordinary();
   }
 
   /* ------------------------------------------------------------------ push
@@ -1478,7 +1820,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-18a';
+  var WRAPPER_BUILD = '2026-09-18b';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
