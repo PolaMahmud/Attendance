@@ -539,6 +539,7 @@
   var SNAP  = 'attendance-snap:';     // one entry per token, so a shared device cannot mix people up
   var QUEUE = 'attendance-queue:';    // registers marked before the app was up
   var STU   = 'attendance-stu:';      // a student's own figures, for their next open
+  var TABC  = 'attendance-cache:';    // the other tabs' last answers (plan, gradebook, resources)
   var KEEP_DAYS = 10;
 
   /* How stale a class list may be and still be typed into. The timetable repeats
@@ -555,6 +556,39 @@
   }
   function stored(){ try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
   function keep(t){ try { localStorage.setItem(KEY, t); } catch (e) {} }
+
+  /* ---- the other tabs' copies --------------------------------------------
+     Home is painted from the snapshot below. The Weekly Plan, Gradebook and Resources keep
+     their last answers here instead: the app posts each one as attendance:cache and gets
+     them all back as attendance:cached the moment it is ready, so those tabs draw at once
+     and refresh behind. The app's own frame cannot keep them — it is credentialless, and
+     its storage goes with the page. Per token, like everything else here, and bounded:
+     the oldest answers go first once there are too many or they grow too big. */
+  var TABC_MAX = 40, TABC_BYTES = 1500000;
+  function readTabCache(token){
+    try { var o = JSON.parse(localStorage.getItem(TABC + token) || '{}'); return (o && typeof o === 'object') ? o : {}; }
+    catch (e) { return {}; }
+  }
+  function writeTabCache(token, key, data){
+    if (typeof key !== 'string' || key.length > 80 || !/^[a-z]+:[\w:|.-]*$/i.test(key)) return;
+    var all = readTabCache(token);
+    if (data === null || data === undefined) delete all[key];
+    else all[key] = { data: data, at: Date.now() };
+    var keys = Object.keys(all).sort(function (a, b) { return (all[a].at || 0) - (all[b].at || 0); });
+    while (keys.length > TABC_MAX) delete all[keys.shift()];
+    var text = JSON.stringify(all);
+    while (text.length > TABC_BYTES && keys.length > 1) { delete all[keys.shift()]; text = JSON.stringify(all); }
+    try { localStorage.setItem(TABC + token, text); }
+    catch (e) {
+      // Out of room: keep the newest half and try once more, rather than keep nothing.
+      keys.slice(0, Math.ceil(keys.length / 2)).forEach(function (k) { delete all[k]; });
+      try { localStorage.setItem(TABC + token, JSON.stringify(all)); } catch (e2) {}
+    }
+  }
+
+  /* A notification can ask for a tab: ?tab=grades. It is held like a tab tapped on the
+     cached bar, and handed over when the app is up. */
+  var WANT_TAB = (location.search.match(/[?&]tab=(plan|res|grades)(?:&|$)/) || [])[1] || '';
 
   /* ---- the device-side snapshot ------------------------------------------ */
 
@@ -1125,7 +1159,7 @@
     location.search.replace(/^\?/, '').split('&').forEach(function (kv) {
       if (!kv) return;
       var k = kv.split('=')[0];
-      if (k === 't') return;                       // the code is handled separately
+      if (k === 't' || k === 'tab') return;        // the code, and a tab asked for, are handled here
       extra += '&' + kv;
     });
     return extra;
@@ -1159,6 +1193,7 @@
   function open(t, extra){
     $('ask').style.display = 'none';
     mark('script start');
+    if (WANT_TAB) QS.tab = WANT_TAB;
 
     // Only preview the register when the link is asking for the register. A link
     // carrying view=students or s=P014 wants a different screen entirely.
@@ -1169,6 +1204,14 @@
            : paintStudent(t) ? 'cached student figures painted'
            : 'no cache — skeleton');
       } catch (e) {}
+    }
+
+    if (QS.tab) {
+      var bar0 = $('instantTabs');
+      if (bar0) Array.prototype.forEach.call(bar0.querySelectorAll('.tab'), function (x) {
+        if (x.getAttribute('data-tab') === QS.tab) x.setAttribute('aria-current', 'page');
+        else x.removeAttribute('aria-current');
+      });
     }
 
     var shown = false;
@@ -1257,6 +1300,8 @@
         if (stuckTimer) { clearTimeout(stuckTimer); stuckTimer = null; }
         var sb = $('stuckBar'); if (sb) sb.hidden = true;
         flushQueue();                       // anything marked while it was loading
+        // The other tabs' copies, before any tab is opened, so it can draw from them.
+        toApp({ type: 'attendance:cached', v: 1, entries: readTabCache(t) });
         // A tab tapped on the cached bar: the app opens it before it is shown.
         if (QS.tab && QS.tab !== 'home') toApp({ type: 'attendance:tab', v: 1, tab: QS.tab });
         QS.tab = '';
@@ -1280,6 +1325,10 @@
         QS.tabsHeard = true;
         var th = Math.max(0, Math.min(200, +m.h || 0));
         document.documentElement.style.setProperty('--tabs', th + 'px');
+        return;
+      }
+      if (m.type === 'attendance:cache') {
+        try { writeTabCache(t, m.key, m.data); } catch (err) {}
         return;
       }
       if (m.type === 'attendance:snapshot') {
@@ -1429,7 +1478,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-17b';
+  var WRAPPER_BUILD = '2026-09-18a';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
@@ -1716,6 +1765,22 @@
     if (!key) return;
     try { localStorage.setItem(PUSHKEY + PUSH.token, key); } catch (e) {}
     tellWorker(key);
+  }
+
+  if ('serviceWorker' in navigator && navigator.serviceWorker.addEventListener) {
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      var m = e && e.data;
+      if (!m || m.type !== 'attendance:open-tab' || !/^(plan|res|grades)$/.test(String(m.tab || ''))) return;
+      if (QS.ready) toApp({ type: 'attendance:tab', v: 1, tab: m.tab });
+      else QS.tab = m.tab;
+    });
+  }
+  // The tab has been read; it should not be asked for again on a reload.
+  if (WANT_TAB) {
+    try {
+      var qs = location.search.replace(/^\?/, '').split('&').filter(function (kv) { return kv && kv.split('=')[0] !== 'tab'; });
+      history.replaceState(null, '', location.pathname + (qs.length ? '?' + qs.join('&') : ''));
+    } catch (e) {}
   }
 
   var extra = passthrough();

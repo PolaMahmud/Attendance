@@ -104,11 +104,15 @@ self.addEventListener('push', function (e) {
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();
   var target = (e.notification.data && e.notification.data.open) || './';
+  // A notification can name a tab (?tab=grades for new marks); the page opens it.
+  var tab = (String(target).match(/[?&]tab=(plan|res|grades)(?:&|$)/) || [])[1] || '';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     .then(function (list) {
-      // Focus the app if it is already open rather than opening a second copy of it.
+      // Focus the app if it is already open rather than opening a second copy of it —
+      // and, when the notification is about a tab, ask the open page to go to it.
       for (var i = 0; i < list.length; i++) {
         if (list[i].url.indexOf(self.registration.scope) === 0 && 'focus' in list[i]) {
+          if (tab) try { list[i].postMessage({ type: 'attendance:open-tab', v: 1, tab: tab }); } catch (err) {}
           return list[i].focus();
         }
       }
