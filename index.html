@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#171B22" media="(prefers-color-scheme: dark)">
@@ -34,6 +34,18 @@
   mt.setAttribute('name', 'theme-color');
   mt.setAttribute('content', dark ? '#171B22' : '#FFFFFF');
   document.head.appendChild(mt);
+})();
+</script>
+<script>
+/* iOS Safari ignores user-scalable=no, and a laptop trackpad pinch arrives as
+   ctrl+wheel; either would zoom the app like a web page. Ctrl +/- is left alone
+   for anyone who needs larger text. */
+(function(){
+  function stop(e){ e.preventDefault(); }
+  ['gesturestart','gesturechange','gestureend'].forEach(function(t){
+    document.addEventListener(t, stop, {passive:false});
+  });
+  document.addEventListener('wheel', function(e){ if (e.ctrlKey) e.preventDefault(); }, {passive:false});
 })();
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -134,7 +146,14 @@
      (347 + 26 + 2 = 375 in a 347 track), the code input and the save buttons. */
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);
-    font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+    font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;
+    overscroll-behavior:none}
+  /* No pinch or double-tap zoom, here or through the frame; see App.html. */
+  html,body,*{touch-action:pan-x pan-y}
+  /* Text is not selectable anywhere, as in a native app. Fields must stay selectable
+     or iOS will not let anyone place the cursor, select or paste inside them. */
+  *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
   /* pointer-events is the load-bearing half of this rule, not opacity.
      The frame is fixed at inset:0 above the cached screen, so at opacity:0 it is
      invisible AND still swallows every tap — the cards underneath render correctly,
