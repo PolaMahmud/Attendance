@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#171B22" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F3F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111216" media="(prefers-color-scheme: dark)">
 <title>Attendance</title>
 
 <script>
@@ -32,7 +32,7 @@
   for (var i = old.length - 1; i >= 0; i--) old[i].parentNode.removeChild(old[i]);
   var mt = document.createElement('meta');
   mt.setAttribute('name', 'theme-color');
-  mt.setAttribute('content', dark ? '#171B22' : '#FFFFFF');
+  mt.setAttribute('content', dark ? '#111216' : '#F3F2F7');
   document.head.appendChild(mt);
 })();
 </script>
@@ -82,26 +82,46 @@
      Every token below is copied from App.html. When one moves, both move, or the
      cached cards jump the moment the live app arrives. */
   :root{
-    --bg:#EEF0F4; --surface:#FFFFFF; --surface-2:#F4F6F9; --surface-3:#E8EBF1;
-    --ink:#12151C; --ink-2:#5A6373; --ink-3:#646D7C;
-    --line:#DDE1E9; --line-2:#C6CCD8;
+    --bg:#F3F2F7; --surface:#FFFFFF; --surface-2:#F6F5FA; --surface-3:#ECEBF2;
+    --ink:#1F2330; --ink-2:#6B6F7B; --ink-3:#686C78;
+    --line:#E7E6EE; --line-2:#D4D3DD;
 
-    --accent:#3446C8; --accent-hover:#2A38A8; --accent-ink:#FFFFFF;
-    --accent-soft:#E9ECFB; --accent-line:#C3CBF2;
+    --accent:#1F2330; --accent-hover:#363A48; --accent-ink:#FFFFFF;
+    --accent-soft:#ECEBF2; --accent-line:#D4D3DD;
 
-    --low:#9A5407;  --low-soft:#FDF0DE;  --low-line:#EFD3AC;
-    --full:#A81E17; --full-soft:#FDECEA; --full-line:#F0C4C0;
-    --ok:#0A6B4B;   --ok-soft:#E3F4EC;   --ok-line:#BCE0D2;
+    --low:#8A4B12;  --low-soft:#FBE6CF;  --low-line:#F0CFA8;
+    --full:#9B2F35; --full-soft:#F7DADA; --full-line:#EDBDBD;
+    --ok:#2E6A45;   --ok-soft:#DCEFE2;   --ok-line:#BBDCC6;
 
-    --r-lg:14px; --r-md:10px; --r-sm:8px;
-    --shadow:0 1px 2px rgba(18,21,28,.05);
-    --sheen:rgba(18,21,28,.05);
+    --r-lg:22px; --r-md:14px; --r-sm:10px;
+    --shadow:0 1px 2px rgba(31,35,48,.04),0 4px 14px rgba(31,35,48,.04);
+    --sheen:rgba(31,35,48,.05);
+
+    /* Liquid Glass, as App.html defines it. */
+    --gl-bg:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.28));
+    --gl-blur:blur(9px) saturate(190%) brightness(1.04);
+    --gl-edge:rgba(255,255,255,.8);
+    --gl-shadow:0 10px 30px rgba(31,35,48,.12),0 1px 3px rgba(31,35,48,.06),inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
+    --gl-sm:0 4px 14px rgba(31,35,48,.08),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
+    --gl-bar:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10));
+    --gl-bar-blur:blur(5px) saturate(220%) brightness(1.06);
+    --gl-lens:rgba(255,255,255,.78);
+    --gl-lens-shadow:inset 0 1px 0 #FFFFFF,0 2px 10px rgba(31,35,48,.10);
+    --gl-p:linear-gradient(180deg,rgba(52,56,68,.9),rgba(26,28,36,.95));
+    --gl-p-edge:rgba(255,255,255,.3);
+    --gl-p-shadow:0 8px 22px rgba(20,22,30,.22),inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.25);
+    --gl-p-ink:#FFFFFF;
+
+    /* The subject line-art behind sign-in and the notification screens: faint, so it
+       never competes with the card. This page only. */
+    --art-1:#00B2F0; --art-2:#9B5CFF; --art-3:#FF7A1A; --art-4:#12D466; --art-5:#FF2E8A;
+    --art-o:.24;
 
     /* The shell's own JS writes var(--late) and var(--absent) into the legend
        swatches inline, so those two names have to survive. Declared literally in
        both themes rather than aliased to --low / --full: an alias resolves against
        whichever value wins on :root, which is correct but easy to break silently. */
-    --late:#9A5407; --absent:#A81E17;
+    --late:#8A4B12; --absent:#9B2F35;
 
     /* Subject tones, by option-block slot — the six App.html knows, and not one more.
        Copied rather than derived: this page paints the timetable card on the first
@@ -117,21 +137,38 @@
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   }
   :root[data-theme="dark"]{
-    --bg:#0F1218; --surface:#171B22; --surface-2:#1E232B; --surface-3:#262C36;
-    --ink:#E8EBF1; --ink-2:#9BA5B4; --ink-3:#8791A1;
-    --line:#272D37; --line-2:#39414E;
+    --bg:#111216; --surface:#1D1F25; --surface-2:#24262D; --surface-3:#2E3038;
+    --ink:#ECEDF2; --ink-2:#A3A7B3; --ink-3:#9A9EAA;
+    --line:#2A2C33; --line-2:#3A3D46;
 
-    --accent:#8496FF; --accent-hover:#9EACFF; --accent-ink:#0B0E14;
-    --accent-soft:#1D2440; --accent-line:#333D6B;
+    --accent:#ECEDF2; --accent-hover:#FFFFFF; --accent-ink:#14161C;
+    --accent-soft:#2E3038; --accent-line:#3A3D46;
 
-    --low:#E3AA63;  --low-soft:#2A1F0F;  --low-line:#503C1D;
-    --full:#F58A7E; --full-soft:#2E1815; --full-line:#552822;
-    --ok:#5CC79B;   --ok-soft:#0F2A20;   --ok-line:#1E4B38;
+    --low:#F3C99A;  --low-soft:#3D2E1F;  --low-line:#5A4430;
+    --full:#F0B1B1; --full-soft:#3E2527; --full-line:#5E393B;
+    --ok:#A6DDB8;   --ok-soft:#23362B;   --ok-line:#355440;
 
-    --late:#E3AA63; --absent:#F58A7E;
+    --late:#F3C99A; --absent:#F0B1B1;
 
     --shadow:0 1px 2px rgba(0,0,0,.4);
     --sheen:rgba(255,255,255,.06);
+
+    --gl-bg:linear-gradient(180deg,rgba(44,46,54,.62),rgba(24,25,30,.58));
+    --gl-blur:blur(9px) saturate(170%);
+    --gl-edge:rgba(255,255,255,.09);
+    --gl-shadow:0 14px 34px rgba(0,0,0,.55),inset 0 .5px 0 rgba(255,255,255,.22);
+    --gl-sm:0 4px 14px rgba(0,0,0,.4),inset 0 .5px 0 rgba(255,255,255,.22);
+    --gl-bar:linear-gradient(180deg,rgba(44,46,54,.5),rgba(24,25,30,.46));
+    --gl-bar-blur:blur(6px) saturate(170%);
+    --gl-lens:rgba(255,255,255,.10);
+    --gl-lens-shadow:inset 0 .5px 0 rgba(255,255,255,.18);
+    --gl-p:linear-gradient(180deg,rgba(255,255,255,.95),rgba(228,230,236,.88));
+    --gl-p-edge:rgba(255,255,255,.65);
+    --gl-p-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.1);
+    --gl-p-ink:#14161C;
+
+    --art-1:#45D9FF; --art-2:#B87CFF; --art-3:#FFA03D; --art-4:#55FF8E; --art-5:#FF52A8;
+    --art-o:.26;
 
     --tt-as1:#332E17; --tt-as1-line:#4E4526;
     --tt-as2:#362919; --tt-as2-line:#523E23;
@@ -174,35 +211,36 @@
     bottom:calc(env(safe-area-inset-bottom) + 12px);
     /* ...and above the app's own bottom tabs when it has them; --tabs is their height,
        posted by the app (attendance:tabs). */
-    bottom:max(calc(env(safe-area-inset-bottom) + 12px), calc(var(--tabs, 0px) + 10px));
+    bottom:max(calc(env(safe-area-inset-bottom) + 12px), calc(env(safe-area-inset-bottom) + var(--tabs, 0px) + 10px));
     display:flex;gap:8px;align-items:center;flex-wrap:wrap;
-    background:var(--surface);color:var(--ink);border:1px solid var(--line);
-    border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.35;
-    box-shadow:0 8px 30px rgba(10,12,18,.18)}
+    background:var(--gl-bg);color:var(--ink);border:1px solid var(--gl-edge);
+    border-radius:22px;padding:12px 14px;font-size:13.5px;line-height:1.35;box-shadow:var(--gl-shadow);
+    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
   .notif[hidden]{display:none}
   .notif span{flex:1 1 160px;min-width:0}
-  .notif button{flex:0 0 auto;border:0;border-radius:10px;padding:9px 14px;
-    font:inherit;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;
-    min-height:40px}
-  .notif button.alt{background:transparent;color:var(--ink-2);
-    border:1px solid var(--line);font-weight:500}
+  .notif button{flex:0 0 auto;border:1px solid var(--gl-p-edge);border-radius:99px;padding:9px 16px;
+    font:inherit;font-weight:600;cursor:pointer;background:var(--gl-p);color:var(--gl-p-ink);
+    box-shadow:var(--gl-p-shadow);min-height:40px}
+  .notif button.alt{background:var(--gl-bg);color:var(--ink);
+    border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);font-weight:500}
   .inner{max-width:880px;margin:0 auto}
 
   /* ---- the bottom tabs: a MIRROR of App.html's .tabs block (invariant 35) ----
      Copied rule for rule so the app's bar fades in exactly on top of this one. Tokens
      only, so both themes follow. Change one, change both — tabs.test.js compares them. */
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:28;background:var(--surface);
-    border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-  .tabs-in{max-width:880px;margin:0 auto;display:flex}
-  .tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;
-    padding:7px 4px 8px;font-size:11.5px;font-weight:600;color:var(--ink-3);
-    white-space:nowrap;transition:color .12s ease}
-  .tab .ic{display:grid;place-items:center;width:52px;height:28px;border-radius:99px;
-    transition:background .12s ease}
-  .tab svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;
+  .tabs{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:28;
+    max-width:560px;margin:0 auto;padding:5px;border-radius:99px;background:var(--gl-bar);
+    border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
+    -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
+  .tabs-in{display:flex;gap:2px}
+  .tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;
+    padding:6px 4px 7px;border-radius:99px;font-size:10.5px;font-weight:600;color:var(--ink);
+    white-space:nowrap;transition:background .12s ease,box-shadow .12s ease}
+  .tab .ic{display:grid;place-items:center;width:44px;height:26px;border-radius:99px}
+  .tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;
     stroke-linecap:round;stroke-linejoin:round}
-  .tab[aria-current="page"]{color:var(--ink)}
-  .tab[aria-current="page"] .ic{background:var(--surface-3)}
+  .tab[aria-current="page"]{color:var(--ink);background:var(--gl-lens);box-shadow:var(--gl-lens-shadow)}
+  .tab[aria-current="page"] .ic{background:transparent}
   /* The app's tabs are <button>s, which do not inherit line-height: their labels sit at
      the font's `normal`, so the copy must too (1.5 made it 1px taller).
      And the copy TAKES taps. It used to be pointer-events:none, which did not make it
@@ -210,12 +248,12 @@
      for Gradebook opened a register. A tap here is held and handed to the app when it is up. */
   .ph .tabs{line-height:normal}
   .ph .tab{cursor:pointer;-webkit-tap-highlight-color:transparent}
-  .ph.hastabs{padding-bottom:calc(env(safe-area-inset-bottom) + 96px)}
+  .ph.hastabs{padding-bottom:calc(env(safe-area-inset-bottom) + 100px)}
 
   .sbar{display:flex;align-items:center;gap:10px;padding:10px 0 14px}
   .slogo{font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--ink)}
   .spill{width:74px;height:26px;border-radius:99px;background:var(--surface-3)}
-  .sdot{margin-left:auto;width:26px;height:26px;border-radius:50%;background:var(--surface-3)}
+  .sdot{margin-left:auto;width:38px;height:38px;border-radius:50%;background:var(--surface-3)}
   .sblock{border-radius:var(--r-lg);background:var(--surface-3);
     margin-bottom:9px;overflow:hidden;position:relative}
   .sblock::after{content:"";position:absolute;inset:0;
@@ -348,8 +386,9 @@
   /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
   .name{margin-left:auto;display:flex;align-items:center;gap:8px}
   .name .nm{font-size:13px;font-weight:500;color:var(--ink-2)}
-  .avatar{width:26px;height:26px;border-radius:50%;background:var(--surface-3);color:var(--ink-2);
-    display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--gl-bg);color:var(--ink);
+    border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
+    display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
   .dhead{text-align:center;margin:2px 0 12px}
   .dhead b{display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;line-height:1.3}
   .dhead span{font-size:12.5px;color:var(--ink-2)}
@@ -400,9 +439,9 @@
   .lsn.tap:active{transform:scale(.99)}
   .qbar{display:flex;align-items:center;gap:12px;padding:2px 0 12px}
   .qbar b{font-size:19px;font-weight:700;letter-spacing:-.02em;flex:1;min-width:0}
-  .qback{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
-    width:36px;height:36px;flex:none;cursor:pointer;font-size:17px;line-height:1;color:var(--ink);
-    box-shadow:var(--shadow)}
+  .qback{background:var(--gl-bg);border:1px solid var(--gl-edge);border-radius:50%;
+    width:38px;height:38px;flex:none;cursor:pointer;font-size:17px;line-height:1;color:var(--ink);
+    box-shadow:var(--gl-sm);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
   .qsub{font-size:12.5px;color:var(--ink-2);padding:0 0 12px}
   /* The same tile grid the app uses, and the same P -> A -> L cycle on tap, so the
      register a teacher takes here is the one they already know rather than a second
@@ -412,11 +451,11 @@
   .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px}
   .qtile{position:relative;display:flex;flex-direction:column;justify-content:center;
     text-align:left;background:var(--surface);border:1px solid var(--line);
-    border-radius:var(--r-md);padding:8px 10px 8px 14px;overflow:hidden;box-shadow:var(--shadow);
+    border-radius:var(--r-md);padding:10px 12px;overflow:hidden;box-shadow:var(--shadow);
     cursor:pointer;font-family:inherit;color:var(--ink);
     transition:background .12s ease,border-color .12s ease,transform .08s ease}
   .qtile:active{transform:scale(.98)}
-  .qtile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line-2)}
+  .qtile::before{content:none}
   .qtile .av{display:none}
   .qtile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     font-size:13.5px;line-height:1.3;font-weight:600;letter-spacing:-.01em}
@@ -448,29 +487,66 @@
 
   .qacts{display:flex;gap:9px;margin:14px 0 4px;position:sticky;bottom:0;
     padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
-  .qbtn{flex:1;padding:14px;border:1px solid var(--accent);border-radius:var(--r-md);
-    background:var(--accent);color:var(--accent-ink);font-size:15px;font-weight:600;cursor:pointer;
-    font-family:inherit;box-shadow:var(--shadow);
-    transition:background .12s ease,transform .08s ease}
-  .qbtn:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+  .qbtn{flex:1;padding:14px;border:1px solid var(--gl-p-edge);border-radius:99px;
+    background:var(--gl-p);color:var(--gl-p-ink);font-size:15px;font-weight:600;cursor:pointer;
+    font-family:inherit;box-shadow:var(--gl-p-shadow);
+    transition:filter .12s ease,transform .08s ease}
+  .qbtn:hover{filter:brightness(1.08)}
   .qbtn:active{transform:scale(.985)}
-  .qbtn.alt{background:var(--surface);color:var(--ink);border-color:var(--line-2)}
-  .qbtn.alt:hover{background:var(--surface-2)}
+  .qbtn.alt{background:var(--gl-bg);color:var(--ink);border-color:var(--gl-edge);box-shadow:var(--gl-sm);
+    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
+  .qbtn.alt:hover{filter:none;opacity:.88}
   .qnote{font-size:12px;color:var(--ink-2);text-align:center;padding:8px 0 0}
 
-  /* ---- first-ever open: ask for the code ---- */
-  .ask{position:fixed;inset:0;z-index:3;display:grid;place-items:center;padding:24px}
-  .box{width:100%;max-width:320px;text-align:center}
-  .box h1{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px;color:var(--ink)}
-  .box p{font-size:13.5px;color:var(--ink-2);margin:0 0 18px;line-height:1.5}
-  .box input{width:100%;-webkit-appearance:none;appearance:none;padding:13px;
-    border:1px solid var(--line);border-radius:var(--r-md);font-size:16px;font-family:inherit;
-    text-align:center;letter-spacing:.05em;background:var(--surface);color:var(--ink)}
-  .box input:focus{border-color:var(--line-2);outline:2px solid var(--accent);outline-offset:2px}
-  .box button{width:100%;margin-top:10px;padding:14px;border:1px solid var(--accent);
-    border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-size:15px;
-    font-weight:600;cursor:pointer;font-family:inherit;box-shadow:var(--shadow)}
-  .box button:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+  /* ---- sign-in (first open, or after Sign out) and the notification gate ----
+     One glass card over the six subjects drawn faintly behind it. */
+  .ask,.gate{position:fixed;inset:0;display:grid;place-items:center;padding:24px 16px;
+    overflow-y:auto;background:var(--bg)}
+  .ask{z-index:3}
+  .gate{z-index:20}
+  .gate[hidden]{display:none}
+  /* The drawing lives in a <symbol>, and selectors cannot reach into a <use>'s copy of it,
+     so its colours are inline var()s, which do inherit through. */
+  .art{position:fixed;inset:0;width:100%;height:100%;opacity:var(--art-o);pointer-events:none}
+  .box{position:relative;width:100%;max-width:380px;text-align:left;padding:26px 22px 20px;
+    border-radius:32px;background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
+    -webkit-backdrop-filter:blur(18px) saturate(190%);backdrop-filter:blur(18px) saturate(190%)}
+  .gtile{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;margin-bottom:16px;
+    background:var(--surface-3);color:var(--ink);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm)}
+  .gtile.warn{background:var(--low-soft);color:var(--low)}
+  .gtile svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .box .kicker{font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 2px}
+  .box h1{font-size:28px;line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0 0 6px;color:var(--ink)}
+  .box p{font-size:15px;color:var(--ink-2);margin:0 0 16px;line-height:1.45}
+  .box label{display:block;font-size:13px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+  .box input{width:100%;-webkit-appearance:none;appearance:none;padding:14px 18px;
+    border:1px solid var(--gl-edge);border-radius:99px;font-size:16px;font-family:inherit;
+    background:var(--gl-bg);color:var(--ink);box-shadow:var(--gl-sm),inset 0 2px 6px rgba(0,0,0,.06)}
+  .box input:focus{outline:2px solid var(--accent);outline-offset:2px}
+  .box .go{width:100%;margin-top:12px;padding:15px;border:1px solid var(--gl-p-edge);
+    border-radius:99px;background:var(--gl-p);color:var(--gl-p-ink);font-size:16px;
+    font-weight:600;cursor:pointer;font-family:inherit;box-shadow:var(--gl-p-shadow)}
+  .box .go:hover{filter:brightness(1.08)}
+  .box .go[hidden]{display:none}
+  .box .foot{font-size:13px;color:var(--ink-2);text-align:center;margin:14px 0 0}
+  .box .err{font-size:13px;color:var(--full);margin:8px 2px 0}
+  .box .err:empty{display:none}
+  .okpill{position:fixed;top:calc(env(safe-area-inset-top) + 18px);left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:99px;font-size:13px;font-weight:600;
+    white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;color:var(--ink);
+    background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
+    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);z-index:4}
+  .okpill[hidden]{display:none}
+  .steps{list-style:none;margin:0 0 4px;padding:0;display:flex;flex-direction:column;gap:8px}
+  .steps:empty{display:none}
+  .steps li{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:22px;font-size:15px;
+    background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm)}
+  .steps li b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+    font-size:14px;background:var(--surface-3);color:var(--ink)}
+  .gfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;
+    font-size:13px;color:var(--ink-2)}
+  .gfoot button{border:1px solid var(--gl-edge);background:var(--gl-bg);color:var(--ink);font:inherit;
+    font-weight:600;border-radius:99px;padding:7px 14px;cursor:pointer;box-shadow:var(--gl-sm)}
 
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
   @media (prefers-reduced-motion:reduce){
@@ -493,13 +569,56 @@
   is looking at their real timetable while Apps Script is still starting up. The
   snapshot holds no student names and no marks — only the lesson grid.
 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- The six subjects, drawn once and used behind sign-in and the notification gate. -->
+  <symbol id="art" viewBox="0 0 390 844">
+    <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <g style="stroke:var(--art-1)" transform="translate(318 118) rotate(-12)"><ellipse rx="52" ry="18"/><ellipse rx="52" ry="18" transform="rotate(60)"/><ellipse rx="52" ry="18" transform="rotate(120)"/><circle r="7" style="fill:var(--art-1)"/></g>
+      <text style="fill:var(--art-2)" x="34" y="128" font-family="Georgia,'Times New Roman',serif" font-size="92" font-style="italic" stroke="none">&#960;</text>
+      <g style="stroke:var(--art-4)" transform="translate(26 300)"><path d="M0 0C40 30 40 60 0 90S-40 150 0 180S40 240 0 270"/><path d="M40 0C0 30 0 60 40 90S80 150 40 180S0 240 40 270"/><path d="M10 22h22M14 68h14M10 112h22M6 158h28M12 202h18M8 248h24"/></g>
+      <g style="stroke:var(--art-3)" transform="translate(330 470)"><path d="M0-40L34.6-20V20L0 40L-34.6 20V-20Z"/><circle r="20"/></g>
+      <g style="stroke:var(--art-1)" transform="translate(205 412)"><rect x="-26" y="-26" width="52" height="52" rx="8"/><rect x="-11" y="-11" width="22" height="22" rx="3"/><path d="M-14-26v-10M0-26v-10M14-26v-10M-14 26v10M0 26v10M14 26v10M-26-14h-10M-26 0h-10M-26 14h-10M26-14h10M26 0h10M26 14h10"/></g>
+      <g style="stroke:var(--art-5)" transform="translate(150 520)"><path d="M0 0v56M-9 46l9 12 9-12"/></g>
+      <path style="stroke:var(--art-2)" d="M146 640q18-30 36 0t36 0t36 0"/>
+      <g style="stroke:var(--art-3)" transform="translate(66 640)"><path d="M-12-50h24M-8-50v34L-40 40h80L8-16v-34"/><path d="M-28 18h56"/><circle cx="-6" cy="28" r="4"/><circle cx="10" cy="30" r="3"/></g>
+      <path style="stroke:var(--art-5)" d="M290 618l-22 18 22 18M330 618l22 18-22 18M318 610l-14 52"/>
+      <g style="stroke:var(--art-1)" transform="translate(72 772)"><path d="M0-20C-14-28-34-28-48-22V24C-34 18-14 18 0 26C14 18 34 18 48 24V-22C34-28 14-28 0-20ZM0-20V26"/><path d="M-38-10C-28-13-18-13-10-9M-38 2C-28-1-18-1-10 3M10-9C18-13 28-13 38-10M10 3C18-1 28-1 38 2"/></g>
+      <text style="stroke:var(--art-2)" x="150" y="800" font-family="Georgia,'Times New Roman',serif" font-size="76" fill="none">&#8721;</text>
+      <g style="stroke:var(--art-4)" transform="translate(300 780)"><ellipse rx="46" ry="34"/><circle cx="8" cy="-4" r="12"/><circle cx="-22" cy="12" r="3"/><circle cx="22" cy="18" r="2.5"/></g>
+    </g>
+  </symbol>
+</svg>
 <div class="ask" id="ask" style="display:none">
-  <div class="box">
-    <h1>Attendance</h1>
-    <p>Enter the code from your attendance link.</p>
-    <input id="code" type="text" inputmode="latin" autocomplete="off" spellcheck="false" placeholder="your code">
-    <button id="go">Open my register</button>
-  </div>
+  <svg class="art" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><use href="#art"/></svg>
+  <div class="okpill" id="signedOut" role="status" hidden></div>
+  <form class="box" id="askForm" action="#" novalidate>
+    <div class="gtile" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2.5v3M16 2.5v3"/><path d="M8.5 13l2.5 2.5 4.5-5"/></svg></div>
+    <h1>Sign in</h1>
+    <p>Paste the attendance link the school sent you, or just the code at the end of it.</p>
+    <label for="code">Link or code</label>
+    <input id="code" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://&#8230;?t=  or  a1b2c3d4e5">
+    <p class="err" id="codeErr" role="alert"></p>
+    <button class="go" id="go" type="submit">Continue</button>
+    <p class="foot">Lost your link? Ask the office to resend it.</p>
+  </form>
+</div>
+
+<!-- Notifications are required (the school's choice). Until this device can receive them,
+     this covers the app and says the one thing that will fix it. Four cases, and none of
+     them is a dead end: ask (one tap), an iPhone that must add the app to its Home Screen
+     first, a device that said no before (only its settings can undo that), and a browser
+     with no push at all — usually a link opened inside another app. Sign out is always
+     here, so a shared phone is never stuck on someone else's screen. -->
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle" hidden>
+  <svg class="art" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><use href="#art"/></svg>
+  <section class="box">
+    <div class="gtile" id="gateIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+    <h1 id="gateTitle"></h1>
+    <p id="gateBody"></p>
+    <ol class="steps" id="gateSteps"></ol>
+    <button class="go" id="gateGo" type="button" hidden></button>
+    <div class="gfoot"><span id="gateWho"></span><button type="button" id="gateOut">Sign out</button></div>
+  </section>
 </div>
 
 <div class="ph" id="shell" aria-hidden="true">
@@ -1671,11 +1790,14 @@
         // everyone again" round the office is on — see pushReady for both.
         PUSH.reachable = !!m.reachable;
         PUSH.round = m.round;
+        PUSH.name = String(m.name || '');
         try { pushReady(m.vapid, t); } catch (err) {}
         return;
       }
       // ...and has just written a subscription to the sheet.
       if (m.type === 'attendance:push-registered') { try { pushRegistered(m.key); } catch (err) {} return; }
+      // Sign out, from the account menu. Only the app itself may ask.
+      if (m.type === 'attendance:signout') { if (K.on || e.source === QS.app) signOut(m.name); return; }
       // The app's tab bar came or went; keep the notification bar clear of it.
       if (m.type === 'attendance:tabs') {
         QS.tabsHeard = true;
@@ -1706,7 +1828,7 @@
           document.documentElement.setAttribute('data-theme', m.theme);
           // ...and the status bar with it, or the toggle leaves a white strip behind.
           var mc = document.querySelector('meta[name="theme-color"]');
-          if (mc) mc.setAttribute('content', m.theme === 'dark' ? '#171B22' : '#FFFFFF');
+          if (mc) mc.setAttribute('content', m.theme === 'dark' ? '#111216' : '#F3F2F7');
         }
         return;
       }
@@ -1839,7 +1961,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-09-18b';
+  var WRAPPER_BUILD = '2026-10-15a';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
@@ -1994,7 +2116,71 @@
     bar.hidden = false;
   }
 
+  /* ---- the notification gate ----
+     Notifications are required. gate(kind) covers the app until this device can receive
+     them; the server's reachable flag (pushOn) lets a second device through once the
+     person is reachable on another — they have enabled notifications, just not here. */
+  var GATE = {
+    ask: { title: 'Turn on notifications', go: 'Turn on notifications',
+      body: 'The app tells you when a register is due and when weekly plans are out. ' +
+            'It needs notifications on before you can continue.', steps: [] },
+    install: { title: 'Add the app to your Home Screen', go: '',
+      body: 'On iPhone, notifications only work once the app is on your Home Screen. ' +
+            'It takes three taps, then you can turn them on.',
+      steps: ['Tap the Share button in Safari', 'Choose \u201cAdd to Home Screen\u201d', 'Open the app from its new icon'] },
+    blocked: { title: 'Notifications are blocked', go: 'I\u2019ve turned them on', warn: true,
+      body: 'They were turned off for this app earlier, so it cannot ask again. ' +
+            'Turn them back on in your settings, then come back.',
+      steps: ['Open Settings, then Notifications', 'Find Attendance (or this browser)', 'Turn on Allow Notifications'] },
+    unsupported: { title: 'Open this in Safari or Chrome', go: 'Copy my link',
+      body: 'This browser cannot show notifications. Most often that is because the link ' +
+            'was opened inside another app, like WhatsApp or Instagram.',
+      steps: ['Tap the \u22ef or Share button', 'Choose \u201cOpen in Safari\u201d or \u201cOpen in Chrome\u201d',
+              'On an older iPhone, update to iOS 16.4 or later'] }
+  };
+  function gate(kind) {
+    var g = GATE[kind], box = $('gate');
+    if (!g || !box) return;
+    $('gateTitle').textContent = g.title;
+    $('gateBody').textContent = g.body;
+    $('gateSteps').innerHTML = g.steps.map(function (x, i) {
+      return '<li><b>' + (i + 1) + '</b><span>' + esc(x) + '</span></li>';
+    }).join('');
+    $('gateIcon').className = 'gtile' + (g.warn ? ' warn' : '');
+    $('gateWho').textContent = PUSH.name ? 'Signed in as ' + PUSH.name : '';
+    var go = $('gateGo');
+    go.hidden = !g.go;
+    go.textContent = g.go;
+    go.onclick = kind === 'ask' ? function () {
+      // Straight from the tap: the permission prompt needs that user activation.
+      Notification.requestPermission().then(function (p) {
+        if (p === 'granted') { ungate(); subscribeAndRegister(); }
+        else if (p === 'denied') gate('blocked');
+      });
+    } : kind === 'blocked' ? function () { location.reload(); }
+      : kind === 'unsupported' ? function () {
+        var link = location.origin + location.pathname + '?t=' + encodeURIComponent(PUSH.token || stored());
+        var done = function () { go.textContent = 'Link copied'; };
+        try { navigator.clipboard.writeText(link).then(done, function () { window.prompt('Copy your link:', link); }); }
+        catch (e) { window.prompt('Copy your link:', link); }
+      } : null;
+    $('gateOut').onclick = function () { signOut(PUSH.name); };
+    box.hidden = false;
+    mark('notification gate: ' + kind);
+  }
+  function ungate() { var box = $('gate'); if (box) box.hidden = true; }
+
   function pushReady(vapid, token) {
+    PUSH.token = token || '';
+    /* Which of the four the device is in. An iPhone browser tab first: it has no Push API
+       until the app is installed, so it would otherwise look like an unsupported browser. */
+    var iOSdev = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                     navigator.standalone === true;
+    var noPush = !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window);
+    if (noPush && !PUSH.reachable) {
+      if (iOSdev && !standalone) gate('install'); else gate('unsupported');
+    }
     if (!('serviceWorker' in navigator)) {
       return pushWhyNot('This browser cannot show notifications (no service worker support).');
     }
@@ -2044,24 +2230,9 @@
     var installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
                     navigator.standalone === true;
     if (iOS && !installed) {
-      /* Not silent, and not a dead button either. Apple grants the Push API only to an
-         installed app, so "Turn on" here could not work — but installing is the single
-         step that makes it work, the teacher cannot possibly guess it, and they are
-         holding the app open right now. Telling them IS the feature. "Got it" holds until
-         the next round, exactly like "Not now": an iPhone in a browser tab is the one
-         device that can never be reached, so it is the one most worth reminding. */
-      if (elsewhere || snoozed('ios-told')) return;
-      var ib = $('notifBar');
-      if (!ib) return;
-      $('notifText').textContent = 'To get reminders on an iPhone, add this to your Home ' +
-        'Screen first: tap Share, then "Add to Home Screen". Then open it from the icon.';
-      $('notifYes').hidden = true;
-      $('notifNo').textContent = 'Got it';
-      $('notifNo').onclick = function () {
-        ib.hidden = true;
-        snooze('ios-told');
-      };
-      ib.hidden = false;
+      /* Apple grants the Push API only to an installed app, so asking here could not work.
+         Installing is the single step that makes it work: the gate says how. */
+      if (!elsewhere) gate('install');
       return;
     }
 
@@ -2092,29 +2263,12 @@
         return;
       }
       if (Notification.permission === 'denied') {
+        if (!elsewhere) gate('blocked');
         return pushWhyNot('Notifications are blocked for this app in your device settings. ' +
           'Turn them back on there — a web page is not allowed to ask again.');
       }
-      // ?notify=1 still offers it on demand, and clears today's snooze so it stays offered.
-      if (diag) {
-        try { localStorage.removeItem(PUSHKEY + 'declined'); } catch (e) {}
-      }
-      if (elsewhere || snoozed('declined')) return;
-
-      var bar = $('notifBar');
-      if (!bar) return;
-      bar.hidden = false;
-      $('notifNo').onclick = function () {
-        bar.hidden = true;
-        snooze('declined');
-      };
-      $('notifYes').onclick = function () {
-        // Straight from the tap. The permission prompt needs that user activation.
-        Notification.requestPermission().then(function (p) {
-          bar.hidden = true;
-          if (p === 'granted') subscribeAndRegister();
-        });
-      };
+      // Not asked yet (or the prompt was dismissed): required, so the gate asks.
+      if (!elsewhere) gate('ask');
     }).catch(function (err) {
       pushWhyNot('The notification helper (sw.js) did not load: ' + (err && err.message || err) +
         '. It must sit on the website beside index.html — open /sw.js in a browser to check.');
@@ -2144,6 +2298,34 @@
     } catch (e) {}
   }
 
+  /* Sign out: forget this person on this device, stop this device's notifications for
+     them, and come back to the sign-in screen. Registers still waiting to be sent stay
+     queued under their code, and go the next time that person signs in here. */
+  function signOut(name) {
+    var tk = stored();
+    try { sessionStorage.setItem('attendance-signedout', String(name || '').slice(0, 80) || '1'); } catch (e) {}
+    try {
+      [SNAP, STU, TABC, SHELLS, BOOTS, PUSHKEY].forEach(function (p) { localStorage.removeItem(p + tk); });
+      localStorage.removeItem(KEY);
+    } catch (e) {}
+    var go = function () { location.replace(location.pathname); };
+    try {
+      if (!('serviceWorker' in navigator)) return go();
+      navigator.serviceWorker.getRegistration()
+        .then(function (r) { return r && r.pushManager ? r.pushManager.getSubscription() : null; })
+        .then(function (sub) { return sub ? sub.unsubscribe() : null; })
+        .then(go, go);
+      setTimeout(go, 1500);                 // never wait on a push service to leave
+    } catch (e) { go(); }
+  }
+  /* A whole link or just its code: take the t= out of a link, and trim either. */
+  function codeFrom(v) {
+    v = String(v || '').trim();
+    var m = v.match(/[?&#]t=([^&#\s]+)/);
+    if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
+    return /^[A-Za-z0-9_-]{6,}$/.test(v) ? v : '';
+  }
+
   var extra = passthrough();
   var fromLink = (location.search.match(/[?&]t=([^&]+)/) || [])[1] || '';
   if (fromLink) {
@@ -2157,13 +2339,23 @@
   } else {
     $('shell').classList.add('gone');
     $('ask').style.display = 'grid';
-    $('go').addEventListener('click', function () {
-      var v = $('code').value.trim();
-      if (!v) return;
+    var was = '';
+    try { was = sessionStorage.getItem('attendance-signedout') || ''; sessionStorage.removeItem('attendance-signedout'); } catch (e) {}
+    if (was) {
+      $('signedOut').textContent = '\u2713  ' + (was === '1' ? 'Signed out' : 'Signed out of ' + was);
+      $('signedOut').hidden = false;
+    }
+    $('askForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = codeFrom($('code').value);
+      if (!v) {
+        $('codeErr').textContent = $('code').value.trim()
+          ? 'That does not look like an attendance link or code.' : 'Paste your link or code first.';
+        return;
+      }
+      $('codeErr').textContent = '';
+      $('signedOut').hidden = true;
       keep(v); open(v, extra);
-    });
-    $('code').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') $('go').click();
     });
   }
 })();
