@@ -1740,6 +1740,9 @@
       K.next = null; K.frame = el; f = el; QS.frame = el; QS.app = el.contentWindow;
       toApp({ type: 'attendance:cached', v: 1, entries: readTabCache(t) });
       if (K.swapTab) toApp({ type: 'attendance:tab', v: 1, tab: K.swapTab });
+      // Everything the first copy was told on its attendance:ready, this one needs too:
+      // without it, the Manage button opened a tab of its own (and Google's error page).
+      toApp({ type: 'attendance:host', v: 1, exec: WEBAPP_URL, admin: true });
       el.classList.add('ready');
       setTimeout(function () { if (old && old.parentNode) old.parentNode.removeChild(old); }, 300);
       mark('newer app on screen');
@@ -2004,7 +2007,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-10-16b';
+  var WRAPPER_BUILD = '2026-10-16c';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
