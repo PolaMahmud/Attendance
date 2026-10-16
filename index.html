@@ -432,6 +432,37 @@
   .chip.wait{background:var(--surface-2);border-color:var(--line);color:var(--ink-3)}
   .chip.queued{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 
+
+  /* ---- the cached Home, laid out as the app's (Liquid Glass layout in App.html) ----
+     Header controls float with no strip; the day is a large title; then now, the day's
+     registers as one inset list, and the timetable last. The clock card is not drawn. */
+  #instantInner{display:flex;flex-direction:column}
+  #instantInner>.sbar{order:0;padding:0 2px 6px}
+  #instantInner>.sbar .slogo{visibility:hidden;flex:1}
+  #instantInner>.dhead{order:1}
+  #instantInner>.ttwhenwrap{display:none}
+  #instantInner>.ttnow,#instantInner>.note{order:2}
+  #instantInner>.dsum{order:3}
+  #instantInner>.lessons,#instantInner>.sblock.hlsn,#instantInner>.nolsn{order:4}
+  #instantInner>.tt,#instantInner>.htt{order:5;margin-top:22px}
+  .dhead{text-align:left;margin:4px 4px 18px}
+  .dhead .eye{display:block;font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:2px}
+  .dhead b{font-size:34px;line-height:1.2;letter-spacing:.2px;padding-bottom:2px}
+  .dhead span{font-size:17px}
+  .dsum{font-size:22px;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin:22px 4px 10px}
+  #instantInner .lessons{grid-template-columns:1fr;gap:0;background:var(--surface);border-radius:var(--r-lg);
+    overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+  #instantInner .lsn{border:0;border-radius:0;box-shadow:none;background:transparent;min-height:68px;padding:11px 16px}
+  #instantInner .lsn:not(:first-child){background:linear-gradient(var(--line),var(--line)) 68px 0/calc(100% - 68px) 1px no-repeat}
+  .lsn .per{width:40px;height:40px;border:0;border-radius:12px}
+  .lsn .per b{font-size:17px}
+  .lsn .per span{display:none}
+  .lsn .mid .t{font-size:17px;font-weight:500}
+  .lsn .mid .s{font-size:14px}
+  .lsn[data-tone="as1"] .per{background:var(--tt-as1)} .lsn[data-tone="as2"] .per{background:var(--tt-as2)}
+  .lsn[data-tone="as3"] .per{background:var(--tt-as3)} .lsn[data-tone="a21"] .per{background:var(--tt-a21)}
+  .lsn[data-tone="a22"] .per{background:var(--tt-a22)} .lsn[data-tone="a23"] .per{background:var(--tt-a23)}
+
   /* ---- taking a register before the app is up ---- */
   .lsn.tap{pointer-events:auto;cursor:pointer;text-align:left;
     transition:border-color .12s ease,background .12s ease,transform .08s ease}
@@ -1209,6 +1240,7 @@
     var tap = markable(l, fresh);
     return '<' + (tap ? 'button type="button"' : 'div') +
       ' class="lsn' + (l.leave && !l.taken ? ' leave' : '') + (tap ? ' tap' : '') + '"' +
+      (l.tone ? ' data-tone="' + esc(l.tone) + '"' : '') +
       (tap ? ' data-i="' + i + '"' : '') + '>' +
       '<div class="per"><b>' + esc(l.period) + '</b><span>Per</span></div>' +
       '<div class="mid"><div class="t">' + esc(l.label) + '</div>' +
@@ -1282,13 +1314,13 @@
       // The week, drawn from the app's own copy of it; a plain held-open gap when
       // there is no copy to draw.
       ttHtml +
-      '<div class="dhead"><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
+      '<div class="dhead"><i class="eye">' + esc(s.meta.school || '') + '</i><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
         esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
       // The card above says it when there is one; the pill is only for the bare gap.
       (ttHtml.indexOf('ttnow') === -1 ? '<div class="note"><span class="spin"></span>' + esc(hint) + '</div>' : '');
 
     if (lessons.length) {
-      html += '<div class="lessons">' +
+      html += '<div class="dsum">Registers</div><div class="lessons">' +
         lessons.map(function (l, i) {
           return card(l, admin, live, i, fresh, !!queuedFor(token, l, iso));
         }).join('') +
@@ -1775,6 +1807,9 @@
         // The ordinary app hands over a copy of itself to keep, when this page has none as
         // new as it (invariant 41).
         if (!K.on) { var have = readShell(t); toApp({ type: 'attendance:want-shell', v: 1, have: have ? have.build : '' }); }
+        // The address that really serves the app, for its admin dashboard link: the
+        // server's own idea of it comes from a setting that can go stale.
+        toApp({ type: 'attendance:host', v: 1, exec: WEBAPP_URL, admin: true });
         reveal();
         return;
       }
@@ -1798,6 +1833,14 @@
       if (m.type === 'attendance:push-registered') { try { pushRegistered(m.key); } catch (err) {} return; }
       // Sign out, from the account menu. Only the app itself may ask.
       if (m.type === 'attendance:signout') { if (K.on || e.source === QS.app) signOut(m.name); return; }
+      // The Manage button: the dashboard, in this page's own frame (see openAdmin).
+      if (m.type === 'attendance:open-admin') {
+        if (K.on || e.source === QS.app) {
+          try { sessionStorage.setItem('attendance-admin-from', '1'); } catch (err) {}
+          location.assign(location.pathname + '?admin=1');
+        }
+        return;
+      }
       // The app's tab bar came or went; keep the notification bar clear of it.
       if (m.type === 'attendance:tabs') {
         QS.tabsHeard = true;
@@ -1961,7 +2004,7 @@
      holds on to its start page hard, so "I uploaded it and nothing changed" is usually
      a cached copy — and there was no way to tell that from a real fault. ?notify=1
      prints this. */
-  var WRAPPER_BUILD = '2026-10-15a';
+  var WRAPPER_BUILD = '2026-10-16b';
   var PUSHKEY = 'attendance-push:';
   var PUSH = { reg: null, vapid: '', token: '' };
 
@@ -2324,6 +2367,35 @@
     var m = v.match(/[?&#]t=([^&#\s]+)/);
     if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
     return /^[A-Za-z0-9_-]{6,}$/.test(v) ? v : '';
+  }
+
+  /* The admin dashboard (invariant 44). Opened in a tab of its own it meets the same
+     multi-account bug the app does ("Sorry, unable to open the file at this time"), so
+     it gets the app's cure: this page's frame, cookie-free where the browser can. The
+     token stays on this device; ?admin=1 says only which page to show. */
+  function openAdmin(t) {
+    $('ask').style.display = 'none';
+    $('shell').classList.add('gone');
+    document.title = 'Admin';
+    var el = document.createElement('iframe');
+    el.id = 'admin';
+    el.title = 'Admin dashboard';
+    el.setAttribute('allow', 'clipboard-write');
+    try { if ('credentialless' in HTMLIFrameElement.prototype) el.credentialless = true; } catch (e) {}
+    el.className = 'ready';
+    el.src = WEBAPP_URL + '?admin=1&in=1&t=' + encodeURIComponent(t);
+    document.body.appendChild(el);
+    window.addEventListener('message', function (e) {
+      var m = e && e.data;
+      if (!m || m.v !== 1 || m.type !== 'attendance:admin-back') return;
+      var from = '';
+      try { from = sessionStorage.getItem('attendance-admin-from') || ''; sessionStorage.removeItem('attendance-admin-from'); } catch (err) {}
+      if (from && history.length > 1) history.back(); else location.replace(location.pathname);
+    });
+  }
+  if (/[?&]admin=1(?:&|$)/.test(location.search) && !/[?&]t=/.test(location.search) && stored()) {
+    openAdmin(stored());
+    return;
   }
 
   var extra = passthrough();
