@@ -2,6 +2,91 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>
+/* KS5 attendance — backend switch (step 2 of db-migration/PLAN.md, "Rollout").
+ *
+ * Paste this, inside <script>…<\/script>, as the FIRST thing in <head> of index.html (the Apps Script
+ * app, side "old"), and of the new app's page at ./v2/ (side "new") with SIDE changed to 'new'.
+ * Inline, not <script src>: a separate file would add a network round trip before the first paint.
+ *
+ * Who goes where is decided by backend.json next to index.html:
+ *   { "newUrl": "",  "default": "old", "testers": [] }
+ *   newUrl   the new app's address, relative to index.html (e.g. "v2/"). Blank = everyone stays on
+ *            Apps Script whatever else is set, which is how it ships.
+ *   default  "old" or "new": where everyone not listed goes.
+ *   testers  first 12 hex characters of SHA-256(token) for people who go to the new app early.
+ *            Hashes, not tokens: backend.json is public and a token is a login.
+ *            Make one with:  printf %s 'THEIR_TOKEN' | sha256sum | cut -c1-12
+ *
+ * A link can override it for that device:  ?backend=new  ?backend=old  ?backend=auto (clear).
+ *
+ * The decision is made from what this device stored last time, so the page never waits on the
+ * network. backend.json is then fetched in the background and the stored decision updated; it
+ * takes effect on the next open. Both sides run this, so a flip back to "old" is honoured even by
+ * someone who is sitting in the new app: it sends them back on their next open.
+ */
+(function () {
+  'use strict';
+  var SIDE = 'old';                              // 'new' on the new app's page
+  var HOME = SIDE === 'old' ? './' : '../';      // where index.html and backend.json live, from this page
+  var LS = 'attendance-backend', OVR = 'attendance-backend-override', CODE = 'attendance-code';
+
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+
+  /* Pure: which side a person belongs on. Exported for the tests. */
+  function decide(cfg, tokenHash, override) {
+    if (!cfg || !cfg.newUrl) return 'old';                              // nothing to switch to
+    if (override === 'new' || override === 'old') return override;
+    if (tokenHash && (cfg.testers || []).indexOf(tokenHash) !== -1) return 'new';
+    return cfg['default'] === 'new' ? 'new' : 'old';
+  }
+
+  function hash12(s) {
+    if (!s || !window.crypto || !crypto.subtle || !window.TextEncoder) return Promise.resolve('');
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function (b) {
+      return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('').slice(0, 12);
+    }, function () { return ''; });
+  }
+
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { decide: decide }; return; }
+
+  var q = new URLSearchParams(location.search), o = q.get('backend');
+  if (o === 'new' || o === 'old') set(OVR, o);
+  if (o === 'auto') set(OVR, null);
+  if (o) {                                       // tidy the address bar; keep ?t= for the app to pick up
+    q['delete']('backend');
+    var rest = q.toString();
+    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) {}
+  }
+
+  function go(side, cfg) {
+    if (side === SIDE) return false;
+    var url = side === 'new' ? HOME + cfg.newUrl : HOME;
+    location.replace(url + location.search + location.hash);
+    return true;
+  }
+
+  // Decide now, from what this device knew last time.
+  var known = null;
+  try { known = JSON.parse(get(LS) || 'null'); } catch (e) {}
+  if (known && known.cfg) {
+    var side = o === 'new' || o === 'old' ? decide(known.cfg, known.h, o) : decide(known.cfg, known.h, get(OVR));
+    if (go(side, known.cfg)) return;
+  }
+
+  // Refresh in the background for next time. Never redirects mid-session, except for an explicit ?backend=.
+  var token = get(CODE) || q.get('t') || '';
+  fetch(HOME + 'backend.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (cfg) {
+      if (!cfg) return;
+      return hash12(token).then(function (h) {
+        set(LS, JSON.stringify({ cfg: cfg, h: h, at: Date.now() }));
+        if (o === 'new' || o === 'old') go(decide(cfg, h, o), cfg);
+      });
+    })['catch'](function () {});
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3F2F7" media="(prefers-color-scheme: light)">
