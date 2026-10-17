@@ -1843,6 +1843,8 @@
       if (m.type === 'attendance:open-admin') {
         if (K.on || e.source === QS.app) {
           try { sessionStorage.setItem('attendance-admin-from', '1'); } catch (err) {}
+          // The theme on screen, so the dashboard opens in it (openAdmin puts it on the URL).
+          if (m.theme === 'dark' || m.theme === 'light') { try { localStorage.setItem('attendance-theme', m.theme); } catch (err) {} }
           location.assign(location.pathname + '?admin=1');
         }
         return;
