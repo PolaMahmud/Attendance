@@ -2,6 +2,91 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>
+/* KS5 attendance — backend switch (step 2 of db-migration/PLAN.md, "Rollout").
+ *
+ * Paste this, inside <script>…<\/script>, as the FIRST thing in <head> of index.html (the Apps Script
+ * app, side "old"), and of the new app's page at ./v2/ (side "new") with SIDE changed to 'new'.
+ * Inline, not <script src>: a separate file would add a network round trip before the first paint.
+ *
+ * Who goes where is decided by backend.json next to index.html:
+ *   { "newUrl": "",  "default": "old", "testers": [] }
+ *   newUrl   the new app's address, relative to index.html (e.g. "v2/"). Blank = everyone stays on
+ *            Apps Script whatever else is set, which is how it ships.
+ *   default  "old" or "new": where everyone not listed goes.
+ *   testers  first 12 hex characters of SHA-256(token) for people who go to the new app early.
+ *            Hashes, not tokens: backend.json is public and a token is a login.
+ *            Make one with:  printf %s 'THEIR_TOKEN' | sha256sum | cut -c1-12
+ *
+ * A link can override it for that device:  ?backend=new  ?backend=old  ?backend=auto (clear).
+ *
+ * The decision is made from what this device stored last time, so the page never waits on the
+ * network. backend.json is then fetched in the background and the stored decision updated; it
+ * takes effect on the next open. Both sides run this, so a flip back to "old" is honoured even by
+ * someone who is sitting in the new app: it sends them back on their next open.
+ */
+(function () {
+  'use strict';
+  var SIDE = 'old';                              // 'new' on the new app's page
+  var HOME = SIDE === 'old' ? './' : '../';      // where index.html and backend.json live, from this page
+  var LS = 'attendance-backend', OVR = 'attendance-backend-override', CODE = 'attendance-code';
+
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+
+  /* Pure: which side a person belongs on. Exported for the tests. */
+  function decide(cfg, tokenHash, override) {
+    if (!cfg || !cfg.newUrl) return 'old';                              // nothing to switch to
+    if (override === 'new' || override === 'old') return override;
+    if (tokenHash && (cfg.testers || []).indexOf(tokenHash) !== -1) return 'new';
+    return cfg['default'] === 'new' ? 'new' : 'old';
+  }
+
+  function hash12(s) {
+    if (!s || !window.crypto || !crypto.subtle || !window.TextEncoder) return Promise.resolve('');
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function (b) {
+      return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('').slice(0, 12);
+    }, function () { return ''; });
+  }
+
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { decide: decide }; return; }
+
+  var q = new URLSearchParams(location.search), o = q.get('backend');
+  if (o === 'new' || o === 'old') set(OVR, o);
+  if (o === 'auto') set(OVR, null);
+  if (o) {                                       // tidy the address bar; keep ?t= for the app to pick up
+    q['delete']('backend');
+    var rest = q.toString();
+    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) {}
+  }
+
+  function go(side, cfg) {
+    if (side === SIDE) return false;
+    var url = side === 'new' ? HOME + cfg.newUrl : HOME;
+    location.replace(url + location.search + location.hash);
+    return true;
+  }
+
+  // Decide now, from what this device knew last time.
+  var known = null;
+  try { known = JSON.parse(get(LS) || 'null'); } catch (e) {}
+  if (known && known.cfg) {
+    var side = o === 'new' || o === 'old' ? decide(known.cfg, known.h, o) : decide(known.cfg, known.h, get(OVR));
+    if (go(side, known.cfg)) return;
+  }
+
+  // Refresh in the background for next time. Never redirects mid-session, except for an explicit ?backend=.
+  var token = get(CODE) || q.get('t') || '';
+  fetch(HOME + 'backend.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (cfg) {
+      if (!cfg) return;
+      return hash12(token).then(function (h) {
+        set(LS, JSON.stringify({ cfg: cfg, h: h, at: Date.now() }));
+        if (o === 'new' || o === 'old') go(decide(cfg, h, o), cfg);
+      });
+    })['catch'](function () {});
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3F2F7" media="(prefers-color-scheme: light)">
@@ -709,6 +794,7 @@
   var QUEUE = 'attendance-queue:';    // registers marked before the app was up
   var STU   = 'attendance-stu:';      // a student's own figures, for their next open
   var TABC  = 'attendance-cache:';    // the other tabs' last answers (plan, gradebook, resources)
+  var ADMC  = 'attendance-admin:';    // the admin dashboard's last answer, and the section it was on
   var KEEP_DAYS = 10;
 
   /* How stale a class list may be and still be typed into. The timetable repeats
@@ -739,7 +825,9 @@
     catch (e) { return {}; }
   }
   function writeTabCache(token, key, data){
-    if (typeof key !== 'string' || key.length > 80 || !/^[a-z]+:[\w:|.-]*$/i.test(key)) return;
+    // A bare name is a key too: Resources keeps its one answer as plain 'res', and a
+    // pattern that insisted on a colon turned it away, so that tab never drew from here.
+    if (typeof key !== 'string' || key.length > 80 || !/^[a-z]+(?::[\w:|.-]*)?$/i.test(key)) return;
     var all = readTabCache(token);
     if (data === null || data === undefined) delete all[key];
     else all[key] = { data: data, at: Date.now() };
@@ -1840,6 +1928,8 @@
       if (m.type === 'attendance:open-admin') {
         if (K.on || e.source === QS.app) {
           try { sessionStorage.setItem('attendance-admin-from', '1'); } catch (err) {}
+          // The theme on screen, so the dashboard opens in it (openAdmin puts it on the URL).
+          if (m.theme === 'dark' || m.theme === 'light') { try { localStorage.setItem('attendance-theme', m.theme); } catch (err) {} }
           location.assign(location.pathname + '?admin=1');
         }
         return;
@@ -2351,7 +2441,7 @@
     var tk = stored();
     try { sessionStorage.setItem('attendance-signedout', String(name || '').slice(0, 80) || '1'); } catch (e) {}
     try {
-      [SNAP, STU, TABC, SHELLS, BOOTS, PUSHKEY].forEach(function (p) { localStorage.removeItem(p + tk); });
+      [SNAP, STU, TABC, ADMC, SHELLS, BOOTS, PUSHKEY].forEach(function (p) { localStorage.removeItem(p + tk); });
       localStorage.removeItem(KEY);
     } catch (e) {}
     var go = function () { location.replace(location.pathname); };
@@ -2376,6 +2466,28 @@
      multi-account bug the app does ("Sorry, unable to open the file at this time"), so
      it gets the app's cure: this page's frame, cookie-free where the browser can. The
      token stays on this device; ?admin=1 says only which page to show. */
+  /* The dashboard keeps its last answer here, like the app's tabs keep theirs in TABC: its
+     frame is credentialless, so anything it stored itself went with the page and every
+     open sat on "Loading the sheet…" until Apps Script answered. Per token, one record,
+     bounded; the page sends it without anyone's link in it (see Admin.html). */
+  var ADMC_BYTES = 2500000;
+  function readAdminCache(token){
+    var o = readJSON(ADMC + token);
+    return (o && o.v === 1 && o.data && typeof o.data === 'object') ? o : null;
+  }
+  function writeAdminCache(token, m){
+    var rec = { v: 1, at: Date.now(), tab: typeof m.tab === 'string' ? m.tab.slice(0, 20) : '', data: m.data };
+    if (!m.data || typeof m.data !== 'object') {
+      // Only the section changed: keep the answer we have.
+      var have = readAdminCache(token);
+      if (!have) return;
+      rec.data = have.data; rec.at = have.at;
+    }
+    var text = JSON.stringify(rec);
+    if (text.length > ADMC_BYTES) return;
+    try { localStorage.setItem(ADMC + token, text); }
+    catch (e) { try { localStorage.removeItem(ADMC + token); } catch (e2) {} }
+  }
   function openAdmin(t) {
     $('ask').style.display = 'none';
     $('shell').classList.add('gone');
@@ -2386,11 +2498,38 @@
     el.setAttribute('allow', 'clipboard-write');
     try { if ('credentialless' in HTMLIFrameElement.prototype) el.credentialless = true; } catch (e) {}
     el.className = 'ready';
-    el.src = WEBAPP_URL + '?admin=1&in=1&t=' + encodeURIComponent(t);
+    /* The theme the person picked in the app, on the URL, exactly as the app's own frame
+       gets it. Without it the dashboard only ever saw the phone's setting: an app set to
+       Light on a phone in dark mode opened a dark dashboard, every time. */
+    var themed = '';
+    try {
+      var pref = localStorage.getItem('attendance-theme');
+      if (pref === 'dark' || pref === 'light') themed = '&theme=' + pref;
+    } catch (e) {}
+    el.src = WEBAPP_URL + '?admin=1&in=1&t=' + encodeURIComponent(t) + themed;
     document.body.appendChild(el);
+    // Apps Script nests the page a frame or two inside ours: anything posted from under
+    // our frame is the dashboard; anything else (an opener, another tab) is not.
+    function fromAdmin(w) {
+      for (var i = 0; w && i < 6; i++) {
+        if (w === el.contentWindow) return true;
+        if (w === w.parent) return false;
+        w = w.parent;
+      }
+      return false;
+    }
     window.addEventListener('message', function (e) {
       var m = e && e.data;
-      if (!m || m.v !== 1 || m.type !== 'attendance:admin-back') return;
+      if (!m || m.v !== 1) return;
+      if (m.type === 'attendance:admin-ready' || m.type === 'attendance:admin-cache') {
+        if (!e.source || !fromAdmin(e.source)) return;
+        if (m.type === 'attendance:admin-cache') { try { writeAdminCache(t, m); } catch (err) {} return; }
+        var kept = readAdminCache(t);
+        try { e.source.postMessage({ type: 'attendance:admin-cached', v: 1, at: kept ? kept.at : 0,
+          tab: kept ? kept.tab : '', data: kept ? kept.data : null }, '*'); } catch (err) {}
+        return;
+      }
+      if (m.type !== 'attendance:admin-back') return;
       var from = '';
       try { from = sessionStorage.getItem('attendance-admin-from') || ''; sessionStorage.removeItem('attendance-admin-from'); } catch (err) {}
       if (from && history.length > 1) history.back(); else location.replace(location.pathname);
