@@ -396,7 +396,7 @@
   .ttwhen .t:empty{display:none}
 
   .ttweek{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;
-    -webkit-overflow-scrolling:touch;padding-bottom:2px}
+    -webkit-overflow-scrolling:touch;padding-bottom:2px;position:relative;scroll-padding-left:58px}
   .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:52px;padding:6px 4px 6px 0;
     border:1px solid transparent;background:var(--surface)}
   .ttgutter .ttdn{visibility:hidden}
@@ -1081,8 +1081,12 @@
   /* The clock card, the timetable, and a held-open card for the countdown — the same
      three the app paints, in the same order. Falls back to the plain reserved gap for
      a snapshot written before any of this existed. */
-  function ttCard(tt, strip, iso, d, hint){
+  /* away: the week has a Timetable tab of its own in the app (invariant 46), so Home holds
+     only the card for what is on now — drawn here, held open, as the app will. */
+  function ttCard(tt, strip, iso, d, hint, away){
     if (!tt || !(tt.days || []).length) return stripGap(strip);
+    if (away) return '<div class="ttc ttnow"><div class="ttmsg"><span class="spin"></span><span>' +
+      esc(hint || '') + '</span></div></div>';
     var when = '<div class="ttwhenwrap"><div class="ttc ttwhen">' + TT_CAL +
       '<span><span class="d">' + esc(SHORT[d.getDay()] + ' ' + d.getDate() + ' ' +
         MONTHS[d.getMonth()]) + '</span><b class="t"></b></span></div></div>';
@@ -1130,12 +1134,13 @@
   var TAB_BAR = {
     home:   ['Home', '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h4.5v-5.5h4V20h4.5V9.5"/>'],
     plan:   ['Weekly Plan', '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13.5h4M7.5 16.5h7"/>'],
+    tt:     ['Timetable', '<rect x="3.5" y="4.5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.25 9.5V20M14.75 9.5V20"/>'],
     res:    ['Resources', '<path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h3.6l2 2.2h7.4a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>'],
     grades: ['Gradebook', '<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5z"/><path d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19v3H7.5"/><path d="M9 7.5h6M9 11h4"/>']
   };
   function tabList(v){
     if (!Array.isArray(v)) return null;
-    var out = ['home', 'plan', 'res', 'grades'].filter(function (n) { return v.indexOf(n) !== -1; });
+    var out = ['home', 'plan', 'tt', 'res', 'grades'].filter(function (n) { return v.indexOf(n) !== -1; });
     return out.length ? out : null;
   }
   function tabBar(v){
@@ -1393,7 +1398,9 @@
     QS.iso = iso;
     var hint = anyTap ? 'Ready. Tap a lesson to take the register'
              : live ? 'Your last view · updating' : 'Your usual timetable · checking today';
-    var ttHtml = ttCard(s.meta.tt, s.meta.strip, iso, d, hint);
+    // An older snapshot has no set, but still knows the role: a non-admin teacher has all three.
+    var tabs = s.meta.tabs !== undefined ? s.meta.tabs : (admin ? null : ['home', 'plan', 'grades']);
+    var ttHtml = ttCard(s.meta.tt, s.meta.strip, iso, d, hint, !!tabs && tabs.indexOf('tt') !== -1);
 
     var html =
       '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'Attendance') + '</span>' +
@@ -1419,8 +1426,6 @@
         '<div class="sblock hlsn"></div><div class="sblock hlsn"></div><div class="sblock hlsn"></div>';
     }
 
-    // An older snapshot has no set, but still knows the role: a non-admin teacher has all three.
-    var tabs = s.meta.tabs !== undefined ? s.meta.tabs : (admin ? null : ['home', 'plan', 'grades']);
     $('instantInner').innerHTML = html + tabBar(tabs);
     $('instant').style.display = 'block';
     tabRoom(tabs);
@@ -2462,7 +2467,7 @@
     return /^[A-Za-z0-9_-]{6,}$/.test(v) ? v : '';
   }
 
-  /* The admin dashboard (invariant 44). Opened in a tab of its own it meets the same
+  /* The admin dashboard (invariant 46). Opened in a tab of its own it meets the same
      multi-account bug the app does ("Sorry, unable to open the file at this time"), so
      it gets the app's cure: this page's frame, cookie-free where the browser can. The
      token stays on this device; ?admin=1 says only which page to show. */
