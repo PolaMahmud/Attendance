@@ -1,4 +1,4 @@
-/* Service worker for KS5 Attendance. Goes beside index.html on GitHub Pages.
+/* Service worker for KS5 Hub. Goes beside index.html on GitHub Pages.
  *
  * It exists for one job: receive a push and show a notification. It deliberately does
  * NOT cache the app — attendance.html already paints its own cached first screen out
@@ -54,7 +54,7 @@ self.addEventListener('push', function (e) {
        we would have said. So every path below shows something. */
     if (!cfg || !cfg.url || !cfg.key) {
       return note('no-config').then(function () {
-        return self.registration.showNotification('Attendance', {
+        return self.registration.showNotification('KS5 Hub', {
           body: 'This device has not finished setting up — open the app once.',
           icon: './icon-192.png', tag: 'attendance'
         });
@@ -73,7 +73,7 @@ self.addEventListener('push', function (e) {
       .then(function (msg) {
         var why = msg && msg.title ? 'ok' : (msg && msg.__why) || 'nothing-waiting';
         var m = msg && msg.title ? msg : {
-          title: 'Attendance',
+          title: 'KS5 Hub',
           body: why === 'nothing-waiting'
             ? 'Open the app to see what changed.'
             : 'Could not fetch the message — open the app.'
