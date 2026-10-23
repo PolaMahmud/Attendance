@@ -91,7 +91,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111216" media="(prefers-color-scheme: dark)">
-<title>Attendance</title>
+<title>KS5 Hub</title>
 
 <script>
 /* Settle the theme before anything paints, RESOLVING the system preference to an
@@ -142,15 +142,15 @@
 
      iOS wants a PNG here; it ignores SVG for apple-touch-icon, which is what the
      placeholder used to be. It also applies its OWN rounded mask, so the file is
-     full bleed: navy right to the edges, no corners of its own, and no alpha at all
+     full bleed: indigo right to the edges, no corners of its own, and no alpha at all
      because iOS composites transparency against black. make-icons.ps1 builds these
-     from icon.png.
+     from icon.png, the 1024px master.
 
      sizes is declared because WebKit sorts candidate touch icons by their DECLARED
      size and scores an undeclared one as 60px, so an unsized 180 can lose to a
      smaller rival that did declare itself. -->
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-<meta name="apple-mobile-web-app-title" content="KS5 Attendance">
+<meta name="apple-mobile-web-app-title" content="KS5 Hub">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <link rel="manifest" href="./manifest.webmanifest">
 
@@ -664,6 +664,29 @@
   .gfoot button{border:1px solid var(--gl-edge);background:var(--gl-bg);color:var(--ink);font:inherit;
     font-weight:600;border-radius:99px;padding:7px 14px;cursor:pointer;box-shadow:var(--gl-sm)}
 
+  /* ---- the loading screen: a sign-in, or any open with nothing cached to paint ----
+     Shown in place of the bare skeleton, never over a cached screen (invariant: the
+     cached register and a student's cached figures are the fast path, and they stay
+     usable). Same layer as the skeleton, below the frame, so the app fades in over it
+     exactly as it does over the skeleton, and the stuck bar and the gate land on top. */
+  .load{position:fixed;inset:0;z-index:1;display:grid;place-items:center;padding:24px 16px;
+    background:var(--bg);transition:opacity .25s ease}
+  .load[hidden]{display:none}
+  .load.gone{opacity:0;pointer-events:none}
+  .load .box{text-align:center;padding:28px 22px 22px}
+  .load .gtile{margin:0 auto 14px}
+  .load h1{margin:0 0 4px}
+  .lstep{font-size:15px;color:var(--ink);font-weight:600;margin:14px 0 10px;min-height:1.45em}
+  .lbar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;
+    border:1px solid var(--line);position:relative}
+  .lbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;
+    background:var(--accent);transition:width .45s cubic-bezier(.2,.7,.2,1)}
+  .lbar i::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg,transparent 20%,var(--sheen) 50%,transparent 80%);
+    background-size:220% 100%;animation:sh 1.4s linear infinite}
+  .lmeta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);
+    margin-top:8px;font-variant-numeric:tabular-nums}
+
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none !important;transition:none !important}
@@ -739,13 +762,25 @@
 
 <div class="ph" id="shell" aria-hidden="true">
   <div class="inner">
-    <div class="sbar"><span class="slogo">Attendance</span><span class="spill"></span><span class="sdot"></span></div>
+    <div class="sbar"><span class="slogo">KS5 Hub</span><span class="spill"></span><span class="sdot"></span></div>
     <div class="sblock htt"></div>
     <div class="sblock hday" style="width:70%;margin:0 auto 14px"></div>
     <div class="sblock hlsn"></div>
     <div class="sblock hlsn"></div>
     <div class="sblock hlsn"></div>
   </div>
+</div>
+
+<!-- The loading screen, for an open with nothing cached to paint (see LOAD below). -->
+<div class="load" id="load" hidden>
+  <svg class="art" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><use href="#art"/></svg>
+  <section class="box" aria-labelledby="loadTitle">
+    <div class="gtile" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2.5v3M16 2.5v3"/><path d="M8.5 13l2.5 2.5 4.5-5"/></svg></div>
+    <h1 id="loadTitle">KS5 Hub</h1>
+    <p class="lstep" id="loadStep" role="status" aria-live="polite"></p>
+    <div class="lbar" id="loadBar" role="progressbar" aria-labelledby="loadTitle" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loadFill"></i></div>
+    <div class="lmeta"><span id="loadCount"></span><span id="loadPct">0%</span></div>
+  </section>
 </div>
 
 <div class="ph" id="instant" aria-hidden="true" style="display:none"><div class="inner" id="instantInner"></div></div>
@@ -952,7 +987,7 @@
   function keptFrame(sh, boot){
     var el = document.createElement('iframe');
     el.id = 'app';
-    el.title = 'Attendance';
+    el.title = 'KS5 Hub';
     el.setAttribute('allow', 'clipboard-write');
     // Scripts, but no origin of its own: nothing in it can reach this page's storage.
     el.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox ' +
@@ -1248,7 +1283,7 @@
     };
 
     $('instantInner').innerHTML =
-      '<div class="sbar"><span class="slogo">' + esc(s.school || 'Attendance') + '</span>' +
+      '<div class="sbar"><span class="slogo">' + esc(s.school || 'KS5 Hub') + '</span>' +
       '<span class="name"><span class="avatar">' + esc(initials(s.name)) + '</span></span></div>' +
       '<div class="dhead"><b>' + esc(s.name || '') + '</b><span>' +
         esc(['Year ' + (s.year || ''), s.option, s.rangeLabel].filter(Boolean).join(' · ')) +
@@ -1403,7 +1438,7 @@
     var ttHtml = ttCard(s.meta.tt, s.meta.strip, iso, d, hint, !!tabs && tabs.indexOf('tt') !== -1);
 
     var html =
-      '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'Attendance') + '</span>' +
+      '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'KS5 Hub') + '</span>' +
       '<span class="name"><span class="nm">' + esc(name) + '</span>' +
       '<span class="avatar">' + esc(initials(name)) + '</span></span></div>' +
       // The week, drawn from the app's own copy of it; a plain held-open gap when
@@ -1597,6 +1632,82 @@
       marks.map(function (m) { return m[1] + ' ms  ' + m[0]; }).join('\n');
   }
 
+  /* ---- the loading screen ------------------------------------------------
+     A sign-in, a new device, or a link asking for another screen has nothing cached to
+     paint, and a cold Apps Script start can take several seconds. A bare skeleton for
+     that long reads as broken, so these opens get a screen that says what is happening.
+
+     Every stage is something this page actually observes, in this order: open() runs
+     (signing in), the frame is requested (connecting), the frame's document loads
+     (starting), the app speaks for the first time (getting your day), attendance:ready
+     (done). Between stages the bar creeps towards that stage's ceiling, so it never sits
+     still, and no ceiling is 100: only the app being ready fills it. Stages only move
+     forward — the frame's load event and the app's first message can arrive either way
+     round. It is never shown over a cached screen; see invariant 47. */
+  var LOAD = (function () {
+    var STAGES = [
+      { at: 6,  cap: 20, say: 'Signing you in' },
+      { at: 20, cap: 52, say: 'Connecting to the school server' },
+      { at: 56, cap: 80, say: 'Starting KS5 Hub' },
+      { at: 82, cap: 95, say: 'Getting your day ready' }
+    ];
+    var on = false, stage = -1, pct = 0, timer = null;
+    function draw() {
+      var fill = $('loadFill'), bar = $('loadBar');
+      if (!fill || !bar) return;
+      var p = Math.round(pct);
+      fill.style.width = p + '%';
+      bar.setAttribute('aria-valuenow', String(p));
+      $('loadPct').textContent = p + '%';
+      var st = STAGES[Math.max(0, stage)];
+      // Offline before the server has answered is the one thing worth saying instead.
+      var say = (stage < 2 && navigator.onLine === false) ? 'Waiting for a connection' : st.say;
+      if ($('loadStep').textContent !== say) $('loadStep').textContent = say;
+      $('loadCount').textContent = 'Step ' + (Math.max(0, stage) + 1) + ' of ' + STAGES.length;
+    }
+    function tick() {
+      if (!on) return;
+      var cap = STAGES[stage].cap;
+      pct = Math.min(cap, pct + Math.max(0.15, (cap - pct) * 0.06));
+      draw();
+    }
+    function step(n) {
+      if (!on || n <= stage || n >= STAGES.length) return;
+      stage = n;
+      pct = Math.max(pct, STAGES[n].at);
+      draw();
+    }
+    return {
+      start: function () {
+        var el = $('load');
+        if (!el || on) return;
+        on = true;
+        el.hidden = false;
+        el.classList.remove('gone');
+        step(0);
+        timer = setInterval(tick, 250);
+        window.addEventListener('online', draw);
+        window.addEventListener('offline', draw);
+      },
+      step: step,
+      // ready: the app said it is on screen, so the bar may fill. Otherwise (a fallback
+      // timer revealed the frame) it simply steps aside for whatever the frame shows.
+      done: function (ready) {
+        if (!on) return;
+        on = false;
+        if (timer) { clearInterval(timer); timer = null; }
+        if (ready) { pct = 100; stage = STAGES.length - 1; draw(); }
+        var el = $('load');
+        setTimeout(function () { el.classList.add('gone'); }, ready ? 180 : 0);
+        setTimeout(function () { el.hidden = true; }, 700);
+      },
+      on: function () { return on; },
+      stage: function () { return stage; },
+      pct: function () { return pct; }
+    };
+  })();
+  window.__LOAD = LOAD;   // read by loading.test.js; nothing in the page relies on it
+
   function open(t, extra){
     $('ask').style.display = 'none';
     mark('script start');
@@ -1605,14 +1716,17 @@
 
     // Only preview the register when the link is asking for the register. A link
     // carrying view=students or s=P014 wants a different screen entirely.
+    var painted = false;
     if (!extra) {
       try {
         // Teacher first, then the student summary: whichever this device has.
-        mark(paintCached(t) ? 'cached cards painted'
-           : paintStudent(t) ? 'cached student figures painted'
-           : 'no cache — skeleton');
+        mark(paintCached(t) ? (painted = true, 'cached cards painted')
+           : paintStudent(t) ? (painted = true, 'cached student figures painted')
+           : 'no cache — loading screen');
       } catch (e) {}
     }
+    // Nothing of theirs to show: the loading screen, never over a cached screen.
+    if (!painted) LOAD.start();
 
     if (QS.tab) {
       var bar0 = $('instantTabs');
@@ -1680,6 +1794,7 @@
       if (QS.editing) { QS.onDone = reveal; return; }
       shown = true;
       if (f) f.classList.add('ready');
+      LOAD.done(QS.ready);
       setTimeout(function () {
         $('shell').classList.add('gone');
         $('instant').classList.add('gone');
@@ -1845,6 +1960,7 @@
       K.frame = el; f = el; QS.frame = el;
       $('slot').appendChild(el);
       QS.app = el.contentWindow;
+      LOAD.step(2);                         // the page is already here; only its data is not
       mark('kept app started (' + K.sh.build + ')');
       startBridge(credOK);
       // Nothing to wait for forever: calls fail with a reason after this, registers excepted.
@@ -1885,6 +2001,8 @@
       if (!K.on && !QS.ready && e.source && e.source !== window &&
           (m === 'attendance:ready' || (m && m.v === 1))) QS.app = e.source;
       if (K.on && e.source && !keptWin(e.source)) return;
+      // The app's first word, before it has painted: it is up and fetching the day.
+      if (m && m.v === 1 && e.source && e.source === QS.app) LOAD.step(3);
       if (m === 'attendance:ready') {
         mark('app painted (attendance:ready)');
         if (K.readyTimer) { clearTimeout(K.readyTimer); K.readyTimer = null; }
@@ -1991,6 +2109,17 @@
         try { localStorage.setItem('attendance-plan-view', m.view === 'day' ? 'day' : 'week'); } catch (err) {}
         return;
       }
+      if (m.type === 'attendance:hold') {
+        // A register the app could not send (the line dropped): kept with the ones marked
+        // here, so it goes on the next open even if the app is closed first. Only the app may.
+        var hi = m.item || {};
+        if ((K.on || e.source === QS.app) && hi.classId && hi.date && hi.statuses && typeof hi.statuses === 'object') {
+          queueAdd(t, { classId: String(hi.classId), date: String(hi.date), period: String(hi.period),
+                        statuses: hi.statuses, label: '', at: Date.now() });
+          mark('register held for the next open');
+        }
+        return;
+      }
       if (m.type === 'attendance:saved') {
         // Only drop it once the server has confirmed; a failure keeps it queued so
         // the next open tries again rather than losing the register.
@@ -2028,11 +2157,12 @@
     function buildFrame(anon) {
       var el = document.createElement('iframe');
       el.id = 'app';
-      el.title = 'Attendance';
+      el.title = 'KS5 Hub';
       el.setAttribute('allow', 'clipboard-write');
       if (anon) { try { el.credentialless = true; } catch (e) {} }
       el.onload = function () {
         mark('iframe document loaded' + (anon ? ' (cookie-free)' : ''));
+        LOAD.step(2);
         // Second line of defence. Only fires if attendance:ready never lands; when it
         // does, reveal has already run and this is a no-op.
         setTimeout(reveal, 3500);
@@ -2069,6 +2199,7 @@
       // If the shell has already been swapped away, the replacement must not fade in.
       if (shown) f.classList.add('ready');
       $('slot').appendChild(f);
+      LOAD.step(1);
       mark('iframe requested' + (anon ? ' (cookie-free)' : ''));
     }
 
@@ -2086,6 +2217,7 @@
       setTimeout(function () {
         if (QS.editing || !f) return;           // unless they are mid-register
         f.classList.add('ready');
+        LOAD.done(false);
         $('shell').classList.add('gone');
         $('instant').classList.add('gone');
       }, 15000);
