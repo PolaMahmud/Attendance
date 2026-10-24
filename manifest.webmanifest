@@ -1,7 +1,7 @@
 {
-  "name": "KS5 Attendance",
-  "short_name": "Attendance",
-  "description": "Take registers, see your own attendance, chase missing registers.",
+  "name": "KS5 Hub",
+  "short_name": "KS5 Hub",
+  "description": "Timetable, registers and attendance, grades, weekly plans and resources for a KS5 sixth form.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
