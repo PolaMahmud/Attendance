@@ -1,4 +1,4 @@
-/* Service worker for KS5 Attendance. Goes beside index.html on GitHub Pages.
+/* Service worker for KS5 Hub. Goes beside index.html on GitHub Pages.
  *
  * It exists for one job: receive a push and show a notification. It deliberately does
  * NOT cache the app — attendance.html already paints its own cached first screen out
@@ -16,7 +16,33 @@ var CFG = 'push-config-v1';
 /* Take over as soon as we are installed, so the first notification does not have to
    wait for every tab to close. */
 self.addEventListener('install', function (e) { self.skipWaiting(); });
-self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()); });
+self.addEventListener('activate', function (e) {
+  e.waitUntil(Promise.all([
+    self.clients.claim(),
+    /* Lets a page load start on the network while this worker wakes, so answering page
+       loads below costs no time. */
+    self.registration.navigationPreload ? self.registration.navigationPreload.enable() : null
+  ]));
+});
+
+/* Page loads, and only page loads. Chrome on Android offers Install only to a site whose
+   worker answers them, so this is here for installing, not caching: a load still goes to
+   the network exactly as before, and the one thing added is a plain offline page in place
+   of the browser's own error when there is no network at all. Nothing is stored. */
+var OFFLINE = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+  '<title>KS5 Hub</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;' +
+  'font:17px -apple-system,system-ui,sans-serif;background:#F3F2F7;color:#1C1C1E;text-align:center">' +
+  '<div><p style="font-weight:600;margin:0 0 6px">No connection</p><p style="margin:0 0 18px;color:#6E6E73">' +
+  'KS5 Hub opens when you are back online.</p><button onclick="location.reload()" style="font:inherit;' +
+  'padding:11px 22px;border:0;border-radius:99px;background:#1C1C1E;color:#fff">Try again</button></div>';
+self.addEventListener('fetch', function (e) {
+  if (e.request.mode !== 'navigate') return;
+  e.respondWith(Promise.resolve(e.preloadResponse).then(function (r) {
+    return r || fetch(e.request);
+  }).catch(function () {
+    return new Response(OFFLINE, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }));
+});
 
 /* The page tells us where to ask and who to say we are. Kept in the Cache API rather
    than IndexedDB: two lines instead of twenty, and it survives restarts just as well. */
@@ -54,7 +80,7 @@ self.addEventListener('push', function (e) {
        we would have said. So every path below shows something. */
     if (!cfg || !cfg.url || !cfg.key) {
       return note('no-config').then(function () {
-        return self.registration.showNotification('Attendance', {
+        return self.registration.showNotification('KS5 Hub', {
           body: 'This device has not finished setting up — open the app once.',
           icon: './icon-192.png', tag: 'attendance'
         });
@@ -73,7 +99,7 @@ self.addEventListener('push', function (e) {
       .then(function (msg) {
         var why = msg && msg.title ? 'ok' : (msg && msg.__why) || 'nothing-waiting';
         var m = msg && msg.title ? msg : {
-          title: 'Attendance',
+          title: 'KS5 Hub',
           body: why === 'nothing-waiting'
             ? 'Open the app to see what changed.'
             : 'Could not fetch the message — open the app.'

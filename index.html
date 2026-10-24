@@ -90,7 +90,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3F2F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111216" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>KS5 Hub</title>
 
 <script>
@@ -117,7 +117,7 @@
   for (var i = old.length - 1; i >= 0; i--) old[i].parentNode.removeChild(old[i]);
   var mt = document.createElement('meta');
   mt.setAttribute('name', 'theme-color');
-  mt.setAttribute('content', dark ? '#111216' : '#F3F2F7');
+  mt.setAttribute('content', dark ? '#000000' : '#F3F2F7');
   document.head.appendChild(mt);
 })();
 </script>
@@ -220,15 +220,38 @@
     --tt-a22:#D5EEDC; --tt-a22-line:#A2D2B1;
     --tt-a23:#E3DBF8; --tt-a23-line:#BEAEEA;
 
+    /* The segmented control (I11): iOS's tertiary fill for the track, translucent so it
+       reads on the page and on a card alike; the chosen segment is a raised pill. */
+    --seg-track:rgba(118,118,128,.12); --seg-on:#FFFFFF;
+    --seg-shadow:drop-shadow(0 3px 4px rgba(0,0,0,.10)) drop-shadow(0 0 .5px rgba(0,0,0,.18));
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+
+    /* Type (I9): Apple's text styles, and only these. Every size on the page is one of
+       them, picked as the nearest step to what it was. They are rem against a 17px root
+       (Body), so on an iPhone the whole ramp follows Settings > Display > Larger Text:
+       html takes the system's own body size below, and everything scales with it. */
+    --fs-large:calc(34rem / 17);    /* Large Title */
+    --fs-title1:calc(28rem / 17);   /* Title 1 */
+    --fs-title2:calc(22rem / 17);   /* Title 2 */
+    --fs-title3:calc(20rem / 17);   /* Title 3 */
+    --fs-headline:1rem;             /* Headline: Body's size, set semibold */
+    --fs-body:1rem;                 /* Body, 17 */
+    --fs-callout:calc(16rem / 17);  /* Callout */
+    --fs-subhead:calc(15rem / 17);  /* Subheadline */
+    --fs-footnote:calc(13rem / 17); /* Footnote */
+    --fs-caption1:calc(12rem / 17); /* Caption 1 */
+    --fs-caption2:calc(11rem / 17); /* Caption 2, the smallest there is */
   }
   :root[data-theme="dark"]{
-    --bg:#111216; --surface:#1D1F25; --surface-2:#24262D; --surface-3:#2E3038;
-    --ink:#ECEDF2; --ink-2:#A3A7B3; --ink-3:#9A9EAA;
-    --line:#2A2C33; --line-2:#3A3D46;
+    /* iOS's grouped dark ramp (I15), as App.html has it: black page, raised grey cards. */
+    --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
+    --ink:#F2F2F7; --ink-2:#AEAEB2; --ink-3:#9C9CA1;
+    --line:#38383A; --line-2:#48484A;
 
-    --accent:#ECEDF2; --accent-hover:#FFFFFF; --accent-ink:#14161C;
-    --accent-soft:#2E3038; --accent-line:#3A3D46;
+    --accent:#F2F2F7; --accent-hover:#FFFFFF; --accent-ink:#1C1C1E;
+    --accent-soft:#3A3A3C; --accent-line:#48484A;
+    --seg-track:rgba(118,118,128,.24); --seg-on:#636366;
+    --seg-shadow:drop-shadow(0 3px 4px rgba(0,0,0,.35));
 
     --low:#F3C99A;  --low-soft:#3D2E1F;  --low-line:#5A4430;
     --full:#F0B1B1; --full-soft:#3E2527; --full-line:#5E393B;
@@ -240,19 +263,19 @@
     --shadow:0 1px 2px rgba(0,0,0,.4);
     --sheen:rgba(255,255,255,.06);
 
-    --gl-bg:linear-gradient(180deg,rgba(44,46,54,.62),rgba(24,25,30,.58));
+    --gl-bg:linear-gradient(180deg,rgba(58,58,60,.62),rgba(36,36,38,.58));
     --gl-blur:blur(9px) saturate(170%);
     --gl-edge:rgba(255,255,255,.09);
     --gl-shadow:0 14px 34px rgba(0,0,0,.55),inset 0 .5px 0 rgba(255,255,255,.22);
     --gl-sm:0 4px 14px rgba(0,0,0,.4),inset 0 .5px 0 rgba(255,255,255,.22);
-    --gl-bar:linear-gradient(180deg,rgba(44,46,54,.5),rgba(24,25,30,.46));
+    --gl-bar:linear-gradient(180deg,rgba(28,28,30,.55),rgba(0,0,0,.42));
     --gl-bar-blur:blur(6px) saturate(170%);
     --gl-lens:rgba(255,255,255,.10);
     --gl-lens-shadow:inset 0 .5px 0 rgba(255,255,255,.18);
     --gl-p:linear-gradient(180deg,rgba(255,255,255,.95),rgba(228,230,236,.88));
     --gl-p-edge:rgba(255,255,255,.65);
     --gl-p-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.1);
-    --gl-p-ink:#14161C;
+    --gl-p-ink:#1C1C1E;
 
     --art-1:#45D9FF; --art-2:#B87CFF; --art-3:#FFA03D; --art-4:#55FF8E; --art-5:#FF52A8;
     --art-o:.26;
@@ -269,6 +292,14 @@
      width:100% plus padding was rendering wider than its container: the lesson card
      (347 + 26 + 2 = 375 in a 347 track), the code input and the save buttons. */
   *{box-sizing:border-box}
+  /* The root is Body (I9). 106.25% is 17px wherever the browser's default is 16. On an
+     iPhone (-webkit-touch-callout is iOS-only) the root is the system's body font
+     instead, which is what the Larger Text setting moves; macOS Safari also knows
+     -apple-system-body but reports 13px there, hence the guard. */
+  html{font-size:106.25%}
+  @supports (font:-apple-system-body) and (-webkit-touch-callout:none){
+    html{font:-apple-system-body}
+  }
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);
     font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;
     overscroll-behavior:none}
@@ -301,14 +332,14 @@
     bottom:max(calc(env(safe-area-inset-bottom) + 12px), calc(env(safe-area-inset-bottom) + var(--tabs, 0px) + 10px));
     display:flex;gap:8px;align-items:center;flex-wrap:wrap;
     background:var(--gl-bg);color:var(--ink);border:1px solid var(--gl-edge);
-    border-radius:22px;padding:12px 14px;font-size:13.5px;line-height:1.35;box-shadow:var(--gl-shadow);
+    border-radius:22px;padding:12px 14px;font-size:var(--fs-footnote);line-height:1.35;box-shadow:var(--gl-shadow);
     -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
   .notif[hidden]{display:none}
   .notif .nbell{display:flex;align-items:center;gap:8px;font-weight:600}
   .notif .nbell svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .notif .stk{display:flex;gap:10px;align-items:flex-start}
   .notif .stk svg{width:20px;height:20px;flex:none;color:var(--low);margin-top:1px}
-  .notif .stk b{display:block;font-size:14.5px}
+  .notif .stk b{display:block;font-size:var(--fs-subhead)}
   .notif .stkwhy{display:block;color:var(--ink-2)}
   .notif span{flex:1 1 160px;min-width:0}
   .notif button{flex:0 0 auto;border:1px solid var(--gl-p-edge);border-radius:99px;padding:9px 16px;
@@ -327,13 +358,17 @@
     -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
   .tabs-in{display:flex;gap:2px}
   .tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;
-    padding:6px 4px 7px;border-radius:99px;font-size:10.5px;font-weight:600;color:var(--ink);
+    padding:6px 4px 7px;border-radius:99px;font-size:min(var(--fs-caption2),13px);font-weight:500;color:var(--ink-2);
     white-space:nowrap;transition:background .12s ease,box-shadow .12s ease}
   .tab .ic{display:grid;place-items:center;width:44px;height:26px;border-radius:99px}
   .tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;
     stroke-linecap:round;stroke-linejoin:round}
-  .tab[aria-current="page"]{color:var(--ink);background:var(--gl-lens);box-shadow:var(--gl-lens-shadow)}
+  .tab[aria-current="page"]{color:var(--ink);font-weight:700;background:var(--gl-lens);box-shadow:var(--gl-lens-shadow)}
   .tab[aria-current="page"] .ic{background:transparent}
+  .tab .f,.tab[aria-current="page"] .o{display:none}
+  .tab[aria-current="page"] .f{display:block}
+  .tab .f{fill:currentColor;stroke:none}
+  .tab .f .s{fill:none;stroke:currentColor}
   /* The app's tabs are <button>s, which do not inherit line-height: their labels sit at
      the font's `normal`, so the copy must too (1.5 made it 1px taller).
      And the copy TAKES taps. It used to be pointer-events:none, which did not make it
@@ -344,7 +379,7 @@
   .ph.hastabs{padding-bottom:calc(env(safe-area-inset-bottom) + 100px)}
 
   .sbar{display:flex;align-items:center;gap:10px;padding:10px 0 14px}
-  .slogo{font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--ink)}
+  .slogo{font-weight:700;font-size:var(--fs-callout);letter-spacing:-.02em;color:var(--ink)}
   .spill{width:74px;height:26px;border-radius:99px;background:var(--surface-3)}
   .sdot{margin-left:auto;width:38px;height:38px;border-radius:50%;background:var(--surface-3)}
   .sblock{border-radius:var(--r-lg);background:var(--surface-3);
@@ -375,15 +410,20 @@
     box-shadow:var(--shadow)}
   .tt{padding:9px 11px 10px;margin-bottom:10px}
   .tthead{display:flex;align-items:center;gap:8px;margin-bottom:9px}
-  .ttlab{display:flex;align-items:center;gap:6px;flex:none;font-size:11px;font-weight:600;
+  .ttlab{display:flex;align-items:center;gap:6px;flex:none;font-size:var(--fs-caption2);font-weight:600;
     letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
   .ttlab svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;
     stroke-linecap:round;stroke-linejoin:round}
-  .ttviews{display:flex;gap:2px;flex:none;background:var(--surface-2);
-    border:1px solid var(--line);border-radius:99px;padding:2px}
-  .ttview{padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;
-    color:var(--ink-2)}
-  .ttview.on{background:var(--surface-3);color:var(--ink);box-shadow:var(--shadow)}
+  /* App.html's one segmented control (I11): grey track drawn 4px in, 44px segments with
+     the pill in the padding box. */
+  .ttviews{position:relative;isolation:isolate;display:flex;gap:0;flex:1;padding:0 2px;margin:0;border-radius:99px}
+  .ttviews::before{content:"";position:absolute;left:0;right:0;top:4px;bottom:4px;z-index:-1;border-radius:99px;
+    background:var(--seg-track)}
+  .ttview{display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;min-height:44px;padding:0 8px;
+    border:solid transparent;border-width:6px 0;background-clip:padding-box;border-radius:99px;
+    font-size:var(--fs-footnote);font-weight:500;line-height:1.25;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ttview.on{background-color:var(--seg-on);font-weight:600;filter:var(--seg-shadow)}
   .ttfold{width:26px;height:26px;flex:none;display:grid;place-items:center;color:var(--ink-3)}
   .ttfold svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;
     stroke-linecap:round;stroke-linejoin:round}
@@ -399,8 +439,8 @@
     font-variant-numeric:tabular-nums;line-height:1.2}
   .ttwhen svg{width:15px;height:15px;flex:none;color:var(--ink-3);fill:none;
     stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .ttwhen .d{display:block;font-size:11px;font-weight:600;color:var(--ink-3);white-space:nowrap}
-  .ttwhen .t{display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+  .ttwhen .d{display:block;font-size:var(--fs-caption2);font-weight:600;color:var(--ink-3);white-space:nowrap}
+  .ttwhen .t{display:block;font-size:var(--fs-callout);font-weight:700;letter-spacing:-.02em;white-space:nowrap}
   .ttwhen .t:empty{display:none}
 
   .ttweek{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;
@@ -412,8 +452,8 @@
     justify-content:center;align-items:flex-end;text-align:right;
     font-variant-numeric:tabular-nums;line-height:1.15}
   .ttgrow:last-child{margin-bottom:0}
-  .ttgrow b{font-size:11px;font-weight:700;color:var(--ink-2)}
-  .ttgrow span{font-size:9.5px;font-weight:600;color:var(--ink-3)}
+  .ttgrow b{font-size:var(--fs-caption2);font-weight:700;color:var(--ink-2)}
+  .ttgrow span{font-size:var(--fs-caption2);font-weight:600;color:var(--ink-3)}
   .ttday{flex:1 0 96px;min-width:96px;padding:6px;border:1px solid var(--line);
     border-radius:var(--r-md);background:var(--surface-2)}
   .ttday.today{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
@@ -421,8 +461,8 @@
     padding:0 1px 4px}
   /* Weekday then ordinal date (S9), as App.html draws it. */
   .ttday{container-type:inline-size}
-  .ttdn .dw,.ttchip .dw{font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
-  .ttdn b,.ttchip b{font-size:13px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ttdn .dw,.ttchip .dw{font-size:var(--fs-caption1);font-weight:600;color:var(--ink-2);white-space:nowrap}
+  .ttdn b,.ttchip b{font-size:var(--fs-footnote);font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
   .ttdn sup,.ttchip sup{font-size:.66em;line-height:0;vertical-align:.52em;margin-left:.5px;letter-spacing:0}
   .dw .wl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   @container (min-width:112px){
@@ -435,7 +475,7 @@
   .ttl{display:flex;align-items:center;width:100%;text-align:left;padding:0 6px;
     background:var(--surface);border:1px solid var(--line)}
   .ttl .sj{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    font-size:11.5px;font-weight:600;line-height:1.2;letter-spacing:-.01em}
+    font-size:var(--fs-caption1);font-weight:600;line-height:1.2;letter-spacing:-.01em}
   .tt [data-tone="as1"]{background:var(--tt-as1);border-color:var(--tt-as1-line)}
   .tt [data-tone="as2"]{background:var(--tt-as2);border-color:var(--tt-as2-line)}
   .tt [data-tone="as3"]{background:var(--tt-as3);border-color:var(--tt-as3-line)}
@@ -443,28 +483,28 @@
   .tt [data-tone="a22"]{background:var(--tt-a22);border-color:var(--tt-a22-line)}
   .tt [data-tone="a23"]{background:var(--tt-a23);border-color:var(--tt-a23-line)}
   .ttgap{box-shadow:inset 0 0 0 1px var(--line)}
-  .ttempty{font-size:11px;color:var(--ink-3);padding:3px 2px}
-  .ttempty.tall{padding:16px 2px;text-align:center;font-size:13px}
+  .ttempty{font-size:var(--fs-caption2);color:var(--ink-3);padding:3px 2px}
+  .ttempty.tall{padding:16px 2px;text-align:center;font-size:var(--fs-footnote)}
 
   .ttchips{display:flex;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;
     -webkit-overflow-scrolling:touch;padding-bottom:2px;margin-bottom:8px}
   .ttchip{flex:none;min-width:46px;display:flex;flex-direction:column;align-items:center;
     gap:1px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--r-md);
     background:var(--surface-2);font-variant-numeric:tabular-nums}
-  .ttchip .dw{font-size:11px;line-height:1.2}
+  .ttchip .dw{font-size:var(--fs-caption2);line-height:1.2}
   .ttchip.today{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
   .ttchip.today b,.ttchip.today .dw{color:var(--accent)}
   .ttchip.sel{background:var(--surface-3);border-color:var(--line-2)}
   .ttlist{display:flex;flex-direction:column;gap:3px}
   .ttp{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:6px 10px;
     border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
-  .ttp .pn{width:18px;flex:none;font-size:11px;font-weight:700;color:var(--ink-3);
+  .ttp .pn{width:18px;flex:none;font-size:var(--fs-caption2);font-weight:700;color:var(--ink-3);
     font-variant-numeric:tabular-nums}
-  .ttp .tm{width:86px;flex:none;font-size:11.5px;color:var(--ink-2);
+  .ttp .tm{width:86px;flex:none;font-size:var(--fs-caption1);color:var(--ink-2);
     font-variant-numeric:tabular-nums}
-  .ttp .nm{flex:1;min-width:0;font-size:13.5px;font-weight:600;letter-spacing:-.01em;
+  .ttp .nm{flex:1;min-width:0;font-size:var(--fs-footnote);font-weight:600;letter-spacing:-.01em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ttp .rm{flex:none;font-size:11.5px;color:var(--ink-3)}
+  .ttp .rm{flex:none;font-size:var(--fs-caption1);color:var(--ink-3)}
   .ttp.free{background:transparent}
   .ttp.free .nm{font-weight:500;color:var(--ink-3)}
 
@@ -472,31 +512,31 @@
      and how long is left. Its card is held at the height the app's own will be, with a
      single quiet bar where that answer goes. */
   .nolsn{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
-    box-shadow:var(--shadow);padding:26px 18px;text-align:center;font-size:14px;
+    box-shadow:var(--shadow);padding:26px 18px;text-align:center;font-size:var(--fs-subhead);
     font-weight:600;color:var(--ink-2)}
   /* 75px in every state, the same as the app's, so the handover does not jump. It says
      what the app will say before it knows the time — never a time of its own (inv. 31). */
   .ttnow{padding:9px 11px 10px;margin-bottom:12px;min-height:75px;display:flex;
     flex-direction:column;justify-content:center}
-  .ttmsg{display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+  .ttmsg{display:flex;align-items:center;gap:10px;font-size:var(--fs-footnote);line-height:1.5;color:var(--ink-2)}
   .ttmsg .spin{margin:3px}
   /* Ready (W8): App.html's .ttgo and .ttready, kept the same (invariant 35). */
   .ttgo{width:34px;height:34px;flex:none;border-radius:var(--r-sm);display:grid;place-items:center;
     background:var(--ok-soft);border:1px solid var(--ok-line);color:var(--ok)}
   .ttgo svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .ttready b{font-size:14.5px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+  .ttready b{font-size:var(--fs-subhead);font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 
   /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
   .name{margin-left:auto;display:flex;align-items:center;gap:8px}
-  .name .nm{font-size:13px;font-weight:500;color:var(--ink-2)}
+  .name .nm{font-size:var(--fs-footnote);font-weight:500;color:var(--ink-2)}
   .avatar{width:38px;height:38px;border-radius:50%;background:var(--gl-bg);color:var(--ink);
     border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
-    display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+    display:grid;place-items:center;font-size:var(--fs-footnote);font-weight:700;flex:none}
   .dhead{text-align:center;margin:2px 0 12px}
-  .dhead b{display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;line-height:1.3}
-  .dhead span{font-size:12.5px;color:var(--ink-2)}
+  .dhead b{display:block;font-size:var(--fs-callout);font-weight:700;letter-spacing:-.02em;line-height:1.3}
+  .dhead span{font-size:var(--fs-footnote);color:var(--ink-2)}
   .note{display:flex;align-items:center;justify-content:center;gap:7px;
-    font-size:12px;color:var(--ink-2);margin:0 auto 12px;padding:5px 12px;width:max-content;
+    font-size:var(--fs-caption1);color:var(--ink-2);margin:0 auto 12px;padding:5px 12px;width:max-content;
     max-width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:99px}
   .spin{width:11px;height:11px;border-radius:50%;border:2px solid var(--line-2);
     border-top-color:var(--ink-3);animation:sp .7s linear infinite;flex:none}
@@ -510,24 +550,24 @@
     box-shadow:var(--shadow);pointer-events:none;color:var(--ink);font-family:inherit}
   .lsn .per{width:42px;height:42px;flex:none;border-radius:var(--r-sm);background:var(--surface-2);
     border:1px solid var(--line);display:grid;place-content:center;text-align:center}
-  .lsn .per b{display:block;font-size:18px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  .lsn .per b{display:block;font-size:var(--fs-body);font-weight:700;letter-spacing:-.03em;line-height:1;
     font-variant-numeric:tabular-nums}
-  .lsn .per span{display:block;font-size:9px;font-weight:700;letter-spacing:.07em;
+  .lsn .per span{display:block;font-size:var(--fs-caption2);font-weight:700;letter-spacing:.07em;
     text-transform:uppercase;color:var(--ink-3);margin-top:2px}
   .lsn .mid{flex:1;min-width:0}
-  .lsn .mid .t{font-weight:600;font-size:15px;letter-spacing:-.01em}
-  .lsn .mid .s{font-size:12.5px;color:var(--ink-2);margin-top:1px}
+  .lsn .mid .t{font-weight:600;font-size:var(--fs-subhead);letter-spacing:-.01em}
+  .lsn .mid .s{font-size:var(--fs-footnote);color:var(--ink-2);margin-top:1px}
   /* Grid items default to min-width:auto, so a card whose chip will not wrap grows
      past its own track instead of shrinking. Same rule as App.html. */
   .lessons>*{min-width:0}
   .lsn .end{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none;
     min-width:0;max-width:58%}
   .lsn .end .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis}
-  .lsn .end .n{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .lsn .end .n{font-size:var(--fs-caption1);color:var(--ink-3);font-variant-numeric:tabular-nums}
   .lsn.leave{opacity:.7}
   .lsn.leave .per{background:var(--low-soft);border-color:var(--low-line)}
 
-  .chip{font-size:12px;font-weight:600;border-radius:99px;padding:3px 9px;white-space:nowrap;
+  .chip{font-size:var(--fs-caption1);font-weight:600;border-radius:99px;padding:3px 9px;white-space:nowrap;
     background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2)}
   .chip.ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
   .chip.todo{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
@@ -540,27 +580,16 @@
      Header controls float with no strip; the day is a large title; then now, the day's
      registers as one inset list, and the timetable last. The clock card is not drawn. */
   #instantInner{display:flex;flex-direction:column}
-  /* The header as the app draws it (W7): Live on the left, refresh and theme as one
-     capsule, the account on the right, gap 8 — and no name beside the avatar, which the
-     app never shows on a phone. Live is in its "not yet" grey until the app takes over and
-     turns the dot green; the word and the width stay the same, so only the dot changes.
-     The bottom padding puts the title where the app's is: its bar is 62px and its page
-     starts 12px under that. */
+  /* The header as the app draws it (W7, I3): nothing on the left until there is a way back,
+     and the account on the right with Live as a dot on the initials — in its "not yet" grey
+     until the app takes over and turns it green, so only the dot changes. No name beside the
+     avatar, which the app never shows on a phone. The bottom padding puts the title where
+     the app's is: its bar is 62px and its page starts 12px under that. */
   #instantInner>.sbar{order:0;padding:0 2px 24px;gap:8px}
   #instantInner>.sbar .slogo{visibility:hidden;flex:1;min-width:0;white-space:nowrap;overflow:hidden}
-  .slive{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;box-sizing:border-box;
-    font-size:13px;font-weight:600;color:var(--ink-3);white-space:nowrap;flex:none;
-    background:var(--gl-bg);border:1px solid var(--gl-edge);border-radius:99px;box-shadow:var(--gl-sm);
-    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
-  .slive i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);flex:none}
-  .scap{display:flex;flex:none}
-  .scap span{width:44px;height:38px;box-sizing:border-box;display:grid;place-items:center;color:var(--ink);
-    background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
-    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
-  .scap span:first-child{border-radius:22px 0 0 22px;border-right:0}
-  .scap span+span{border-radius:0 22px 22px 0;border-left:0}
-  .scap svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  :root[data-theme="dark"] .scap .i-moon,:root:not([data-theme="dark"]) .scap .i-sun{display:none}
+  .sbar .avatar{position:relative}
+  .sbar .avatar::after{content:"";position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;box-sizing:border-box;
+    border-radius:50%;background:var(--ink-3);border:2.5px solid var(--bg)}
   #instantInner>.dhead,#instantInner>.stuwrap{order:1}
   /* The app's date row is 84px with its day arrows beside it; the still copy has none. */
   #instantInner>.dhead{min-height:84px}
@@ -570,18 +599,18 @@
   #instantInner>.lessons,#instantInner>.sblock.hlsn,#instantInner>.nolsn{order:4}
   #instantInner>.tt,#instantInner>.htt{order:5;margin-top:22px}
   .dhead{text-align:left;margin:4px 4px 18px}
-  .dhead .eye{display:block;font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:2px}
-  .dhead b{font-size:34px;line-height:1.2;letter-spacing:.2px;padding-bottom:2px}
-  .dhead span{font-size:17px}
+  .dhead .eye{display:block;font-style:normal;font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2);margin-bottom:2px}
+  .dhead b{font-size:var(--fs-large);line-height:1.2;letter-spacing:.2px;padding-bottom:2px}
+  .dhead span{font-size:var(--fs-body)}
   /* A copy of App.html's .daysum (A1): change the two together. */
   .dsum{display:flex;gap:7px;flex-wrap:wrap;align-items:baseline;margin:22px 4px 10px}
-  .dsum .lab{font-size:22px;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin-right:auto}
-  .dsum .dsfig{font-size:13px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
-  .dsum .dsfig b{font-size:22px;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-right:1px}
+  .dsum .lab{font-size:var(--fs-title2);font-weight:700;letter-spacing:-.01em;color:var(--ink);margin-right:auto}
+  .dsum .dsfig{font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .dsum .dsfig b{font-size:var(--fs-title2);font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-right:1px}
   .dsum .dsbar{flex:1 0 100%;display:flex;gap:3px;height:8px;border-radius:99px;overflow:hidden;margin-top:4px}
   .dsum .dsbar i{display:block;min-width:6px}
   .dsum .taken{background:var(--ring-p)} .dsum .excused{background:var(--ring-l)} .dsum .missing{background:var(--ring-a)} .dsum .dsbar .todo{background:var(--surface-3)}
-  .dsum .dskey{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  .dsum .dskey{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--fs-footnote);color:var(--ink-2);margin-top:2px}
   .dsum .dskey>span{display:inline-flex;align-items:center;gap:5px}
   .dsum .dskey i{width:8px;height:8px;border-radius:99px;flex:none}
   .dsum .dskey .todo{box-shadow:inset 0 0 0 1.5px var(--ink-3)}
@@ -590,10 +619,10 @@
   #instantInner .lsn{border:0;border-radius:0;box-shadow:none;background:transparent;min-height:68px;padding:11px 16px}
   #instantInner .lsn:not(:first-child){background:linear-gradient(var(--line),var(--line)) 68px 0/calc(100% - 68px) 1px no-repeat}
   .lsn .per{width:40px;height:40px;border:0;border-radius:12px}
-  .lsn .per b{font-size:17px}
+  .lsn .per b{font-size:var(--fs-body)}
   .lsn .per span{display:none}
-  .lsn .mid .t{font-size:17px;font-weight:500}
-  .lsn .mid .s{font-size:14px}
+  .lsn .mid .t{font-size:var(--fs-body);font-weight:500}
+  .lsn .mid .s{font-size:var(--fs-subhead)}
   .lsn[data-tone="as1"] .per{background:var(--tt-as1)} .lsn[data-tone="as2"] .per{background:var(--tt-as2)}
   .lsn[data-tone="as3"] .per{background:var(--tt-as3)} .lsn[data-tone="a21"] .per{background:var(--tt-a21)}
   .lsn[data-tone="a22"] .per{background:var(--tt-a22)} .lsn[data-tone="a23"] .per{background:var(--tt-a23)}
@@ -602,7 +631,12 @@
   .lsn.tap{pointer-events:auto;cursor:pointer;text-align:left;
     transition:border-color .12s ease,background .12s ease,transform .08s ease}
   .lsn.tap:hover{border-color:var(--line-2);background:var(--surface-2)}
-  .lsn.tap:active{transform:scale(.99)}
+  /* Presses as the app's (its "One press, everywhere", invariant 35): a list row takes the
+     grey highlight rather than shrinking, a tile or button gives to .97 and a shade darker;
+     the press lands at once and the release eases back on the iOS curve. */
+  .lsn.tap:active{transform:none;background-color:var(--surface-3)}
+  .ph .tab .ic{transition:transform .22s cubic-bezier(.32,.72,0,1)}
+  .ph .tab:active .ic{transform:scale(.9);transition-duration:.06s}
   /* The register as the app draws it (W9): back where the app's back is, "Take register"
      over a large title and "P1 · 08:00–08:50 · Thu 22 Oct", the running count as three
      soft tiles, then the tiles — every one an icon and its word, Present included — and
@@ -618,29 +652,28 @@
     stroke-linecap:round;stroke-linejoin:round}
   .qhead{display:flex;align-items:flex-start;gap:10px;margin:0 0 12px}
   .qhead .grow{flex:1;min-width:0}
-  .qeye{font-size:13px;font-weight:600;color:var(--ink-2)}
-  .qtitle{margin:0;font-size:34px;line-height:1.2;font-weight:700;letter-spacing:.2px;color:var(--ink)}
-  .qsub{margin:0;font-size:17px;color:var(--ink-2)}
+  .qeye{font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2)}
+  .qtitle{margin:0;font-size:var(--fs-large);line-height:1.2;font-weight:700;letter-spacing:.2px;color:var(--ink)}
+  .qsub{margin:0;font-size:var(--fs-body);color:var(--ink-2)}
   .qcounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
   .qcounts .rc{border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;line-height:1.2}
-  .qcounts .rc b{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
-  .qcounts .rc span{font-size:13px;font-weight:500}
+  .qcounts .rc b{font-size:var(--fs-title2);font-weight:700;font-variant-numeric:tabular-nums}
+  .qcounts .rc span{font-size:var(--fs-footnote);font-weight:500}
   .qcounts .p{background:var(--ok-soft);color:var(--ok)}
   .qcounts .l{background:var(--low-soft);color:var(--low)}
   .qcounts .a{background:var(--full-soft);color:var(--full)}
-  .qhint{font-size:12px;color:var(--ink-3);text-align:right;margin:-4px 0 9px}
+  .qhint{font-size:var(--fs-caption1);color:var(--ink-3);text-align:right;margin:-4px 0 9px}
   .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
   .qtile{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:68px;
     text-align:left;background:var(--surface);border:1px solid var(--line);
     border-radius:20px;padding:12px 14px;overflow:hidden;box-shadow:var(--shadow);
     cursor:pointer;font-family:inherit;color:var(--ink);
-    transition:background .12s ease,border-color .12s ease,transform .08s ease}
-  .qtile:active{transform:scale(.98)}
+    transition:background .12s ease,border-color .12s ease,transform .08s ease,filter .08s ease}
   .qtile .av{display:none}
   .qtile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    font-size:16.5px;line-height:1.3;font-weight:600;letter-spacing:-.01em}
+    font-size:var(--fs-body);line-height:1.3;font-weight:600;letter-spacing:-.01em}
   .qtile .st{display:flex;align-items:center;gap:4px;min-height:17px;margin-top:1px;
-    font-size:13px;font-weight:600;color:var(--ok)}
+    font-size:var(--fs-footnote);font-weight:600;color:var(--ok)}
   .qtile .st svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
   .qtile[data-s="L"]{background:var(--low-soft);border-color:var(--low-line)}
   .qtile[data-s="L"] .st{color:var(--low)}
@@ -650,16 +683,16 @@
   /* ---- a student's cached summary ---- */
   .stot{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
     padding:18px;text-align:center;margin-bottom:9px;box-shadow:var(--shadow)}
-  .stot b{display:block;font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  .stot b{display:block;font-size:var(--fs-large);font-weight:700;letter-spacing:-.03em;line-height:1;
     font-variant-numeric:tabular-nums}
-  .stot span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:6px}
+  .stot span{display:block;font-size:var(--fs-footnote);color:var(--ink-2);margin-top:6px}
   .srow{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface);
     border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:8px;box-shadow:var(--shadow)}
   .srow.past{opacity:.55}
-  .slab{flex:1;min-width:0;font-size:14.5px;font-weight:600;overflow:hidden;
+  .slab{flex:1;min-width:0;font-size:var(--fs-subhead);font-weight:600;overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap}
-  .sfig{font-size:12.5px;color:var(--ink-3);flex:none}
-  .spct{font-weight:700;font-size:16px;flex:none;min-width:52px;text-align:right;
+  .sfig{font-size:var(--fs-footnote);color:var(--ink-3);flex:none}
+  .spct{font-weight:700;font-size:var(--fs-callout);flex:none;min-width:52px;text-align:right;
     font-variant-numeric:tabular-nums}
 
   /* The app's floating Save bar. Its second line says the one thing that differs here:
@@ -669,16 +702,18 @@
     background:var(--gl-bar);border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
     -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
   .qinfo{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
-  .qinfo b{font-size:15px;font-weight:600}
-  .qinfo span{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-2);
+  .qinfo b{font-size:var(--fs-subhead);font-weight:600}
+  .qinfo span{display:flex;align-items:center;gap:5px;font-size:var(--fs-footnote);color:var(--ink-2);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .qinfo svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .qbtn{flex:none;padding:13px 22px;border:1px solid var(--gl-p-edge);border-radius:99px;
-    background:var(--gl-p);color:var(--gl-p-ink);font-size:17px;font-weight:600;cursor:pointer;
+    background:var(--gl-p);color:var(--gl-p-ink);font-size:var(--fs-body);font-weight:600;cursor:pointer;
     font-family:inherit;box-shadow:var(--gl-p-shadow);
     transition:filter .12s ease,transform .08s ease}
   .qbtn:hover{filter:brightness(1.08)}
-  .qbtn:active{transform:scale(.985)}
+  /* (the presses above) */
+  .qtile,.qbtn{transition-duration:.22s;transition-timing-function:cubic-bezier(.32,.72,0,1)}
+  .qtile:active,.qbtn:active{transform:scale(.97);filter:brightness(.94);transition-duration:.06s}
 
   /* ---- sign-in (first open, or after Sign out) and the notification gate ----
      One glass card over the six subjects drawn faintly behind it. */
@@ -697,34 +732,34 @@
     background:var(--surface-3);color:var(--ink);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm)}
   .gtile.warn{background:var(--low-soft);color:var(--low)}
   .gtile svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .box .kicker{font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 2px}
-  .box h1{font-size:28px;line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0 0 6px;color:var(--ink)}
-  .box p{font-size:15px;color:var(--ink-2);margin:0 0 16px;line-height:1.45}
-  .box label{display:block;font-size:13px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+  .box .kicker{font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2);margin:0 0 2px}
+  .box h1{font-size:var(--fs-title1);line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0 0 6px;color:var(--ink)}
+  .box p{font-size:var(--fs-subhead);color:var(--ink-2);margin:0 0 16px;line-height:1.45}
+  .box label{display:block;font-size:var(--fs-footnote);font-weight:600;margin:0 0 6px;color:var(--ink)}
   .box input{width:100%;-webkit-appearance:none;appearance:none;padding:14px 18px;
-    border:1px solid var(--gl-edge);border-radius:99px;font-size:16px;font-family:inherit;
+    border:1px solid var(--gl-edge);border-radius:99px;font-size:var(--fs-callout);font-family:inherit;
     background:var(--gl-bg);color:var(--ink);box-shadow:var(--gl-sm),inset 0 2px 6px rgba(0,0,0,.06)}
   .box input:focus{outline:2px solid var(--accent);outline-offset:2px}
   .box .go{width:100%;margin-top:12px;padding:15px;border:1px solid var(--gl-p-edge);
-    border-radius:99px;background:var(--gl-p);color:var(--gl-p-ink);font-size:16px;
+    border-radius:99px;background:var(--gl-p);color:var(--gl-p-ink);font-size:var(--fs-callout);
     font-weight:600;cursor:pointer;font-family:inherit;box-shadow:var(--gl-p-shadow)}
   .box .go:hover{filter:brightness(1.08)}
   .box .go[hidden]{display:none}
-  .box .foot{font-size:13px;color:var(--ink-2);text-align:center;margin:14px 0 0}
-  .box .err{font-size:13px;color:var(--full);margin:8px 2px 0}
+  .box .foot{font-size:var(--fs-footnote);color:var(--ink-2);text-align:center;margin:14px 0 0}
+  .box .err{font-size:var(--fs-footnote);color:var(--full);margin:8px 2px 0}
   .box .err:empty{display:none}
   .okpill{position:fixed;top:calc(env(safe-area-inset-top) + 18px);left:50%;transform:translateX(-50%);
-    display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:99px;font-size:13px;font-weight:600;
+    display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:99px;font-size:var(--fs-footnote);font-weight:600;
     white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;color:var(--ink);
     background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
     -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);z-index:4}
   .okpill[hidden]{display:none}
   .steps{list-style:none;margin:0 0 4px;padding:0;display:flex;flex-direction:column;gap:8px}
   .steps:empty{display:none}
-  .steps li{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:22px;font-size:15px;
+  .steps li{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:22px;font-size:var(--fs-subhead);
     background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm)}
   .steps li b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
-    font-size:14px;background:var(--surface-3);color:var(--ink)}
+    font-size:var(--fs-subhead);background:var(--surface-3);color:var(--ink)}
   .steps .gs{flex:1;min-width:0;line-height:1.35}
   .steps .gs strong{font-weight:700}
   /* The icon to look for on the phone, where the eye ends up after reading the step. */
@@ -737,19 +772,23 @@
   .gwhy:empty{display:none}
   .gw{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:13px 8px 12px;
     border-radius:22px;background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
-    font-size:14px;font-weight:600;color:var(--ink);text-align:center}
+    font-size:var(--fs-subhead);font-weight:600;color:var(--ink);text-align:center}
   .gw i{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;
     background:var(--ok-soft);color:var(--ok)}
   .gw:nth-child(2) i{background:var(--accent-soft);color:var(--accent)}
   .gw svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .glink{display:block;width:100%;margin:10px 0 0;padding:12px 16px;border-radius:16px;font-size:14px;font-weight:500;line-height:1.3;
+  .glink{display:block;width:100%;margin:10px 0 0;padding:12px 16px;border-radius:16px;font-size:var(--fs-subhead);font-weight:500;line-height:1.3;
     font-family:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);
     -webkit-user-select:all;user-select:all}
   .glink[hidden]{display:none}
   .gfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;
-    font-size:13px;color:var(--ink-2)}
-  .gfoot button{border:1px solid var(--gl-edge);background:var(--gl-bg);color:var(--ink);font:inherit;
-    font-weight:600;border-radius:99px;padding:7px 14px;cursor:pointer;box-shadow:var(--gl-sm)}
+    font-size:var(--fs-footnote);color:var(--ink-2)}
+  /* Sign Out, said the way the app's account menu says it: red words and the same icon,
+     no red fill; 44px tall, the smallest a thumb should be asked to hit. */
+  .gfoot button{display:inline-flex;align-items:center;gap:6px;min-height:44px;border:1px solid var(--gl-edge);
+    background:var(--gl-bg);color:var(--full);font:inherit;font-weight:600;border-radius:99px;padding:0 16px 0 13px;
+    cursor:pointer;box-shadow:var(--gl-sm)}
+  .gfoot button svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
   /* ---- the loading screen: a sign-in, or any open with nothing cached to paint ----
      Shown in place of the bare skeleton, never over a cached screen (invariant: the
@@ -763,7 +802,7 @@
   .load .box{text-align:center;padding:28px 22px 22px}
   .load .gtile{margin:0 auto 14px}
   .load h1{margin:0 0 4px}
-  .lstep{font-size:15px;color:var(--ink);font-weight:600;margin:12px 0 4px;min-height:1.45em}
+  .lstep{font-size:var(--fs-subhead);color:var(--ink);font-weight:600;margin:12px 0 4px;min-height:1.45em}
   .lbar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;
     border:1px solid var(--line);position:relative}
   .lbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;
@@ -781,7 +820,7 @@
   .lsteps .lbar{position:absolute;left:12.5%;right:12.5%;top:15px;height:4px;border:0}
   .lstages{position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr)}
   .lstages li{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;
-    font-size:12px;font-weight:600;color:var(--ink-3);white-space:nowrap;transition:color .25s ease}
+    font-size:var(--fs-caption1);font-weight:600;color:var(--ink-3);white-space:nowrap;transition:color .25s ease}
   .lstages i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
     background:var(--surface-3);color:var(--ink-3);transition:background .25s ease,color .25s ease}
   .lstages svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;
@@ -865,7 +904,7 @@
     <ol class="steps" id="gateSteps"></ol>
     <input class="glink" id="gateLink" type="text" readonly aria-label="Your link" hidden>
     <button class="go" id="gateGo" type="button" hidden></button>
-    <div class="gfoot"><span id="gateWho"></span><button type="button" id="gateOut">Sign out</button></div>
+    <div class="gfoot"><span id="gateWho"></span><button type="button" id="gateOut"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>Sign Out</button></div>
   </section>
 </div>
 
@@ -1306,6 +1345,15 @@
     res:    ['Resources', '<path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h3.6l2 2.2h7.4a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>'],
     grades: ['Gradebook', '<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5z"/><path d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19v3H7.5"/><path d="M9 7.5h6M9 11h4"/>']
   };
+  // ...and the solid glyph each shows while it is the current tab (I13).
+  var TAB_FILL = {
+    home: '<path d="M12 3.2 2.9 10.7a.9.9 0 0 0 1.2 1.4l.9-.8V20a1 1 0 0 0 1 1h4.5v-6h3v6H18a1 1 0 0 0 1-1v-8.7l.9.8a.9.9 0 0 0 1.2-1.4z"/>',
+    plan: '<path fill-rule="evenodd" d="M6 5h12a2.5 2.5 0 0 1 2.5 2.5V18a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 18V7.5A2.5 2.5 0 0 1 6 5zM7.5 12.6h4v1.8h-4zM7.5 15.6h7v1.8h-7z"/><path class="s" d="M8 3v3M16 3v3"/>',
+    tt: '<path fill-rule="evenodd" d="M6 4.5h12A2.5 2.5 0 0 1 20.5 7v10.5A2.5 2.5 0 0 1 18 20H6a2.5 2.5 0 0 1-2.5-2.5V7A2.5 2.5 0 0 1 6 4.5zM3.5 8.8h17v1.4h-17zM3.5 14.05h17v1.4h-17zM8.55 10.2h1.4v3.85h-1.4zM14.05 10.2h1.4v3.85h-1.4zM8.55 15.45h1.4V20h-1.4zM14.05 15.45h1.4V20h-1.4z"/>',
+    res: '<path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h3.6l2 2.2h7.4a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
+    grades: '<path fill-rule="evenodd" d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5zM9 6.8h6v1.4H9zM9 10.3h4v1.4H9z"/><path class="s" d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19v3H7.5"/>'
+  };
+
   function tabList(v){
     if (!Array.isArray(v)) return null;
     var out = ['home', 'plan', 'tt', 'res', 'grades'].filter(function (n) { return v.indexOf(n) !== -1; });
@@ -1316,7 +1364,8 @@
     return !list ? '' : '<div class="tabs" id="instantTabs"><div class="tabs-in">' +
       list.map(function (n) {
         return '<span class="tab" data-tab="' + n + '"' + (n === 'home' ? ' aria-current="page"' : '') + '><span class="ic">' +
-          '<svg viewBox="0 0 24 24">' + TAB_BAR[n][1] + '</svg></span>' + TAB_BAR[n][0] + '</span>';
+          '<svg class="o" viewBox="0 0 24 24">' + TAB_BAR[n][1] + '</svg><svg class="f" viewBox="0 0 24 24">' + TAB_FILL[n] +
+          '</svg></span>' + TAB_BAR[n][0] + '</span>';
       }).join('') + '</div></div>';
   }
   // Room under the last card, and the notification bar lifted clear, before the app says so.
@@ -1618,14 +1667,9 @@
     return true;
   }
 
-  /* The app's header, drawn still (W7): see .slive. Theme shows the glyph the app's
-     button offers — the moon in light, the sun in dark. */
+  /* The app's header, drawn still (W7, I3): the account and its Live dot, nothing else. */
   function headBar(school, name) {
-    return '<div class="sbar"><span class="slive"><i></i>Live</span>' +
-      '<span class="slogo">' + esc(school || 'KS5 Hub') + '</span>' +
-      '<span class="scap"><span><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></span>' +
-      '<span><svg viewBox="0 0 24 24" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>' +
-      '<svg viewBox="0 0 24 24" class="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span></span>' +
+    return '<div class="sbar"><span class="slogo">' + esc(school || 'KS5 Hub') + '</span>' +
       '<span class="name"><span class="avatar">' + esc(initials(name)) + '</span></span></div>';
   }
 
@@ -2294,12 +2338,20 @@
       if (m.type === 'attendance:theme') {
         // The app owns the toggle; this page owns the preference, because it paints
         // first on the next open and has the origin that survives a redeploy.
-        if (m.theme === 'dark' || m.theme === 'light') {
+        // System (I3): the pin is dropped and the page follows the phone again.
+        if (m.theme === 'system') {
+          try { localStorage.removeItem('attendance-theme'); } catch (err) {}
+          m.theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme-by', 'system');
+        } else if (m.theme === 'dark' || m.theme === 'light') {
           try { localStorage.setItem('attendance-theme', m.theme); } catch (err) {}
+          document.documentElement.setAttribute('data-theme-by', 'user');
+        }
+        if (m.theme === 'dark' || m.theme === 'light') {
           document.documentElement.setAttribute('data-theme', m.theme);
           // ...and the status bar with it, or the toggle leaves a white strip behind.
           var mc = document.querySelector('meta[name="theme-color"]');
-          if (mc) mc.setAttribute('content', m.theme === 'dark' ? '#111216' : '#F3F2F7');
+          if (mc) mc.setAttribute('content', m.theme === 'dark' ? '#000000' : '#F3F2F7');
         }
         return;
       }
@@ -2954,6 +3006,15 @@
     });
   }
 })();
+
+/* The worker, on every load, signed in or not. Chrome on Android offers Install only to a
+   page whose worker is already running, and the sign-in screen is exactly where someone
+   first meets the site. Push setup later registers the same file and gets this one back. */
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
 </script>
 </body>
 </html>
