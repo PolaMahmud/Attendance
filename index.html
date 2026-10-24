@@ -177,6 +177,7 @@
     --low:#8A4B12;  --low-soft:#FBE6CF;  --low-line:#F0CFA8;
     --full:#9B2F35; --full-soft:#F7DADA; --full-line:#EDBDBD;
     --ok:#2E6A45;   --ok-soft:#DCEFE2;   --ok-line:#BBDCC6;
+    --ring-p:#8DCCA3; --ring-l:#F2BC86; --ring-a:#E9A3A3;   /* the app's pastel graphic tones */
 
     --r-lg:22px; --r-md:14px; --r-sm:10px;
     --shadow:0 1px 2px rgba(31,35,48,.04),0 4px 14px rgba(31,35,48,.04);
@@ -232,6 +233,7 @@
     --low:#F3C99A;  --low-soft:#3D2E1F;  --low-line:#5A4430;
     --full:#F0B1B1; --full-soft:#3E2527; --full-line:#5E393B;
     --ok:#A6DDB8;   --ok-soft:#23362B;   --ok-line:#355440;
+    --ring-p:#7FC79A; --ring-l:#E9B47E; --ring-a:#E39595;
 
     --late:#F3C99A; --absent:#F0B1B1;
 
@@ -302,6 +304,12 @@
     border-radius:22px;padding:12px 14px;font-size:13.5px;line-height:1.35;box-shadow:var(--gl-shadow);
     -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
   .notif[hidden]{display:none}
+  .notif .nbell{display:flex;align-items:center;gap:8px;font-weight:600}
+  .notif .nbell svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .notif .stk{display:flex;gap:10px;align-items:flex-start}
+  .notif .stk svg{width:20px;height:20px;flex:none;color:var(--low);margin-top:1px}
+  .notif .stk b{display:block;font-size:14.5px}
+  .notif .stkwhy{display:block;color:var(--ink-2)}
   .notif span{flex:1 1 160px;min-width:0}
   .notif button{flex:0 0 auto;border:1px solid var(--gl-p-edge);border-radius:99px;padding:9px 16px;
     font:inherit;font-weight:600;cursor:pointer;background:var(--gl-p);color:var(--gl-p-ink);
@@ -411,10 +419,17 @@
   .ttday.today{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
   .ttdn{height:26px;display:flex;align-items:center;gap:5px;width:100%;text-align:left;
     padding:0 1px 4px}
-  .ttdn b{font-size:13px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-  .ttdn span{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-    color:var(--ink-3)}
-  .ttday.today .ttdn b,.ttday.today .ttdn span{color:var(--accent)}
+  /* Weekday then ordinal date (S9), as App.html draws it. */
+  .ttday{container-type:inline-size}
+  .ttdn .dw,.ttchip .dw{font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+  .ttdn b,.ttchip b{font-size:13px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ttdn sup,.ttchip sup{font-size:.66em;line-height:0;vertical-align:.52em;margin-left:.5px;letter-spacing:0}
+  .dw .wl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  @container (min-width:112px){
+    .ttdn .dw .wl{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+    .ttdn .dw .ws{display:none}
+  }
+  .ttday.today .ttdn b,.ttday.today .ttdn .dw{color:var(--accent)}
   .ttl,.ttgap{height:32px;margin-bottom:3px;border-radius:var(--r-sm)}
   .ttl:last-child,.ttgap:last-child{margin-bottom:0}
   .ttl{display:flex;align-items:center;width:100%;text-align:left;padding:0 6px;
@@ -436,11 +451,9 @@
   .ttchip{flex:none;min-width:46px;display:flex;flex-direction:column;align-items:center;
     gap:1px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--r-md);
     background:var(--surface-2);font-variant-numeric:tabular-nums}
-  .ttchip b{font-size:13px;font-weight:700;letter-spacing:-.02em}
-  .ttchip span{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-    color:var(--ink-3)}
+  .ttchip .dw{font-size:11px;line-height:1.2}
   .ttchip.today{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
-  .ttchip.today b,.ttchip.today span{color:var(--accent)}
+  .ttchip.today b,.ttchip.today .dw{color:var(--accent)}
   .ttchip.sel{background:var(--surface-3);border-color:var(--line-2)}
   .ttlist{display:flex;flex-direction:column;gap:3px}
   .ttp{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:6px 10px;
@@ -467,6 +480,11 @@
     flex-direction:column;justify-content:center}
   .ttmsg{display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
   .ttmsg .spin{margin:3px}
+  /* Ready (W8): App.html's .ttgo and .ttready, kept the same (invariant 35). */
+  .ttgo{width:34px;height:34px;flex:none;border-radius:var(--r-sm);display:grid;place-items:center;
+    background:var(--ok-soft);border:1px solid var(--ok-line);color:var(--ok)}
+  .ttgo svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ttready b{font-size:14.5px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 
   /* ---- cached view: mirrors the app's own cards so the swap is invisible ---- */
   .name{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -522,9 +540,30 @@
      Header controls float with no strip; the day is a large title; then now, the day's
      registers as one inset list, and the timetable last. The clock card is not drawn. */
   #instantInner{display:flex;flex-direction:column}
-  #instantInner>.sbar{order:0;padding:0 2px 6px}
-  #instantInner>.sbar .slogo{visibility:hidden;flex:1}
-  #instantInner>.dhead{order:1}
+  /* The header as the app draws it (W7): Live on the left, refresh and theme as one
+     capsule, the account on the right, gap 8 — and no name beside the avatar, which the
+     app never shows on a phone. Live is in its "not yet" grey until the app takes over and
+     turns the dot green; the word and the width stay the same, so only the dot changes.
+     The bottom padding puts the title where the app's is: its bar is 62px and its page
+     starts 12px under that. */
+  #instantInner>.sbar{order:0;padding:0 2px 24px;gap:8px}
+  #instantInner>.sbar .slogo{visibility:hidden;flex:1;min-width:0;white-space:nowrap;overflow:hidden}
+  .slive{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;box-sizing:border-box;
+    font-size:13px;font-weight:600;color:var(--ink-3);white-space:nowrap;flex:none;
+    background:var(--gl-bg);border:1px solid var(--gl-edge);border-radius:99px;box-shadow:var(--gl-sm);
+    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
+  .slive i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);flex:none}
+  .scap{display:flex;flex:none}
+  .scap span{width:44px;height:38px;box-sizing:border-box;display:grid;place-items:center;color:var(--ink);
+    background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
+    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
+  .scap span:first-child{border-radius:22px 0 0 22px;border-right:0}
+  .scap span+span{border-radius:0 22px 22px 0;border-left:0}
+  .scap svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  :root[data-theme="dark"] .scap .i-moon,:root:not([data-theme="dark"]) .scap .i-sun{display:none}
+  #instantInner>.dhead,#instantInner>.stuwrap{order:1}
+  /* The app's date row is 84px with its day arrows beside it; the still copy has none. */
+  #instantInner>.dhead{min-height:84px}
   #instantInner>.ttwhenwrap{display:none}
   #instantInner>.ttnow,#instantInner>.note{order:2}
   #instantInner>.dsum{order:3}
@@ -534,7 +573,18 @@
   .dhead .eye{display:block;font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:2px}
   .dhead b{font-size:34px;line-height:1.2;letter-spacing:.2px;padding-bottom:2px}
   .dhead span{font-size:17px}
-  .dsum{font-size:22px;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin:22px 4px 10px}
+  /* A copy of App.html's .daysum (A1): change the two together. */
+  .dsum{display:flex;gap:7px;flex-wrap:wrap;align-items:baseline;margin:22px 4px 10px}
+  .dsum .lab{font-size:22px;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin-right:auto}
+  .dsum .dsfig{font-size:13px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .dsum .dsfig b{font-size:22px;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-right:1px}
+  .dsum .dsbar{flex:1 0 100%;display:flex;gap:3px;height:8px;border-radius:99px;overflow:hidden;margin-top:4px}
+  .dsum .dsbar i{display:block;min-width:6px}
+  .dsum .taken{background:var(--ring-p)} .dsum .excused{background:var(--ring-l)} .dsum .missing{background:var(--ring-a)} .dsum .dsbar .todo{background:var(--surface-3)}
+  .dsum .dskey{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  .dsum .dskey>span{display:inline-flex;align-items:center;gap:5px}
+  .dsum .dskey i{width:8px;height:8px;border-radius:99px;flex:none}
+  .dsum .dskey .todo{box-shadow:inset 0 0 0 1.5px var(--ink-3)}
   #instantInner .lessons{grid-template-columns:1fr;gap:0;background:var(--surface);border-radius:var(--r-lg);
     overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
   #instantInner .lsn{border:0;border-radius:0;box-shadow:none;background:transparent;min-height:68px;padding:11px 16px}
@@ -553,38 +603,49 @@
     transition:border-color .12s ease,background .12s ease,transform .08s ease}
   .lsn.tap:hover{border-color:var(--line-2);background:var(--surface-2)}
   .lsn.tap:active{transform:scale(.99)}
-  .qbar{display:flex;align-items:center;gap:12px;padding:2px 0 12px}
-  .qbar b{font-size:19px;font-weight:700;letter-spacing:-.02em;flex:1;min-width:0}
-  .qback{background:var(--gl-bg);border:1px solid var(--gl-edge);border-radius:50%;
-    width:38px;height:38px;flex:none;cursor:pointer;font-size:17px;line-height:1;color:var(--ink);
-    box-shadow:var(--gl-sm);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
-  .qsub{font-size:12.5px;color:var(--ink-2);padding:0 0 12px}
-  /* The same tile grid the app uses, and the same P -> A -> L cycle on tap, so the
-     register a teacher takes here is the one they already know rather than a second
-     way of doing it that happens to live in the shell. The initials circle is hidden
-     rather than removed for the same reason it is in the app: the tap handler writes
-     the absent glyph into it. */
-  .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px}
-  .qtile{position:relative;display:flex;flex-direction:column;justify-content:center;
+  /* The register as the app draws it (W9): back where the app's back is, "Take register"
+     over a large title and "P1 · 08:00–08:50 · Thu 22 Oct", the running count as three
+     soft tiles, then the tiles — every one an icon and its word, Present included — and
+     a floating Save bar. Everyone present is the app's round tick beside the title. Same
+     sizes as App.html's register (its .rhead, .rcounts, .tile and .savebar), so a teacher
+     is not learning a second register that happens to live in the shell. */
+  .qbar{display:flex;align-items:center;padding:0 2px 24px}
+  .qback,.qicon{width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;
+    cursor:pointer;color:var(--ink);padding:0;font-family:inherit;
+    background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
+    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
+  .qback svg,.qicon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .qhead{display:flex;align-items:flex-start;gap:10px;margin:0 0 12px}
+  .qhead .grow{flex:1;min-width:0}
+  .qeye{font-size:13px;font-weight:600;color:var(--ink-2)}
+  .qtitle{margin:0;font-size:34px;line-height:1.2;font-weight:700;letter-spacing:.2px;color:var(--ink)}
+  .qsub{margin:0;font-size:17px;color:var(--ink-2)}
+  .qcounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+  .qcounts .rc{border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;line-height:1.2}
+  .qcounts .rc b{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+  .qcounts .rc span{font-size:13px;font-weight:500}
+  .qcounts .p{background:var(--ok-soft);color:var(--ok)}
+  .qcounts .l{background:var(--low-soft);color:var(--low)}
+  .qcounts .a{background:var(--full-soft);color:var(--full)}
+  .qhint{font-size:12px;color:var(--ink-3);text-align:right;margin:-4px 0 9px}
+  .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .qtile{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:68px;
     text-align:left;background:var(--surface);border:1px solid var(--line);
-    border-radius:var(--r-md);padding:10px 12px;overflow:hidden;box-shadow:var(--shadow);
+    border-radius:20px;padding:12px 14px;overflow:hidden;box-shadow:var(--shadow);
     cursor:pointer;font-family:inherit;color:var(--ink);
     transition:background .12s ease,border-color .12s ease,transform .08s ease}
   .qtile:active{transform:scale(.98)}
-  .qtile::before{content:none}
   .qtile .av{display:none}
   .qtile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    font-size:13.5px;line-height:1.3;font-weight:600;letter-spacing:-.01em}
-  .qtile .st{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
-    font-weight:700;color:var(--ink-3);margin-top:2px}
+    font-size:16.5px;line-height:1.3;font-weight:600;letter-spacing:-.01em}
+  .qtile .st{display:flex;align-items:center;gap:4px;min-height:17px;margin-top:1px;
+    font-size:13px;font-weight:600;color:var(--ok)}
+  .qtile .st svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
   .qtile[data-s="L"]{background:var(--low-soft);border-color:var(--low-line)}
-  .qtile[data-s="L"]::before{background:var(--low)}
   .qtile[data-s="L"] .st{color:var(--low)}
   .qtile[data-s="A"]{background:var(--full-soft);border-color:var(--full-line)}
-  .qtile[data-s="A"]::before{background:var(--full)}
   .qtile[data-s="A"] .st{color:var(--full)}
-  .qlegend{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--ink-2);margin-bottom:9px}
-  .qlegend i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px}
 
   /* ---- a student's cached summary ---- */
   .stot{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
@@ -601,18 +662,23 @@
   .spct{font-weight:700;font-size:16px;flex:none;min-width:52px;text-align:right;
     font-variant-numeric:tabular-nums}
 
-  .qacts{display:flex;gap:9px;margin:14px 0 4px;position:sticky;bottom:0;
-    padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
-  .qbtn{flex:1;padding:14px;border:1px solid var(--gl-p-edge);border-radius:99px;
-    background:var(--gl-p);color:var(--gl-p-ink);font-size:15px;font-weight:600;cursor:pointer;
+  /* The app's floating Save bar. Its second line says the one thing that differs here:
+     the register goes once the app has loaded, not this second. */
+  .qsavebar{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:2;margin:14px 0 0;
+    display:flex;align-items:center;gap:12px;padding:7px 7px 7px 20px;border-radius:99px;
+    background:var(--gl-bar);border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
+    -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
+  .qinfo{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+  .qinfo b{font-size:15px;font-weight:600}
+  .qinfo span{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qinfo svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .qbtn{flex:none;padding:13px 22px;border:1px solid var(--gl-p-edge);border-radius:99px;
+    background:var(--gl-p);color:var(--gl-p-ink);font-size:17px;font-weight:600;cursor:pointer;
     font-family:inherit;box-shadow:var(--gl-p-shadow);
     transition:filter .12s ease,transform .08s ease}
   .qbtn:hover{filter:brightness(1.08)}
   .qbtn:active{transform:scale(.985)}
-  .qbtn.alt{background:var(--gl-bg);color:var(--ink);border-color:var(--gl-edge);box-shadow:var(--gl-sm);
-    -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
-  .qbtn.alt:hover{filter:none;opacity:.88}
-  .qnote{font-size:12px;color:var(--ink-2);text-align:center;padding:8px 0 0}
 
   /* ---- sign-in (first open, or after Sign out) and the notification gate ----
      One glass card over the six subjects drawn faintly behind it. */
@@ -659,6 +725,27 @@
     background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm)}
   .steps li b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
     font-size:14px;background:var(--surface-3);color:var(--ink)}
+  .steps .gs{flex:1;min-width:0;line-height:1.35}
+  .steps .gs strong{font-weight:700}
+  /* The icon to look for on the phone, where the eye ends up after reading the step. */
+  .steps .gi{flex:none;width:28px;height:28px;display:grid;place-items:center;color:var(--ink-2)}
+  .steps .gi svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+  .steps .gi img{display:block;width:26px;height:26px;border-radius:7px;box-shadow:0 0 0 1px var(--line)}
+  /* What notifications are for (W3): two glass tiles side by side, an icon over a word. */
+  .gwhy{display:flex;gap:8px;margin:0 0 4px}
+  .gwhy:empty{display:none}
+  .gw{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:13px 8px 12px;
+    border-radius:22px;background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
+    font-size:14px;font-weight:600;color:var(--ink);text-align:center}
+  .gw i{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;
+    background:var(--ok-soft);color:var(--ok)}
+  .gw:nth-child(2) i{background:var(--accent-soft);color:var(--accent)}
+  .gw svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .glink{display:block;width:100%;margin:10px 0 0;padding:12px 16px;border-radius:16px;font-size:14px;font-weight:500;line-height:1.3;
+    font-family:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);
+    -webkit-user-select:all;user-select:all}
+  .glink[hidden]{display:none}
   .gfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;
     font-size:13px;color:var(--ink-2)}
   .gfoot button{border:1px solid var(--gl-edge);background:var(--gl-bg);color:var(--ink);font:inherit;
@@ -676,7 +763,7 @@
   .load .box{text-align:center;padding:28px 22px 22px}
   .load .gtile{margin:0 auto 14px}
   .load h1{margin:0 0 4px}
-  .lstep{font-size:15px;color:var(--ink);font-weight:600;margin:14px 0 10px;min-height:1.45em}
+  .lstep{font-size:15px;color:var(--ink);font-weight:600;margin:12px 0 4px;min-height:1.45em}
   .lbar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;
     border:1px solid var(--line);position:relative}
   .lbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;
@@ -684,8 +771,28 @@
   .lbar i::after{content:"";position:absolute;inset:0;
     background:linear-gradient(100deg,transparent 20%,var(--sheen) 50%,transparent 80%);
     background-size:220% 100%;animation:sh 1.4s linear infinite}
-  .lmeta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);
-    margin-top:8px;font-variant-numeric:tabular-nums}
+  /* The four stages as icons strung on the bar (W5), in place of "Step 2 of 4" and a
+     percentage nobody can act on. The bar runs from the first icon's centre to the last
+     and creeps towards the next stage without reaching it; done is a soft green tick, now
+     is filled with a slow ring turning round it, still to come is quiet. Every state is
+     the same size and the labels never wrap, so nothing moves as it steps on; the words
+     that change are in #loadStep, which is what a reader hears. */
+  .lsteps{position:relative;margin:16px -6px 0}
+  .lsteps .lbar{position:absolute;left:12.5%;right:12.5%;top:15px;height:4px;border:0}
+  .lstages{position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr)}
+  .lstages li{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;
+    font-size:12px;font-weight:600;color:var(--ink-3);white-space:nowrap;transition:color .25s ease}
+  .lstages i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+    background:var(--surface-3);color:var(--ink-3);transition:background .25s ease,color .25s ease}
+  .lstages svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .lstages .done{color:var(--ink-2)}
+  .lstages .done i{background:var(--ok-soft);color:var(--ok)}
+  .lstages .on{color:var(--ink)}
+  .lstages .on i{position:relative;background:var(--accent);color:var(--accent-ink)}
+  .lstages .on i::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+    border:2px solid transparent;border-top-color:var(--ink-3);animation:sp 1.2s linear infinite}
+  .lstages .on.off i{background:var(--low-soft);color:var(--low)}
 
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
   @media (prefers-reduced-motion:reduce){
@@ -733,12 +840,12 @@
   <form class="box" id="askForm" action="#" novalidate>
     <div class="gtile" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2.5v3M16 2.5v3"/><path d="M8.5 13l2.5 2.5 4.5-5"/></svg></div>
     <h1>Sign in</h1>
-    <p>Paste the attendance link the school sent you, or just the code at the end of it.</p>
+    <p>Paste your KS5 Hub link or code.</p>
     <label for="code">Link or code</label>
-    <input id="code" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://&#8230;?t=  or  a1b2c3d4e5">
+    <input id="code" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Link or code">
     <p class="err" id="codeErr" role="alert"></p>
     <button class="go" id="go" type="submit">Continue</button>
-    <p class="foot">Lost your link? Ask the office to resend it.</p>
+    <p class="foot">No link? Ask the office.</p>
   </form>
 </div>
 
@@ -754,7 +861,9 @@
     <div class="gtile" id="gateIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
     <h1 id="gateTitle"></h1>
     <p id="gateBody"></p>
+    <div class="gwhy" id="gateWhy"></div>
     <ol class="steps" id="gateSteps"></ol>
+    <input class="glink" id="gateLink" type="text" readonly aria-label="Your link" hidden>
     <button class="go" id="gateGo" type="button" hidden></button>
     <div class="gfoot"><span id="gateWho"></span><button type="button" id="gateOut">Sign out</button></div>
   </section>
@@ -778,8 +887,10 @@
     <div class="gtile" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2.5v3M16 2.5v3"/><path d="M8.5 13l2.5 2.5 4.5-5"/></svg></div>
     <h1 id="loadTitle">KS5 Hub</h1>
     <p class="lstep" id="loadStep" role="status" aria-live="polite"></p>
-    <div class="lbar" id="loadBar" role="progressbar" aria-labelledby="loadTitle" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loadFill"></i></div>
-    <div class="lmeta"><span id="loadCount"></span><span id="loadPct">0%</span></div>
+    <div class="lsteps">
+      <div class="lbar" id="loadBar" role="progressbar" aria-labelledby="loadTitle" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loadFill"></i></div>
+      <ol class="lstages" id="loadStages" aria-hidden="true"></ol>
+    </div>
   </section>
 </div>
 
@@ -798,7 +909,7 @@
      yet. "Not now" holds until the office runs Attendance > Notifications > Ask everyone
      again, which shows it once more; it stops for good once a device says yes. -->
 <div class="notif" id="notifBar" hidden>
-  <span id="notifText">Get told when you have a register outstanding.</span>
+  <span id="notifText" class="nbell"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 003.4 0"/></svg>Register reminders</span>
   <button type="button" id="notifYes">Turn on</button>
   <button type="button" class="alt" id="notifNo">Not now</button>
 </div>
@@ -1071,6 +1182,21 @@
     return null;
   }
 
+  /* A column's head as the app draws it (S9): the weekday, then the date as an ordinal
+     with the letters raised. Both lengths of weekday; the column's width picks one. */
+  var LONGDAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  function ttOrd(n){
+    var t = n % 100, s = (t >= 11 && t <= 13) ? 'th' : (['th','st','nd','rd'][n % 10] || 'th');
+    return n + '<sup>' + s + '</sup>';
+  }
+  function ttHead(day){
+    var p = String(day.date || '').split('-');
+    var w = p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2], 12).getDay() : -1;
+    var sh = w < 0 ? String(day.dow || '') : SHORT[w], lg = w < 0 ? sh : LONGDAY[w], dd = +(p[2] || 0);
+    return '<span class="dw"><span class="wl">' + esc(lg) + '</span><span class="ws" aria-hidden="true">' +
+      esc(sh) + '</span></span>' + (dd ? '<b>' + ttOrd(dd) + '</b>' : '');
+  }
+
   function ttWeek(tt, iso){
     var rs = tt.periods || [];
     var gutter = '<div class="ttgutter"><div class="ttdn"></div><div class="ttslots">' +
@@ -1087,7 +1213,7 @@
                      : '<div class="ttgap"></div>';
           }).join('');
       return '<div class="ttday' + (day.date === iso ? ' today' : '') + '">' +
-        '<div class="ttdn"><b>' + esc(day.n) + '</b><span>' + esc(String(day.dow).toUpperCase()) + '</span></div>' +
+        '<div class="ttdn">' + ttHead(day) + '</div>' +
         '<div class="ttslots">' + cells + '</div></div>';
     }).join('') + '</div>';
   }
@@ -1097,8 +1223,7 @@
     var cur = ttDayOf(tt, iso) || (tt.days || [])[0];
     var chips = '<div class="ttchips">' + (tt.days || []).map(function (day) {
       return '<div class="ttchip' + (day.date === iso ? ' today' : '') +
-        (cur && day.date === cur.date ? ' sel' : '') + '"><b>' + esc(day.n) + '</b><span>' +
-        esc(String(day.dow).toUpperCase()) + '</span></div>';
+        (cur && day.date === cur.date ? ' sel' : '') + '">' + ttHead(day) + '</div>';
     }).join('') + '</div>';
     if (!cur) return chips;
     if (cur.holiday) return chips + '<div class="ttempty tall">' + esc(cur.holiday) + '</div>';
@@ -1118,10 +1243,20 @@
      a snapshot written before any of this existed. */
   /* away: the week has a Timetable tab of its own in the app (invariant 46), so Home holds
      only the card for what is on now — drawn here, held open, as the app will. */
-  function ttCard(tt, strip, iso, d, hint, away){
+  /* What the card says. Ready is the app's own ready card (W8): there is nothing to wait
+     for, so no spinner; the other two are still checking, and say so with one. */
+  var READY = 'Tap a lesson to take the register';
+  var TAP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5a1.5 1.5 0 0 1 3 0V12"/><path d="M15 11.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L3.5 15a1.6 1.6 0 0 1 2.6-1.8L9 16"/></svg>';
+  function nowCard(hint){
+    return '<div class="ttc ttnow">' + (hint === READY
+      ? '<div class="ttmsg ttready"><span class="ttgo">' + TAP + '</span><b>' + READY + '</b></div>'
+      : '<div class="ttmsg"><span class="spin"></span><span>' + esc(hint || '') + '</span></div>') + '</div>';
+  }
+  function ttCard(tt, strip, iso, d, hint, away, fold){
     if (!tt || !(tt.days || []).length) return stripGap(strip);
-    if (away) return '<div class="ttc ttnow"><div class="ttmsg"><span class="spin"></span><span>' +
-      esc(hint || '') + '</span></div></div>';
+    // The app carries the countdown on the lesson's own row (H15): no card to hold open.
+    if (away && fold) return '';
+    if (away) return nowCard(hint);
     var when = '<div class="ttwhenwrap"><div class="ttc ttwhen">' + TT_CAL +
       '<span><span class="d">' + esc(SHORT[d.getDay()] + ' ' + d.getDate() + ' ' +
         MONTHS[d.getMonth()]) + '</span><b class="t"></b></span></div></div>';
@@ -1137,9 +1272,7 @@
           '</div>' +
           '<span class="ttfold' + (tt.open === false ? ' shut' : '') + '">' + TT_CHEV + '</span>' +
         '</div>' + body +
-      '</section>' +
-      '<div class="ttc ttnow"><div class="ttmsg"><span class="spin"></span><span>' +
-        esc(hint || '') + '</span></div></div>';
+      '</section>' + nowCard(hint);
   }
 
   /* What the cached week says about a day with no lessons in the snapshot.
@@ -1215,7 +1348,7 @@
     // still kept as the fallback height for snapshots written before it, and for the
     // gap when a teacher has no timetable at all.
     s.meta = { school: msg.school, teacher: msg.teacher, strip: msg.strip,
-               tt: msg.tt || (s.meta && s.meta.tt) || null,
+               tt: msg.tt || (s.meta && s.meta.tt) || null, fold: !!msg.fold,
                // Absent (not null) from an older app build, so paintCached can tell the two apart.
                tabs: msg.tabs === undefined ? undefined : tabList(msg.tabs) };
     s.days = s.days || {}; s.dow = s.dow || {}; s.dowAt = s.dowAt || {};
@@ -1283,9 +1416,10 @@
     };
 
     $('instantInner').innerHTML =
-      '<div class="sbar"><span class="slogo">' + esc(s.school || 'KS5 Hub') + '</span>' +
-      '<span class="name"><span class="avatar">' + esc(initials(s.name)) + '</span></span></div>' +
-      '<div class="dhead"><b>' + esc(s.name || '') + '</b><span>' +
+      headBar(s.school, s.name) +
+      // One block in reading order: #instantInner orders its children for the teacher's
+      // Home, and left loose these landed above the name with the gap at the foot (W1).
+      '<div class="stuwrap"><div class="dhead"><i class="eye">' + esc(s.school || '') + '</i><b>' + esc(s.name || '') + '</b><span>' +
         esc(['Year ' + (s.year || ''), s.option, s.rangeLabel].filter(Boolean).join(' · ')) +
       '</span></div>' +
       '<div class="note"><span class="spin"></span>' + seenNote(s) + '</div>' +
@@ -1293,7 +1427,7 @@
       '<div class="stot"><b>' + pct(t.rate) + '</b><span>' + (t.present || 0) + ' present · ' +
         (t.late || 0) + ' late · ' + (t.absent || 0) + ' absent</span></div>' +
       (s.subjects || []).map(function (x) { return row(x.label, x, x.dropped); }).join('') +
-      tabBar(s.tabs);
+      '</div>' + tabBar(s.tabs);
 
     $('instant').style.display = 'block';
     tabRoom(s.tabs);
@@ -1359,6 +1493,24 @@
   function markable(l, fresh){
     return !!(fresh && l.students && l.students.length && !l.leave);
   }
+  /* The app's day summary (daySummary in App.html): taken out of expected, one bar, its key.
+     Drawn at the same size so nothing moves when the app lands. Counts only from today's own
+     snapshot; from a weekday's grid it never guesses, and every lesson is simply to do. */
+  function dsum(lessons, live){
+    var t = { taken: 0, excused: 0, todo: 0 };
+    lessons.forEach(function (l) {
+      if (live && l.taken) t.taken++; else if (l.leave) t.excused++; else t.todo++;
+    });
+    var need = t.taken + t.todo;
+    var seg = function (n, k) { return n ? '<i class="' + k + '" style="flex:' + n + '"></i>' : ''; };
+    var key = function (n, k, w) { return n ? '<span><i class="' + k + '"></i>' + n + ' ' + w + '</span>' : ''; };
+    return '<div class="dsum"><span class="lab">Registers</span>' +
+      '<span class="dsfig">' + (need ? '<b>' + t.taken + '</b>/' + need + ' taken' : 'All excused') + '</span>' +
+      '<span class="dsbar">' + seg(t.taken, 'taken') + seg(t.excused, 'excused') + seg(t.todo, 'todo') + '</span>' +
+      '<span class="dskey">' + key(t.taken, 'taken', 'taken') + key(t.excused, 'excused', 'excused') +
+        key(t.todo, 'todo', 'to do') + '</span></div>';
+  }
+
   function card(l, admin, live, i, fresh, queued){
     var sub = [ (l.start ? l.start + '-' + l.end : ''), l.room, (admin ? l.teacher : '') ]
       .filter(Boolean).join(' \u00b7 ');
@@ -1431,26 +1583,24 @@
     QS.live = live;
     QS.fresh = fresh;
     QS.iso = iso;
-    var hint = anyTap ? 'Ready. Tap a lesson to take the register'
+    var hint = anyTap ? READY
              : live ? 'Your last view · updating' : 'Your usual timetable · checking today';
     // An older snapshot has no set, but still knows the role: a non-admin teacher has all three.
     var tabs = s.meta.tabs !== undefined ? s.meta.tabs : (admin ? null : ['home', 'plan', 'grades']);
-    var ttHtml = ttCard(s.meta.tt, s.meta.strip, iso, d, hint, !!tabs && tabs.indexOf('tt') !== -1);
+    var ttHtml = ttCard(s.meta.tt, s.meta.strip, iso, d, hint, !!tabs && tabs.indexOf('tt') !== -1, s.meta.fold);
 
     var html =
-      '<div class="sbar"><span class="slogo">' + esc(s.meta.school || 'KS5 Hub') + '</span>' +
-      '<span class="name"><span class="nm">' + esc(name) + '</span>' +
-      '<span class="avatar">' + esc(initials(name)) + '</span></span></div>' +
+      headBar(s.meta.school, name) +
       // The week, drawn from the app's own copy of it; a plain held-open gap when
       // there is no copy to draw.
       ttHtml +
       '<div class="dhead"><i class="eye">' + esc(s.meta.school || '') + '</i><b>' + esc(DAYS[d.getDay()]) + '</b><span>' +
-        esc(d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) + '</span></div>' +
+        esc(d.getDate() + ' ' + MONTHS[d.getMonth()]) + '</span></div>' +   // no year, as the app (H14)
       // The card above says it when there is one; the pill is only for the bare gap.
-      (ttHtml.indexOf('ttnow') === -1 ? '<div class="note"><span class="spin"></span>' + esc(hint) + '</div>' : '');
+      (ttHtml.indexOf('ttnow') === -1 ? '<div class="note">' + (hint === READY ? '' : '<span class="spin"></span>') + esc(hint) + '</div>' : '');
 
     if (lessons.length) {
-      html += '<div class="dsum">Registers</div><div class="lessons">' +
+      html += dsum(lessons, live) + '<div class="lessons">' +
         lessons.map(function (l, i) {
           return card(l, admin, live, i, fresh, !!queuedFor(token, l, iso));
         }).join('') +
@@ -1466,6 +1616,17 @@
     tabRoom(tabs);
     $('shell').classList.add('gone');
     return true;
+  }
+
+  /* The app's header, drawn still (W7): see .slive. Theme shows the glyph the app's
+     button offers — the moon in light, the sun in dark. */
+  function headBar(school, name) {
+    return '<div class="sbar"><span class="slive"><i></i>Live</span>' +
+      '<span class="slogo">' + esc(school || 'KS5 Hub') + '</span>' +
+      '<span class="scap"><span><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></span>' +
+      '<span><svg viewBox="0 0 24 24" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>' +
+      '<svg viewBox="0 0 24 24" class="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span></span>' +
+      '<span class="name"><span class="avatar">' + esc(initials(name)) + '</span></span></div>';
   }
 
   /* ---- the register the teacher can take while Apps Script is still starting ---- */
@@ -1507,9 +1668,16 @@
     if (QS.ready && QS.onDone) QS.onDone();
   }
 
-  /* The app's own cycle and wording, so a teacher is not learning a second register. */
+  /* The app's own cycle and wording, so a teacher is not learning a second register.
+     Each status is an icon and its word (the app's TILEWORD), so Present reads the same
+     way as Late and Absent instead of being the blank one. */
   var CYCLE = { P: 'A', A: 'L', L: 'P' };
   var WORD  = { P: 'Present', A: 'Absent', L: 'Late' };
+  var TILEWORD = {
+    P: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Present',
+    L: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Late',
+    A: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Absent'
+  };
 
   function tile(st){
     var v = QS.marks[st.id] || 'P';
@@ -1517,26 +1685,43 @@
       ' aria-label="' + esc(st.name) + ', ' + WORD[v] + '">' +
       '<span class="av">' + (v === 'A' ? '&#10005;' : esc(initials(st.name))) + '</span>' +
       '<span class="nm">' + esc(st.name) + '</span>' +
-      '<span class="st">' + WORD[v] + '</span></button>';
+      '<span class="st">' + TILEWORD[v] + '</span></button>';
+  }
+
+  // The count tiles and the Save bar's line, as the app's update() keeps them.
+  function quickCount(){
+    var l = QS.lesson, c = { P: 0, L: 0, A: 0 };
+    l.students.forEach(function (st) { c[QS.marks[st.id] || 'P']++; });
+    $('qcP').textContent = c.P; $('qcL').textContent = c.L; $('qcA').textContent = c.A;
+    var n = c.L + c.A;
+    $('qInfo').textContent = n ? n + ' flagged' : 'Everyone present';
   }
 
   function renderQuick(){
     var l = QS.lesson;
-    var sub = [ (l.start ? l.start + '-' + l.end : ''), l.room ].filter(Boolean).join(' \u00b7 ');
+    var d = new Date(QS.iso + 'T12:00:00');
+    // "P1 · 08:00–08:50 · Thu 22 Oct", the app's own line (H4).
+    var meta = 'P' + l.period + (l.start ? ' \u00b7 ' + l.start + '\u2013' + l.end : '') +
+      (isNaN(d) ? '' : ' \u00b7 ' + SHORT[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]);
 
     $('quickInner').innerHTML =
-      '<div class="qbar"><button type="button" class="qback" id="qb" aria-label="Back to lessons">&#8249;</button>' +
-      '<b>' + esc(l.label) + '</b></div>' +
-      '<div class="qsub">Period ' + esc(l.period) + (sub ? ' \u00b7 ' + esc(sub) : '') +
-        ' \u00b7 ' + l.students.length + ' students \u00b7 tap to change</div>' +
-      '<div class="qlegend"><span><i style="background:var(--late)"></i>Late</span>' +
-        '<span><i style="background:var(--absent)"></i>Absent</span></div>' +
+      '<div class="qbar"><button type="button" class="qback" id="qb" aria-label="Back to lessons">' +
+        '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button></div>' +
+      '<div class="qhead"><div class="grow"><div class="qeye">Take register</div>' +
+        '<h2 class="qtitle">' + esc(l.label) + '</h2><p class="qsub">' + esc(meta) + '</p></div>' +
+        '<button type="button" class="qicon" id="qall" aria-label="Mark everyone present" title="Mark everyone present">' +
+          '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></button></div>' +
+      '<div class="qcounts" role="status">' +
+        '<div class="rc p"><b id="qcP">0</b><span>Present</span></div>' +
+        '<div class="rc l"><b id="qcL">0</b><span>Late</span></div>' +
+        '<div class="rc a"><b id="qcA">0</b><span>Absent</span></div></div>' +
+      '<div class="qhint">Tap a card to change it</div>' +
       '<div class="qgrid" id="qgrid">' + l.students.map(tile).join('') + '</div>' +
-      '<div class="qacts">' +
-        '<button type="button" class="qbtn alt" id="qall">All present</button>' +
-        '<button type="button" class="qbtn" id="qsave">Save register</button>' +
-      '</div>' +
-      '<div class="qnote">Saves as soon as the app finishes loading.</div>';
+      '<div class="qsavebar"><span class="qinfo"><b id="qInfo"></b>' +
+        '<span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19.5 10 4 4 0 0 1 18 18z"/></svg>' +
+        'Sends once loaded</span></span>' +
+        '<button type="button" class="qbtn" id="qsave">Save register</button></div>';
+    quickCount();
 
     $('qb').addEventListener('click', closeQuick);
     $('qall').addEventListener('click', function () {
@@ -1555,8 +1740,9 @@
       el.setAttribute('data-s', next);
       var who = l.students.filter(function (s) { return s.id === id; })[0] || { name: '' };
       el.querySelector('.av').innerHTML = next === 'A' ? '&#10005;' : esc(initials(who.name));
-      el.querySelector('.st').textContent = WORD[next];
+      el.querySelector('.st').innerHTML = TILEWORD[next];
       el.setAttribute('aria-label', who.name + ', ' + WORD[next]);
+      quickCount();
     });
     $('quick').scrollTop = 0;
   }
@@ -1646,24 +1832,43 @@
      round. It is never shown over a cached screen; see invariant 47. */
   var LOAD = (function () {
     var STAGES = [
-      { at: 6,  cap: 20, say: 'Signing you in' },
-      { at: 20, cap: 52, say: 'Connecting to the school server' },
-      { at: 56, cap: 80, say: 'Starting KS5 Hub' },
-      { at: 82, cap: 95, say: 'Getting your day ready' }
+      { at: 6,  cap: 20, say: 'Signing you in', name: 'Sign in',
+        ic: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>' },
+      { at: 20, cap: 52, say: 'Connecting to the school server', name: 'Connect',
+        ic: '<path d="M2 9a15 15 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>' },
+      { at: 56, cap: 80, say: 'Starting KS5 Hub', name: 'Start',
+        ic: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 9h16"/>' },
+      { at: 82, cap: 95, say: 'Getting your day ready', name: 'Your day',
+        ic: '<rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2.5v3M16 2.5v3M4 9.5h16"/>' }
     ];
-    var on = false, stage = -1, pct = 0, timer = null;
+    var TICK = '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+        OFF = '<path d="M2 9a15 15 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/>';
+    var on = false, stage = -1, pct = 0, timer = null, drawn = '';
     function draw() {
       var fill = $('loadFill'), bar = $('loadBar');
       if (!fill || !bar) return;
       var p = Math.round(pct);
-      fill.style.width = p + '%';
-      bar.setAttribute('aria-valuenow', String(p));
-      $('loadPct').textContent = p + '%';
       var st = STAGES[Math.max(0, stage)];
+      // The bar is drawn between the icons, so it fills by stage: the run to the next icon
+      // is this stage's share of its own climb, held short of arriving.
+      var at = Math.max(0, stage), last = STAGES.length - 1;
+      var vis = (p >= 100 || at >= last) ? 1 : (at + 0.9 * Math.max(0, Math.min(1, (pct - st.at) / (st.cap - st.at)))) / last;
+      fill.style.width = (vis * 100).toFixed(1) + '%';
+      bar.setAttribute('aria-valuenow', String(p));
       // Offline before the server has answered is the one thing worth saying instead.
-      var say = (stage < 2 && navigator.onLine === false) ? 'Waiting for a connection' : st.say;
+      var off = stage < 2 && navigator.onLine === false;
+      var say = off ? 'Waiting for a connection' : st.say;
       if ($('loadStep').textContent !== say) $('loadStep').textContent = say;
-      $('loadCount').textContent = 'Step ' + (Math.max(0, stage) + 1) + ' of ' + STAGES.length;
+      // Redrawn only when a stage changes (not on every creep of the bar), so the
+      // colour change can ease rather than restart four times a second.
+      var key = stage + (off ? 'off' : '') + (p >= 100 ? 'all' : '');
+      if (key === drawn) return;
+      drawn = key;
+      $('loadStages').innerHTML = STAGES.map(function (x, i) {
+        var done = i < stage || p >= 100, now = i === Math.max(0, stage) && !done;
+        return '<li class="' + (done ? 'done' : now ? 'on' + (off ? ' off' : '') : '') + '"><i><svg viewBox="0 0 24 24">' +
+          (done ? TICK : now && off ? OFF : x.ic) + '</svg></i>' + x.name + '</li>';
+      }).join('');
     }
     function tick() {
       if (!on) return;
@@ -1779,12 +1984,19 @@
       var b = $('stuckBar');
       if (!b || !b.hidden) return;
       $('notifBar').hidden = true;            // one bar at a time
-      $('stuckText').textContent = 'Google would not open the app. This is nearly always ' +
-        'the browser, not the app: if it is signed in to more than one Google account, ' +
-        'Google can pick the wrong one. Try a private tab, or sign out of the spare ' +
-        'accounts. It also opens in Firefox.';
+      // Short first (W2); the whole story is one tap away for whoever wants it.
+      $('stuckText').innerHTML = '<span class="stk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3z"/>' +
+        '<path d="M12 10v5M12 18h.01"/></svg><span><b>Google didn\u2019t open the app</b>' +
+        '<span class="stkwhy">Usually a second Google account. Try a private tab.</span></span></span>';
       $('stuckGo').onclick = function () { location.reload(); };
-      $('stuckNo').onclick = function () { b.hidden = true; };
+      $('stuckNo').textContent = 'Why?';
+      $('stuckNo').onclick = function () {
+        if ($('stuckNo').textContent === 'Close') { b.hidden = true; return; }
+        b.querySelector('.stkwhy').textContent = 'If the browser is signed in to more than one Google account, ' +
+          'Google can pick the wrong one. Try a private tab, sign out of the spare accounts, or use Firefox.';
+        $('stuckNo').textContent = 'Close';
+      };
       b.hidden = false;
       mark('app never painted — showed the account explanation');
     }
@@ -2393,33 +2605,56 @@
      Notifications are required. gate(kind) covers the app until this device can receive
      them; the server's reachable flag (pushOn) lets a second device through once the
      person is reachable on another — they have enabled notifications, just not here. */
+  /* Each step is an icon and a few words, the icon being the thing to look for on the
+     phone (W3, W4): "Tap Share" beside the Share glyph reads at a glance where a sentence
+     about it had to be read through. The step text is fixed markup written here, never
+     anything that came in from outside, so it goes in as HTML for its bold words. */
+  var GI = {
+    bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    reg: '<rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2.5v3M16 2.5v3"/><path d="M8.5 13l2.5 2.5 4.5-5"/>',
+    plan: '<path d="M7 3.5h7l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M14 3.5V8h4"/><path d="M8.5 12.5h7M8.5 16h5"/>',
+    share: '<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/>',
+    add: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',
+    set: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    toggle: '<rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="16" cy="12" r="3.2"/>',
+    more: '<circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/>',
+    open: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+    phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>'
+  };
+  function gic(n) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + GI[n] + '</svg>'; }
+  // The app's own icon: the last step is finding it, so it shows the real thing.
+  var APPIC = '<img src="./icon-192.png" alt="" width="26" height="26">';
   var GATE = {
-    ask: { title: 'Turn on notifications', go: 'Turn on notifications',
-      body: 'The app tells you when a register is due and when weekly plans are out. ' +
-            'It needs notifications on before you can continue.', steps: [] },
-    install: { title: 'Add the app to your Home Screen', go: '',
-      body: 'On iPhone, notifications only work once the app is on your Home Screen. ' +
-            'It takes three taps, then you can turn them on.',
-      steps: ['Tap the Share button in Safari', 'Choose \u201cAdd to Home Screen\u201d', 'Open the app from its new icon'] },
+    // Two tiles say what the notifications are FOR, which is the whole case for saying yes.
+    ask: { title: 'Turn on notifications', go: 'Turn on', body: 'KS5 Hub needs them to reach you.',
+      why: [['reg', 'Register due'], ['plan', 'Plan is out']], steps: [] },
+    install: { title: 'Add to Home Screen', go: '',
+      body: 'iPhone only sends notifications to apps on the Home Screen.',
+      steps: [[gic('share'), 'Tap <strong>Share</strong> in Safari'], [gic('add'), '<strong>Add to Home Screen</strong>'],
+              [APPIC, 'Open <strong>KS5 Hub</strong> from it']] },
     blocked: { title: 'Notifications are blocked', go: 'I\u2019ve turned them on', warn: true,
-      body: 'They were turned off for this app earlier, so it cannot ask again. ' +
-            'Turn them back on in your settings, then come back.',
-      steps: ['Open Settings, then Notifications', 'Find Attendance (or this browser)', 'Turn on Allow Notifications'] },
+      body: 'Only your settings can turn them back on.',
+      steps: [[gic('set'), 'Open <strong>Settings</strong>, then <strong>Notifications</strong>'],
+              [APPIC, 'Find <strong>KS5 Hub</strong> (or this browser)'], [gic('toggle'), 'Turn on <strong>Allow Notifications</strong>']] },
     unsupported: { title: 'Open this in Safari or Chrome', go: 'Copy my link',
-      body: 'This browser cannot show notifications. Most often that is because the link ' +
-            'was opened inside another app, like WhatsApp or Instagram.',
-      steps: ['Tap the \u22ef or Share button', 'Choose \u201cOpen in Safari\u201d or \u201cOpen in Chrome\u201d',
-              'On an older iPhone, update to iOS 16.4 or later'] }
+      body: 'This browser can\u2019t show notifications, most often because the link opened inside another app.',
+      steps: [[gic('more'), 'Tap <strong>\u22ef</strong> or <strong>Share</strong>'],
+              [gic('open'), 'Choose <strong>Open in Safari</strong> or <strong>Chrome</strong>'],
+              [gic('phone'), 'Older iPhone? Update to <strong>iOS 16.4</strong>']] }
   };
   function gate(kind) {
     var g = GATE[kind], box = $('gate');
     if (!g || !box) return;
     $('gateTitle').textContent = g.title;
     $('gateBody').textContent = g.body;
+    $('gateWhy').innerHTML = (g.why || []).map(function (x) {
+      return '<span class="gw"><i>' + gic(x[0]) + '</i>' + esc(x[1]) + '</span>';
+    }).join('');
     $('gateSteps').innerHTML = g.steps.map(function (x, i) {
-      return '<li><b>' + (i + 1) + '</b><span>' + esc(x) + '</span></li>';
+      return '<li><b>' + (i + 1) + '</b><span class="gs">' + x[1] + '</span><span class="gi" aria-hidden="true">' + x[0] + '</span></li>';
     }).join('');
     $('gateIcon').className = 'gtile' + (g.warn ? ' warn' : '');
+    $('gateLink').hidden = true;
     $('gateWho').textContent = PUSH.name ? 'Signed in as ' + PUSH.name : '';
     var go = $('gateGo');
     go.hidden = !g.go;
@@ -2434,8 +2669,17 @@
       : kind === 'unsupported' ? function () {
         var link = location.origin + location.pathname + '?t=' + encodeURIComponent(PUSH.token || stored());
         var done = function () { go.textContent = 'Link copied'; };
-        try { navigator.clipboard.writeText(link).then(done, function () { window.prompt('Copy your link:', link); }); }
-        catch (e) { window.prompt('Copy your link:', link); }
+        /* No clipboard (some in-app browsers refuse it): the link goes in the card, selected,
+           for a long-press Copy — never the browser's own prompt box, which looks like an
+           error from somewhere else and is the one thing on screen not in the app's style. */
+        var show = function () {
+          var f = $('gateLink');
+          f.value = link; f.hidden = false;
+          go.textContent = 'Copy the link above';
+          try { f.focus(); f.select(); f.setSelectionRange(0, link.length); } catch (e) {}
+        };
+        try { navigator.clipboard.writeText(link).then(done, show); }
+        catch (e) { show(); }
       } : null;
     $('gateOut').onclick = function () { signOut(PUSH.name); };
     box.hidden = false;
@@ -2701,7 +2945,7 @@
       var v = codeFrom($('code').value);
       if (!v) {
         $('codeErr').textContent = $('code').value.trim()
-          ? 'That does not look like an attendance link or code.' : 'Paste your link or code first.';
+          ? 'That isn\u2019t a KS5 Hub link or code.' : 'Paste your link or code first.';
         return;
       }
       $('codeErr').textContent = '';
