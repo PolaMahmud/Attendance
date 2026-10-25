@@ -317,6 +317,11 @@
   iframe{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2;opacity:0;
     pointer-events:none;transition:opacity .25s ease}
   iframe.ready{opacity:1;pointer-events:auto}
+  /* The status bar's strip, while the kept copy is on screen: the page's colour over
+     whatever scrolls up under it, as the app's own bar is once it has its chrome. Over the
+     placeholder (same z-index, later in the page), under the app's frame. */
+  body::after{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);
+    background:var(--bg);z-index:1;pointer-events:none}
 
   /* ---- placeholder layer: either the skeleton or the cached cards ---- */
   .ph{position:fixed;inset:0;z-index:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
@@ -445,10 +450,13 @@
 
   .ttweek{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;
     -webkit-overflow-scrolling:touch;padding-bottom:2px;position:relative;scroll-padding-left:58px}
-  .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:52px;padding:6px 4px 6px 0;
+  /* Larger Text (owner, 24d): the cells hold two lines of their own text and the axis its
+     times at any size; at the default both are what they were (32px, 52px). */
+  :root{--tt-row:max(32px,calc(var(--fs-caption1) * 2.4 + 2px))}
+  .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:max(52px,calc(var(--fs-caption2) * 3.6));padding:6px 4px 6px 0;
     border:1px solid transparent;background:var(--surface)}
   .ttgutter .ttdn{visibility:hidden}
-  .ttgrow{height:32px;margin-bottom:3px;display:flex;flex-direction:column;
+  .ttgrow{height:var(--tt-row);margin-bottom:3px;display:flex;flex-direction:column;
     justify-content:center;align-items:flex-end;text-align:right;
     font-variant-numeric:tabular-nums;line-height:1.15}
   .ttgrow:last-child{margin-bottom:0}
@@ -470,11 +478,12 @@
     .ttdn .dw .ws{display:none}
   }
   .ttday.today .ttdn b,.ttday.today .ttdn .dw{color:var(--accent)}
-  .ttl,.ttgap{height:32px;margin-bottom:3px;border-radius:var(--r-sm)}
+  .ttl,.ttgap{height:var(--tt-row);margin-bottom:3px;border-radius:var(--r-sm)}
   .ttl:last-child,.ttgap:last-child{margin-bottom:0}
   .ttl{display:flex;align-items:center;width:100%;text-align:left;padding:0 6px;
     background:var(--surface);border:1px solid var(--line)}
   .ttl .sj{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    -webkit-hyphens:auto;hyphens:auto;overflow-wrap:anywhere;
     font-size:var(--fs-caption1);font-weight:600;line-height:1.2;letter-spacing:-.01em}
   .tt [data-tone="as1"]{background:var(--tt-as1);border-color:var(--tt-as1-line)}
   .tt [data-tone="as2"]{background:var(--tt-as2);border-color:var(--tt-as2-line)}
@@ -698,7 +707,7 @@
   /* The app's floating Save bar. Its second line says the one thing that differs here:
      the register goes once the app has loaded, not this second. */
   .qsavebar{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:2;margin:14px 0 0;
-    display:flex;align-items:center;gap:12px;padding:7px 7px 7px 20px;border-radius:99px;
+    display:flex;align-items:center;gap:12px;padding:7px 7px 7px 20px;border-radius:calc(var(--fs-body) * .6 + 23px);
     background:var(--gl-bar);border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
     -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
   .qinfo{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
@@ -1039,6 +1048,8 @@
      whenever the bridge reports a newer build. */
   var SHELLS = 'attendance-shell:', BOOTS = 'attendance-boot:', SHELL_BAD = 'attendance-shell-bad';
   var SLOT_BOOT = '__ATTENDANCE_BOOT__', SLOT_THEME = '__ATTENDANCE_THEME__', SLOT_TT = '__ATTENDANCE_TTPREF__';
+  // The Students view's flag, as Code.gs's FLAG_PREF_RE takes it: "days-3-1.5".
+  var FLAG_PREF = /^(count|days)-[1-9]\d?-(?:[1-9]\d?(?:\.5)?|0\.5)$/;
   var OFFLINE = 'No connection. Check your signal and try again.';
   function readJSON(k){ try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function readShell(token){
@@ -1117,17 +1128,19 @@
     var json = JSON.stringify(b).replace(/</g, '\\u003c')
       .replace(new RegExp(String.fromCharCode(0x2028), 'g'), '\\u2028')
       .replace(new RegExp(String.fromCharCode(0x2029), 'g'), '\\u2029');   // line breaks JSON allows and a script does not
-    var theme = '', tv = '', to = '', pv = '';
+    var theme = '', tv = '', to = '', pv = '', fl = '';
     try {
       theme = localStorage.getItem('attendance-theme') || '';
       tv = localStorage.getItem('attendance-tt-view') || '';
       to = localStorage.getItem('attendance-tt-open') || '';
       pv = localStorage.getItem('attendance-plan-view') || '';
+      fl = localStorage.getItem('attendance-flag') || '';
     } catch (e) {}
     var html = fill(sh.html, SLOT_BOOT, json);
     html = fill(html, SLOT_THEME, (theme === 'dark' || theme === 'light') ? theme : '');
     html = fill(html, SLOT_TT, ((tv === 'day' || tv === 'week') ? tv : '') + ',' +
-      ((to === '0' || to === '1') ? to : '') + ',' + ((pv === 'day' || pv === 'week') ? pv : ''));
+      ((to === '0' || to === '1') ? to : '') + ',' + ((pv === 'day' || pv === 'week') ? pv : '') + ',' +
+      (FLAG_PREF.test(fl) ? fl : ''));
     // The shim runs before any of the page's own scripts.
     var h = html.search(/<head[^>]*>/i);
     if (h === -1) return SHIM + html;
@@ -1814,6 +1827,20 @@
     if (!target) return false;
     try { target.postMessage(msg, '*'); return true; } catch (e) { return false; }
   }
+  /* The status bar's height as this page meets it. The app runs two frames down, where a
+     phone may report no inset at all; told this, its bar reaches up under the status bar
+     and no further (attendance:insets). Again whenever the screen turns. */
+  function topInset(){
+    try {
+      var p = document.createElement('div');
+      p.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
+      document.body.appendChild(p);
+      var h = p.offsetHeight; p.parentNode.removeChild(p);
+      return h || 0;
+    } catch (e) { return 0; }
+  }
+  function sendInsets(){ toApp({ type: 'attendance:insets', v: 1, top: topInset() }); }
+  window.addEventListener('resize', function(){ if (QS.ready) sendInsets(); });
 
   function flushQueue(){
     var target = QS.app || (QS.frame && QS.frame.contentWindow);
@@ -2207,6 +2234,7 @@
       // Everything the first copy was told on its attendance:ready, this one needs too:
       // without it, the Manage button opened a tab of its own (and Google's error page).
       toApp({ type: 'attendance:host', v: 1, exec: WEBAPP_URL, admin: true });
+      sendInsets();
       el.classList.add('ready');
       setTimeout(function () { if (old && old.parentNode) old.parentNode.removeChild(old); }, 300);
       mark('newer app on screen');
@@ -2280,6 +2308,7 @@
         // The address that really serves the app, for its admin dashboard link: the
         // server's own idea of it comes from a setting that can go stale.
         toApp({ type: 'attendance:host', v: 1, exec: WEBAPP_URL, admin: true });
+        sendInsets();
         reveal();
         return;
       }
@@ -2368,6 +2397,15 @@
         } catch (err) {}
         return;
       }
+      if (m.type === 'attendance:flag') {
+        // The Students view's flag (what it counts, both thresholds): kept here for the
+        // same reason as the views, in the one shape doGet takes back (FLAG_PREF_RE).
+        try {
+          var fl2 = String(m.pref || '');
+          if (FLAG_PREF.test(fl2)) localStorage.setItem('attendance-flag', fl2);
+        } catch (err) {}
+        return;
+      }
       if (m.type === 'attendance:plan') {
         // The weekly plan's Day/Week, kept here for the same reason as the timetable's.
         try { localStorage.setItem('attendance-plan-view', m.view === 'day' ? 'day' : 'week'); } catch (err) {}
@@ -2450,6 +2488,9 @@
         // ...and the weekly plan's Day/Week: see attendance:plan.
         var pv = localStorage.getItem('attendance-plan-view');
         if (pv === 'day' || pv === 'week') themed += '&pv=' + pv;
+        // ...and the Students view's flag: see attendance:flag.
+        var fl = localStorage.getItem('attendance-flag');
+        if (FLAG_PREF.test(fl || '')) themed += '&fl=' + fl;
       } catch (e) {}
       el.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '') + themed;
       return el;
