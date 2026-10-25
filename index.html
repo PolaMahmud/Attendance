@@ -420,15 +420,19 @@
   .ttlab svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;
     stroke-linecap:round;stroke-linejoin:round}
   /* App.html's one segmented control (I11): grey track drawn 4px in, 44px segments with
-     the pill in the padding box. */
+     the pill in the padding box, drawn by ::after with its own radius on a square segment,
+     so its ends are round (a round segment's padding edge inside the 6px borders is an
+     oval, and its background and overflow were cut to it, owner 25d). */
   .ttviews{position:relative;isolation:isolate;display:flex;gap:0;flex:1;padding:0 2px;margin:0;border-radius:99px}
   .ttviews::before{content:"";position:absolute;left:0;right:0;top:4px;bottom:4px;z-index:-1;border-radius:99px;
     background:var(--seg-track)}
-  .ttview{display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;min-height:44px;padding:0 8px;
-    border:solid transparent;border-width:6px 0;background-clip:padding-box;border-radius:99px;
+  .ttview{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;min-height:44px;padding:0 8px;
+    border:solid transparent;border-width:6px 0;background:none;border-radius:0;
     font-size:var(--fs-footnote);font-weight:500;line-height:1.25;color:var(--ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ttview.on{background-color:var(--seg-on);font-weight:600;filter:var(--seg-shadow)}
+  .ttview::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:99px;pointer-events:none}
+  .ttview.on{font-weight:600;filter:var(--seg-shadow)}
+  .ttview.on::after{background-color:var(--seg-on)}
   .ttfold{width:26px;height:26px;flex:none;display:grid;place-items:center;color:var(--ink-3)}
   .ttfold svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;
     stroke-linecap:round;stroke-linejoin:round}
