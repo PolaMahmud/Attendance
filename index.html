@@ -167,6 +167,8 @@
      Every token below is copied from App.html. When one moves, both move, or the
      cached cards jump the moment the live app arrives. */
   :root{
+    /* The app's layer for its tab bar (App.html's z-index scale), so the copy below matches it rule for rule. */
+    --z-tabs:28;
     --bg:#F3F2F7; --surface:#FFFFFF; --surface-2:#F6F5FA; --surface-3:#ECEBF2;
     --ink:#1F2330; --ink-2:#6B6F7B; --ink-3:#686C78;
     --line:#E7E6EE; --line-2:#D4D3DD;
@@ -357,7 +359,7 @@
   /* ---- the bottom tabs: a MIRROR of App.html's .tabs block (invariant 35) ----
      Copied rule for rule so the app's bar fades in exactly on top of this one. Tokens
      only, so both themes follow. Change one, change both — tabs.test.js compares them. */
-  .tabs{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:28;
+  .tabs{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:var(--z-tabs);
     max-width:560px;margin:0 auto;padding:5px;border-radius:99px;background:var(--gl-bar);
     border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
     -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
@@ -453,11 +455,11 @@
   .ttwhen .t:empty{display:none}
 
   .ttweek{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;
-    -webkit-overflow-scrolling:touch;padding-bottom:2px;position:relative;scroll-padding-left:58px}
+    -webkit-overflow-scrolling:touch;padding-bottom:2px;position:relative;scroll-padding-left:calc(var(--tt-gutter) + 6px)}
   /* Larger Text (owner, 24d): the cells hold two lines of their own text and the axis its
      times at any size; at the default both are what they were (32px, 52px). */
-  :root{--tt-row:max(32px,calc(var(--fs-caption1) * 2.4 + 2px))}
-  .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:max(52px,calc(var(--fs-caption2) * 3.6));padding:6px 4px 6px 0;
+  :root{--tt-row:max(32px,calc(var(--fs-caption1) * 2.4 + 2px));--tt-gutter:max(52px,calc(var(--fs-caption2) * 3.6))}
+  .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:var(--tt-gutter);padding:6px 4px 6px 0;
     border:1px solid transparent;background:var(--surface)}
   .ttgutter .ttdn{visibility:hidden}
   .ttgrow{height:var(--tt-row);margin-bottom:3px;display:flex;flex-direction:column;
@@ -601,7 +603,7 @@
   #instantInner>.sbar{order:0;padding:0 2px 24px;gap:8px}
   #instantInner>.sbar .slogo{visibility:hidden;flex:1;min-width:0;white-space:nowrap;overflow:hidden}
   .sbar .avatar{position:relative}
-  .sbar .avatar::after{content:"";position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;box-sizing:border-box;
+  .sbar .avatar::after{content:"";position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;box-sizing:border-box;
     border-radius:50%;background:var(--ink-3);border:2.5px solid var(--bg)}
   #instantInner>.dhead,#instantInner>.stuwrap{order:1}
   /* The app's date row is 84px with its day arrows beside it; the still copy has none. */
@@ -847,6 +849,19 @@
   .lstages .on.off i{background:var(--low-soft);color:var(--low)}
 
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
+  /* The app's rule (INPUT): a ring is for the keyboard, never left behind by a tap. */
+  html[data-input="pointer"] :focus-visible:not(input,textarea,select,[contenteditable]){outline:none}
+  /* The wrapper's own overlays come and go as the app's do (owner, 25d: "all the things
+     have exit animation"): the bars rise from the bottom and sink back, the gate and the
+     signed-out pill fade. Leaving (away()), they take no taps. */
+  .notif:not([hidden]){animation:w-in .34s cubic-bezier(.32,.72,0,1) both}
+  .gate:not([hidden]),.okpill:not([hidden]){animation:w-fade .25s ease both}
+  .notif.leaving{animation:w-out .22s ease-in both;pointer-events:none}
+  .gate.leaving,.okpill.leaving{animation:w-unfade .2s ease both;pointer-events:none}
+  @keyframes w-in{from{opacity:0;transform:translateY(14px) scale(.98)}}
+  @keyframes w-out{to{opacity:0;transform:translateY(14px) scale(.98)}}
+  @keyframes w-fade{from{opacity:0}}
+  @keyframes w-unfade{to{opacity:0}}
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none !important;transition:none !important}
   }
@@ -1002,6 +1017,37 @@
   var ROSTER_DAYS = 14;
 
   function $(id){ return document.getElementById(id); }
+  /* Out as it came in (the .leaving rules), then hidden; at once where motion is not
+     wanted or not there to play. show() takes back an exit still under way, so a bar
+     shown again mid-fade is not hidden by the fade's end. */
+  function moving(){
+    try { return !!(window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      window.getComputedStyle && typeof document.body.getAnimations === 'function'); } catch (e) { return false; }
+  }
+  function away(el){
+    if (!el || el.hidden || el.classList.contains('leaving')) return;
+    if (!moving()) { el.hidden = true; return; }
+    var tok = el.__aw = (el.__aw || 0) + 1;
+    el.classList.add('leaving');
+    setTimeout(function () { if (el.__aw !== tok) return; el.classList.remove('leaving'); el.hidden = true; }, 230);
+  }
+  function show(el){
+    if (!el) return;
+    el.__aw = (el.__aw || 0) + 1;
+    el.classList.remove('leaving');
+    el.hidden = false;
+  }
+  // Which input came last, for the focus ring (the app's INPUT block, mirrored).
+  (function () {
+    var root = document.documentElement;
+    function set(v) { if (root.getAttribute('data-input') !== v) root.setAttribute('data-input', v); }
+    document.addEventListener('pointerdown', function () { set('pointer'); }, true);
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && t.matches && t.matches('input,textarea,select,[contenteditable]') && !/^(Tab|Escape)$/.test(e.key)) return;
+      set('key');
+    }, true);
+  })();
   function p2(n){ return (n < 10 ? '0' : '') + n; }
   function esc(s){
     return String(s == null ? '' : s)
@@ -1988,8 +2034,55 @@
   })();
   window.__LOAD = LOAD;   // read by loading.test.js; nothing in the page relies on it
 
+  /* Android's Back does nothing in the app (owner, 2026-10-25). Its edge swipe, from either
+     side, and the 3-button or hardware Back all walk this page's history, which is how a
+     slip of the thumb left the app; the in-app swipe from the left (BACKBAR in App.html)
+     is the one way back, as on an iPhone. So the page stands on a few history entries of
+     its own (state {ks5trap: n}, same address), and a Back that steps down one is simply
+     let be: nothing listens, nothing redraws. A Back onto the bottom one puts one back.
+     This page is the only one that touches history for it. The app, in its frame, only
+     says when it has been touched ('attendance:gesture'), because Chrome skips, on Back,
+     an entry a page added with no touch since (its history-manipulation intervention):
+     entries put down after a touch are the ones that hold, so each touch tops them up,
+     one at a time, to DEEP. iOS has no system Back to catch, so none of this runs there. */
+  var TRAP = (function () {
+    var UA = navigator.userAgent || '', UAD = navigator.userAgentData;
+    var on = (/Android/i.test(UA) || !!(UAD && /android/i.test(UAD.platform || ''))) &&
+             !/iPhone|iPad|iPod/.test(UA) && !!(window.history && history.pushState);
+    var DEEP = 4, armed = false, tapped = false;
+    function depth() { var s = history.state; return s && s.ks5trap > 0 ? s.ks5trap | 0 : 0; }
+    function put(n) { try { history.pushState({ ks5trap: n }, ''); } catch (e) {} }
+    // One entry per touch: Chrome lets each touch vouch for one, so a second put down in the
+    // same breath would only mark the first as one to skip.
+    function touched() {
+      if (!armed) return;
+      var n = depth();
+      if (n < DEEP) put(n + 1);
+    }
+    function arm() {
+      if (!on || armed) return;
+      armed = true;
+      // Ours from here: an entry left by an earlier visit (Back from the dashboard) is the
+      // old page's, and a Back onto one of those would load the page again.
+      try { history.replaceState({ ks5trap: 0 }, ''); } catch (e) {}
+      put(1);
+      window.addEventListener('popstate', function () { if (!depth()) put(1); });
+      // What Chrome counts as a touch: a finger on lifting, a mouse on pressing, a key; the
+      // mousedown a browser makes up after a tap is the same touch.
+      ['touchend', 'mousedown', 'keydown'].forEach(function (ev) {
+        window.addEventListener(ev, function () {
+          if (ev === 'touchend') tapped = true; else if (ev === 'mousedown' && tapped) { tapped = false; return; }
+          touched();
+        }, { capture: true, passive: true });
+      });
+    }
+    return { on: on, arm: arm, touched: touched, depth: depth };
+  })();
+  window.__TRAP = TRAP;   // read by back.test.js; nothing in the page relies on it
+
   function open(t, extra){
     $('ask').style.display = 'none';
+    TRAP.arm();
     mark('script start');
     QS.token = t;
     if (WANT_TAB) QS.tab = WANT_TAB;
@@ -2067,12 +2160,12 @@
       $('stuckGo').onclick = function () { location.reload(); };
       $('stuckNo').textContent = 'Why?';
       $('stuckNo').onclick = function () {
-        if ($('stuckNo').textContent === 'Close') { b.hidden = true; return; }
+        if ($('stuckNo').textContent === 'Close') { away(b); return; }
         b.querySelector('.stkwhy').textContent = 'If the browser is signed in to more than one Google account, ' +
           'Google can pick the wrong one. Try a private tab, sign out of the spare accounts, or use Firefox.';
         $('stuckNo').textContent = 'Close';
       };
-      b.hidden = false;
+      show(b);
       mark('app never painted — showed the account explanation');
     }
     function reveal(){
@@ -2189,7 +2282,7 @@
       BR.win = e.source; BR.up = true; BR.down = false; BR.build = String(m.build || '');
       if (BR.timer) { clearTimeout(BR.timer); BR.timer = null; }
       if (BR.deadline) { clearTimeout(BR.deadline); BR.deadline = null; }
-      var sb = $('stuckBar'); if (sb) sb.hidden = true;
+      var sb = $('stuckBar'); away(sb);
       mark('bridge up (' + BR.build + ')');
       var q = BR.q; BR.q = [];
       q.forEach(toBridge);
@@ -2274,6 +2367,9 @@
     // Store every snapshot the app sends, for this open and all the ones after.
     window.addEventListener('message', function (e) {
       var m = e && e.data;
+      // A touch in the app (Android only): the Back trap tops up. First, so it is never taken
+      // for the app's first word, or anything else. Any frame may say it; it moves nothing.
+      if (m && m.v === 1 && m.type === 'attendance:gesture') { TRAP.touched(); return; }
       // The kept app's line to the server, both ways. Nothing else may use it.
       if (m && m.v === 1 && (m.type === 'attendance:bridge' || m.type === 'attendance:rpc-done')) {
         if (!K.on || !e.source || keptWin(e.source)) return;
@@ -2299,7 +2395,7 @@
         if (!QS.tabsHeard) document.documentElement.style.removeProperty('--tabs');
         // It did paint, just slowly. Call off the explanation, and clear it if it landed.
         if (stuckTimer) { clearTimeout(stuckTimer); stuckTimer = null; }
-        var sb = $('stuckBar'); if (sb) sb.hidden = true;
+        var sb = $('stuckBar'); away(sb);
         flushQueue();                       // anything marked while it was loading
         // The other tabs' copies, before any tab is opened, so it can draw from them.
         toApp({ type: 'attendance:cached', v: 1, entries: readTabCache(t) });
@@ -2694,8 +2790,8 @@
     $('notifText').textContent = reason + '  [wrapper ' + WRAPPER_BUILD + ']';
     $('notifYes').hidden = true;
     $('notifNo').textContent = 'Close';
-    $('notifNo').onclick = function () { bar.hidden = true; };
-    bar.hidden = false;
+    $('notifNo').onclick = function () { away(bar); };
+    show(bar);
   }
 
   /* ---- the notification gate ----
@@ -2779,10 +2875,10 @@
         catch (e) { show(); }
       } : null;
     $('gateOut').onclick = function () { signOut(PUSH.name); };
-    box.hidden = false;
+    show(box);
     mark('notification gate: ' + kind);
   }
-  function ungate() { var box = $('gate'); if (box) box.hidden = true; }
+  function ungate() { away($('gate')); }
 
   function pushReady(vapid, token) {
     PUSH.token = token || '';
@@ -2872,8 +2968,8 @@
         $('notifYes').textContent = 'Show a test';
         $('notifYes').onclick = pushLocalTest;
         $('notifNo').textContent = 'Close';
-        $('notifNo').onclick = function () { gb.hidden = true; };
-        gb.hidden = false;
+        $('notifNo').onclick = function () { away(gb); };
+        show(gb);
         return;
       }
       if (Notification.permission === 'denied') {
@@ -3035,7 +3131,7 @@
     try { was = sessionStorage.getItem('attendance-signedout') || ''; sessionStorage.removeItem('attendance-signedout'); } catch (e) {}
     if (was) {
       $('signedOut').textContent = '\u2713  ' + (was === '1' ? 'Signed out' : 'Signed out of ' + was);
-      $('signedOut').hidden = false;
+      show($('signedOut'));
     }
     $('askForm').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -3046,7 +3142,7 @@
         return;
       }
       $('codeErr').textContent = '';
-      $('signedOut').hidden = true;
+      away($('signedOut'));
       keep(v); open(v, extra);
     });
   }
