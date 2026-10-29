@@ -29,12 +29,40 @@ self.addEventListener('activate', function (e) {
    worker answers them, so this is here for installing, not caching: a load still goes to
    the network exactly as before, and the one thing added is a plain offline page in place
    of the browser's own error when there is no network at all. Nothing is stored. */
-var OFFLINE = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-  '<title>KS5 Hub</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;' +
-  'font:17px -apple-system,system-ui,sans-serif;background:#F3F2F7;color:#1C1C1E;text-align:center">' +
-  '<div><p style="font-weight:600;margin:0 0 6px">No connection</p><p style="margin:0 0 18px;color:#6E6E73">' +
-  'KS5 Hub opens when you are back online.</p><button onclick="location.reload()" style="font:inherit;' +
-  'padding:11px 22px;border:0;border-radius:99px;background:#1C1C1E;color:#fff">Try again</button></div>';
+/* Drawn as the app draws a page that could not load (its empty state, W13): the
+   crossed-out signal in a soft red tile, the words, and Try again as the app's primary
+   button; in the app's own colours, dark when the phone (or the person's choice, kept by
+   index.html on this same origin) is dark, so an installed app opened in the dark does not
+   flash white. Colours only in the two token blocks, as everywhere. */
+var OFFLINE = '<!doctype html><html lang="en"><meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+  '<meta name="color-scheme" content="light dark"><title>KS5 Hub</title>' +
+  '<script>try{var t=localStorage.getItem("attendance-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>' +
+  '<style>' +
+  ':root{--bg:#F3F2F7;--ink:#1F2330;--ink-2:#6B6F7B;--full:#9B2F35;--full-soft:#F7DADA;--full-line:#EDBDBD;' +
+    '--btn:#1F2330;--btn-ink:#FFFFFF;color-scheme:light}' +
+  '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000000;--ink:#F2F2F7;--ink-2:#AEAEB2;' +
+    '--full:#F0B1B1;--full-soft:#3E2527;--full-line:#5E393B;--btn:#F2F2F7;--btn-ink:#1C1C1E;color-scheme:dark}}' +
+  ':root[data-theme="dark"]{--bg:#000000;--ink:#F2F2F7;--ink-2:#AEAEB2;--full:#F0B1B1;--full-soft:#3E2527;' +
+    '--full-line:#5E393B;--btn:#F2F2F7;--btn-ink:#1C1C1E;color-scheme:dark}' +
+  'html{font-size:106.25%;-webkit-text-size-adjust:100%}' +
+  '@supports (font:-apple-system-body) and (-webkit-touch-callout:none){html{font:-apple-system-body}}' +
+  'body{margin:0;min-height:100vh;min-height:100dvh;display:grid;place-items:center;box-sizing:border-box;' +
+    'padding:24px max(20px,env(safe-area-inset-right)) 24px max(20px,env(safe-area-inset-left));' +
+    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;' +
+    'background:var(--bg);color:var(--ink);text-align:center;-webkit-font-smoothing:antialiased}' +
+  'i{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 12px;border-radius:16px;' +
+    'background:var(--full-soft);box-shadow:inset 0 0 0 1px var(--full-line);color:var(--full)}' +
+  'svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
+  'b{display:block;font-size:1rem;font-weight:700;letter-spacing:-.02em;margin-bottom:5px}' +
+  'p{margin:0 0 18px;font-size:calc(15rem / 17);line-height:1.5;color:var(--ink-2)}' +
+  'button{font:inherit;font-size:calc(15rem / 17);font-weight:600;min-height:44px;padding:11px 22px;border:0;' +
+    'border-radius:99px;background:var(--btn);color:var(--btn-ink);cursor:pointer}' +
+  '</style><body><div role="alert">' +
+  '<i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/>' +
+    '<path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/></svg></i>' +
+  '<b>No connection</b><p>KS5 Hub opens when you are back online.</p>' +
+  '<button type="button" onclick="location.reload()">Try again</button></div>';
 self.addEventListener('fetch', function (e) {
   if (e.request.mode !== 'navigate') return;
   e.respondWith(Promise.resolve(e.preloadResponse).then(function (r) {

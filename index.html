@@ -193,6 +193,7 @@
     --gl-sm:0 4px 14px rgba(31,35,48,.08),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
     --gl-bar:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10));
     --gl-bar-blur:blur(5px) saturate(220%) brightness(1.06);
+    --gl-chrome:rgba(243,242,247,.92);
     --gl-lens:rgba(255,255,255,.78);
     --gl-lens-shadow:inset 0 1px 0 #FFFFFF,0 2px 10px rgba(31,35,48,.10);
     --gl-p:linear-gradient(180deg,rgba(52,56,68,.9),rgba(26,28,36,.95));
@@ -272,6 +273,7 @@
     --gl-sm:0 4px 14px rgba(0,0,0,.4),inset 0 .5px 0 rgba(255,255,255,.22);
     --gl-bar:linear-gradient(180deg,rgba(28,28,30,.55),rgba(0,0,0,.42));
     --gl-bar-blur:blur(6px) saturate(170%);
+    --gl-chrome:rgba(0,0,0,.90);
     --gl-lens:rgba(255,255,255,.10);
     --gl-lens-shadow:inset 0 .5px 0 rgba(255,255,255,.18);
     --gl-p:linear-gradient(180deg,rgba(255,255,255,.95),rgba(228,230,236,.88));
@@ -317,7 +319,7 @@
      read as tappable, and simply never receive a finger. It must not take input
      until it is the thing on screen. */
   iframe{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2;opacity:0;
-    pointer-events:none;transition:opacity .25s ease}
+    pointer-events:none;transition:opacity .25s var(--ease-out)}
   iframe.ready{opacity:1;pointer-events:auto}
   /* The status bar's strip, while the kept copy is on screen: the page's colour over
      whatever scrolls up under it, as the app's own bar is once it has its chrome. Over the
@@ -328,7 +330,7 @@
   /* ---- placeholder layer: either the skeleton or the cached cards ---- */
   .ph{position:fixed;inset:0;z-index:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 24px);
-    transition:opacity .25s ease}
+    transition:opacity .25s var(--ease-out)}
   .ph.gone{opacity:0;pointer-events:none}
   /* Above the iframe (z-index 2) so it can be tapped, and anchored to the bottom so it
      never covers the app's header or a register tile. */
@@ -359,14 +361,18 @@
   /* ---- the bottom tabs: a MIRROR of App.html's .tabs block (invariant 35) ----
      Copied rule for rule so the app's bar fades in exactly on top of this one. Tokens
      only, so both themes follow. Change one, change both — tabs.test.js compares them. */
-  .tabs{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:var(--z-tabs);
-    max-width:560px;margin:0 auto;padding:5px;border-radius:99px;background:var(--gl-bar);
+  .tabs{position:fixed;left:12px;right:12px;bottom:calc(var(--vb-bot,0px) + env(safe-area-inset-bottom) + 12px);z-index:var(--z-tabs);
+    max-width:560px;margin:0 auto;padding:5px;border-radius:99px;
+    /* Its sheen over the scrolled top bar's chrome, mostly opaque under a heavy blur: the
+       clear bar glass let a card's coloured chips and words smear through under the labels
+       (the ghost shapes the owner flagged). */
+    background:var(--gl-bar),var(--gl-chrome);
     border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
-    -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
+    -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%)}
   .tabs-in{display:flex;gap:2px}
   .tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;
-    padding:6px 4px 7px;border-radius:99px;font-size:min(var(--fs-caption2),13px);font-weight:500;color:var(--ink-2);
-    white-space:nowrap;transition:background .12s ease,box-shadow .12s ease}
+    padding:6px 4px 7px;border-radius:99px;font-size:min(var(--fs-caption2),13px,max(11px,3.4vw));font-weight:500;color:var(--ink-2);
+    white-space:nowrap;transition:background .12s var(--ease-out),box-shadow .12s var(--ease-out)}
   .tab .ic{display:grid;place-items:center;width:44px;height:26px;border-radius:99px}
   .tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;
     stroke-linecap:round;stroke-linejoin:round}
@@ -458,6 +464,14 @@
     -webkit-overflow-scrolling:touch;padding-bottom:2px;position:relative;scroll-padding-left:calc(var(--tt-gutter) + 6px)}
   /* Larger Text (owner, 24d): the cells hold two lines of their own text and the axis its
      times at any size; at the default both are what they were (32px, 52px). */
+  /* The app's motion tokens, the same values (App.html, "Motion tokens"): entrances ease
+     out, exits ease in, what a finger moved springs. Only the shimmer and the spinners,
+     loops that never stop, stay linear. */
+  :root{--ease-out:cubic-bezier(.22,1,.36,1);--ease-in:cubic-bezier(.4,0,1,1);--spring:cubic-bezier(.34,1.32,.64,1);
+    --ease-ios:cubic-bezier(.32,.72,0,1)}
+  @supports (transition-timing-function:linear(0,1)){
+    :root{--spring:linear(0,.047,.16,.303,.452,.593,.715,.816,.894,.952,.992,1.017,1.032,1.038,1.038,1.035,
+      1.03,1.024,1.019,1.014,1.009,1.006,1.003,1.001,1,.999,.999,.999,.999,.999,1)}}
   :root{--tt-row:max(32px,calc(var(--fs-caption1) * 2.4 + 2px));--tt-gutter:max(52px,calc(var(--fs-caption2) * 3.6))}
   .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:var(--tt-gutter);padding:6px 4px 6px 0;
     border:1px solid transparent;background:var(--surface)}
@@ -644,13 +658,13 @@
 
   /* ---- taking a register before the app is up ---- */
   .lsn.tap{pointer-events:auto;cursor:pointer;text-align:left;
-    transition:border-color .12s ease,background .12s ease,transform .08s ease}
+    transition:border-color .12s var(--ease-out),background .12s var(--ease-out),transform .08s var(--spring)}
   .lsn.tap:hover{border-color:var(--line-2);background:var(--surface-2)}
   /* Presses as the app's (its "One press, everywhere", invariant 35): a list row takes the
      grey highlight rather than shrinking, a tile or button gives to .97 and a shade darker;
      the press lands at once and the release eases back on the iOS curve. */
   .lsn.tap:active{transform:none;background-color:var(--surface-3)}
-  .ph .tab .ic{transition:transform .22s cubic-bezier(.32,.72,0,1)}
+  .ph .tab .ic{transition:transform .3s var(--spring)}
   .ph .tab:active .ic{transform:scale(.9);transition-duration:.06s}
   /* The register as the app draws it (W9): back where the app's back is, "Take register"
      over a large title and "P1 · 08:00–08:50 · Thu 22 Oct", the running count as three
@@ -683,7 +697,7 @@
     text-align:left;background:var(--surface);border:1px solid var(--line);
     border-radius:20px;padding:12px 14px;overflow:hidden;box-shadow:var(--shadow);
     cursor:pointer;font-family:inherit;color:var(--ink);
-    transition:background .12s ease,border-color .12s ease,transform .08s ease,filter .08s ease}
+    transition:background .12s var(--ease-out),border-color .12s var(--ease-out),transform .08s var(--spring),filter .08s var(--ease-out)}
   .qtile .av{display:none}
   .qtile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     font-size:var(--fs-body);line-height:1.3;font-weight:600;letter-spacing:-.01em}
@@ -710,6 +724,99 @@
   .spct{font-weight:700;font-size:var(--fs-callout);flex:none;min-width:52px;text-align:right;
     font-variant-numeric:tabular-nums}
 
+  /* ---- a student's cached Home: App.html's rules for it, scoped to .lens ----
+     Copied from the app's .head, #lensWrap, .ttnow.tdcard/.tdl, the segmented control,
+     .linkbtn/#ctoggle, .card/.chead/.dabs/.cbody/.tbl/.ring and .cfold (invariant 35).
+     Change one, change both. */
+  #instantInner>.lens{order:1}
+  .lens{display:flex;flex-direction:column;line-height:1.5}
+  .lens>.lbody{margin-top:14px}
+  .lens .head{margin:14px 0 12px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .lens .headin{flex:1 1 200px;min-width:0}
+  .lens h2.title{margin:0;font-weight:700;font-size:var(--fs-large);line-height:1.2;letter-spacing:.2px;color:var(--ink)}
+  .lens h2.title::before{content:attr(data-school);display:block;font-size:var(--fs-footnote);font-weight:600;
+    letter-spacing:0;color:var(--ink-2);margin-bottom:2px}
+  .lens .sub{margin:3px 0 0;color:var(--ink-2);font-size:var(--fs-body)}
+  .lens .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+  .lens .ttnow.tdcard{display:block;padding:11px 0 2px;min-height:0}
+  .lens .tdhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 14px 8px}
+  .lens .tdhead .eyebrow{font-size:var(--fs-footnote);font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lens .tdst{flex:none;font-size:var(--fs-footnote);font-weight:500;color:var(--ink-2)}
+  .lens .tdstrip{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px 14px 12px;position:relative}
+  .lens .tdstrip::-webkit-scrollbar{display:none}
+  .lens .tdl{flex:none;height:calc(66rem / 17);border-radius:var(--r-md);border:0;
+    display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;
+    min-width:84px;max-width:168px;padding:0 12px;text-align:left;color:var(--ink);
+    background:var(--tf,var(--surface-2));font-variant-numeric:tabular-nums}
+  .lens .tdl .tdt{font-size:var(--fs-caption1);font-weight:600;color:var(--ink-2);white-space:nowrap}
+  .lens .tdl .tdn{max-width:100%;font-size:var(--fs-subhead);font-weight:600;letter-spacing:-.01em;line-height:1.25;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lens .tdl .tdx:empty{display:none}
+  .lens .tdstrip [data-tone="as1"]{--tf:var(--tt-as1)} .lens .tdstrip [data-tone="as2"]{--tf:var(--tt-as2)}
+  .lens .tdstrip [data-tone="as3"]{--tf:var(--tt-as3)} .lens .tdstrip [data-tone="a21"]{--tf:var(--tt-a21)}
+  .lens .tdstrip [data-tone="a22"]{--tf:var(--tt-a22)} .lens .tdstrip [data-tone="a23"]{--tf:var(--tt-a23)}
+  @supports (background:color-mix(in srgb,red 50%,blue)){
+    .lens .tdl{background:color-mix(in srgb,var(--tf,var(--surface-2)) 50%,var(--surface))}
+  }
+  .lens .tdf{flex:none;width:8px;height:8px;display:grid;place-items:center}
+  .lens .tdf::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--line-2)}
+  .lens .ranges{position:relative;isolation:isolate;display:flex;gap:0;padding:0 2px;margin-bottom:12px;border-radius:99px}
+  .lens .ranges::before{content:"";position:absolute;left:0;right:0;top:4px;bottom:4px;z-index:-1;border-radius:99px;
+    background:var(--seg-track)}
+  .lens .rng{position:relative;isolation:isolate;flex:1 1 0;min-width:0;min-height:44px;padding:0 8px;
+    border:solid transparent;border-width:6px 0;display:flex;align-items:center;justify-content:center;
+    font-size:var(--fs-footnote);font-weight:500;line-height:1.25;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lens .rng::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:99px;pointer-events:none}
+  .lens .rng[aria-pressed="true"]{font-weight:600;filter:var(--seg-shadow)}
+  .lens .rng[aria-pressed="true"]::after{background-color:var(--seg-on)}
+  .lens .ctog{align-self:flex-start;display:flex;align-items:center;min-height:44px;margin:-12px 0 -6px;
+    color:var(--accent);font-weight:600;font-size:var(--fs-subhead);text-decoration:underline;text-underline-offset:2px}
+  .lens .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:12px;align-items:start}
+  .lens .chead{padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);
+    border-radius:var(--r-lg) var(--r-lg) 0 0}
+  .lens .chead h3{margin:0;font-weight:700;font-size:var(--fs-callout);letter-spacing:-.02em}
+  .lens .chead span{display:block;font-size:var(--fs-footnote);color:var(--ink-2);margin-top:1px}
+  .lens .card.past .chead{background:var(--surface)}
+  .lens .card.past .chead h3{color:var(--ink-2)}
+  .lens .card.subj .chead{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center}
+  .lens .card.subj .chead>h3,.lens .card.subj .chead>span{grid-column:1}
+  .lens .card.subj .chead>.cgo{grid-column:2;grid-row:1 / span 2;width:18px;height:18px;color:var(--ink-3);fill:none;
+    stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .lens .card.subj .chead>span:empty{display:none}
+  .lens .dabs{padding:10px 14px 0;font-size:var(--fs-footnote);color:var(--ink-2)}
+  .lens .dabs b{font-size:var(--fs-body);font-weight:700;color:var(--ink);letter-spacing:-.02em}
+  .lens .cbody{padding:12px;display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+  .lens .cbody .tbl{flex:1 1 0;min-width:0}
+  .lens .ring{flex:none;display:flex;align-items:center;gap:6px}
+  .lens .ring .chart{display:block;width:76px;flex:none;height:auto}
+  .lens .ring .rate b{display:block;font-size:var(--fs-subhead);font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .lens .ring .rate span{display:block;font-size:var(--fs-caption2);font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-3)}
+  .lens .tbl{width:100%;border-collapse:separate;border-spacing:4px 0;table-layout:fixed}
+  .lens .tbl th{font-size:var(--fs-caption2);letter-spacing:.02em;text-transform:uppercase;color:var(--ink-3);
+    font-weight:700;padding:0 0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lens .tbl td{font-weight:700;font-size:var(--fs-body);letter-spacing:-.03em;text-align:center;padding:5px 2px;
+    border:0;border-radius:14px;font-variant-numeric:tabular-nums}
+  .lens .tbl td.tp{color:var(--ok);background:var(--ok-soft)} .lens .tbl td.tl{color:var(--low);background:var(--low-soft)}
+  .lens .tbl td.ta{color:var(--full);background:var(--full-soft)}
+  @media(min-width:400px) and (max-width:679px),(min-width:820px){
+    .lens .ring{gap:8px} .lens .ring .rate b{font-size:var(--fs-body)}
+    .lens .tbl{border-spacing:6px 0} .lens .tbl th{letter-spacing:.06em}
+    .lens .tbl td{font-size:var(--fs-title3);padding:7px 3px}}
+  .lens .card:has(>.cbody){container-type:inline-size}
+  @container (max-width:21.5rem){ .lens .ring .chart{width:64px} .lens .tbl th{letter-spacing:0} }
+  @container (max-width:19rem){ .lens .cbody{flex-wrap:wrap;justify-content:center} .lens .cbody .tbl{flex:1 1 100%} }
+  .lens .cfold{border-top:1px solid var(--line)}
+  .lens .cfoldb{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;
+    font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2);line-height:normal}   /* a button there */
+  .lens .cfoldb>span{flex:1;min-width:0}
+  .lens .cfchips{display:flex;gap:6px;flex-wrap:wrap}
+  .lens .cfnone{color:var(--ink-3)}
+  .lens .plchev{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .lens .chip.bad{background:var(--full-soft);border-color:var(--full-line);color:var(--full)}
+
   /* The app's floating Save bar. Its second line says the one thing that differs here:
      the register goes once the app has loaded, not this second. */
   .qsavebar{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:2;margin:14px 0 0;
@@ -724,10 +831,12 @@
   .qbtn{flex:none;padding:13px 22px;border:1px solid var(--gl-p-edge);border-radius:99px;
     background:var(--gl-p);color:var(--gl-p-ink);font-size:var(--fs-body);font-weight:600;cursor:pointer;
     font-family:inherit;box-shadow:var(--gl-p-shadow);
-    transition:filter .12s ease,transform .08s ease}
+    transition:filter .12s var(--ease-out),transform .08s var(--spring)}
   .qbtn:hover{filter:brightness(1.08)}
   /* (the presses above) */
-  .qtile,.qbtn{transition-duration:.22s;transition-timing-function:cubic-bezier(.32,.72,0,1)}
+  /* The release springs back (only the scale: colour and filter have nothing to overshoot to). */
+  .qtile,.qbtn{transition-property:background,border-color,filter,transform;transition-duration:.12s,.12s,.22s,.42s;
+    transition-timing-function:var(--ease-out),var(--ease-out),var(--ease-out),var(--spring)}
   .qtile:active,.qbtn:active{transform:scale(.97);filter:brightness(.94);transition-duration:.06s}
 
   /* ---- sign-in (first open, or after Sign out) and the notification gate ----
@@ -811,7 +920,7 @@
      usable). Same layer as the skeleton, below the frame, so the app fades in over it
      exactly as it does over the skeleton, and the stuck bar and the gate land on top. */
   .load{position:fixed;inset:0;z-index:1;display:grid;place-items:center;padding:24px 16px;
-    background:var(--bg);transition:opacity .25s ease}
+    background:var(--bg);transition:opacity .25s var(--ease-out)}
   .load[hidden]{display:none}
   .load.gone{opacity:0;pointer-events:none}
   .load .box{text-align:center;padding:28px 22px 22px}
@@ -821,7 +930,7 @@
   .lbar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;
     border:1px solid var(--line);position:relative}
   .lbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;
-    background:var(--accent);transition:width .45s cubic-bezier(.2,.7,.2,1)}
+    background:var(--accent);transition:width .45s var(--ease-out)}
   .lbar i::after{content:"";position:absolute;inset:0;
     background:linear-gradient(100deg,transparent 20%,var(--sheen) 50%,transparent 80%);
     background-size:220% 100%;animation:sh 1.4s linear infinite}
@@ -835,9 +944,9 @@
   .lsteps .lbar{position:absolute;left:12.5%;right:12.5%;top:15px;height:4px;border:0}
   .lstages{position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr)}
   .lstages li{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;
-    font-size:var(--fs-caption1);font-weight:600;color:var(--ink-3);white-space:nowrap;transition:color .25s ease}
+    font-size:var(--fs-caption1);font-weight:600;color:var(--ink-3);white-space:nowrap;transition:color .25s var(--ease-out)}
   .lstages i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
-    background:var(--surface-3);color:var(--ink-3);transition:background .25s ease,color .25s ease}
+    background:var(--surface-3);color:var(--ink-3);transition:background .25s var(--ease-out),color .25s var(--ease-out)}
   .lstages svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;
     stroke-linecap:round;stroke-linejoin:round}
   .lstages .done{color:var(--ink-2)}
@@ -854,10 +963,10 @@
   /* The wrapper's own overlays come and go as the app's do (owner, 25d: "all the things
      have exit animation"): the bars rise from the bottom and sink back, the gate and the
      signed-out pill fade. Leaving (away()), they take no taps. */
-  .notif:not([hidden]){animation:w-in .34s cubic-bezier(.32,.72,0,1) both}
-  .gate:not([hidden]),.okpill:not([hidden]){animation:w-fade .25s ease both}
-  .notif.leaving{animation:w-out .22s ease-in both;pointer-events:none}
-  .gate.leaving,.okpill.leaving{animation:w-unfade .2s ease both;pointer-events:none}
+  .notif:not([hidden]){animation:w-in .42s var(--spring) both}
+  .gate:not([hidden]),.okpill:not([hidden]){animation:w-fade .25s var(--ease-out) both}
+  .notif.leaving{animation:w-out .22s var(--ease-in) both;pointer-events:none}
+  .gate.leaving,.okpill.leaving{animation:w-unfade .18s var(--ease-in) both;pointer-events:none}
   @keyframes w-in{from{opacity:0;transform:translateY(14px) scale(.98)}}
   @keyframes w-out{to{opacity:0;transform:translateY(14px) scale(.98)}}
   @keyframes w-fade{from{opacity:0}}
@@ -1513,33 +1622,84 @@
     return 'Your last view &middot; updating';
   }
 
+  /* The flat ring, as App.html's flatRing() draws it: three arcs on one track. */
+  function flatRing(p, l, a){
+    var total = p + l + a, C = 2 * Math.PI * 48, cum = 0, arcs = '';
+    var segs = [[p, '--ring-p'], [l, '--ring-l'], [a, '--ring-a']].filter(function (x) { return x[0]; });
+    var gap = segs.length > 1 ? 16 : 0;
+    segs.forEach(function (x) {
+      var len = Math.max(x[0] / total * C - gap, 0.01);
+      arcs += '<circle cx="56" cy="56" r="48" fill="none" stroke-width="12" stroke-linecap="round" style="stroke:var(' + x[1] + ')" ' +
+        'stroke-dasharray="' + len.toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-cum).toFixed(2) + '" transform="rotate(-90 56 56)"/>';
+      cum += len + gap;
+    });
+    return '<svg class="chart flat" viewBox="0 0 112 112" aria-hidden="true">' +
+      '<circle cx="56" cy="56" r="48" fill="none" stroke-width="12" style="stroke:var(--surface-3)"/>' + arcs + '</svg>';
+  }
+  var GOCHEV = '<svg class="cgo" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  var FCHEV = '<svg class="plchev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  var STU_TONES = { as1: 1, as2: 1, as3: 1, a21: 1, a22: 1, a23: 1 };
+  /* One card of a student's Home, App.html's render() markup: the figures, the ring, and
+     the foot that says how many lates and absences (their dates are not kept here). */
+  function stuCard(head, sub, x, fl, dabs, subj){
+    var total = (x.present || 0) + (x.late || 0) + (x.absent || 0), l = fl ? fl[0] : (x.late || 0), a = fl ? fl[1] : (x.absent || 0);
+    var cell = function (k, v, c) { return [k, v || 0, c]; };
+    var cells = [cell('Present', x.present, 'tp'), cell('Late', x.late, 'tl'), cell('Absent', x.absent, 'ta')];
+    return '<section class="card' + (subj ? ' subj' + (x.dropped ? ' past' : '') : '') + '"' + (subj ? '' : ' style="margin-bottom:14px"') + '>' +
+      '<div class="chead"><h3>' + esc(head) + '</h3><span>' + esc(sub) + '</span>' + (subj ? GOCHEV : '') + '</div>' +
+      (dabs ? '<div class="dabs"><b>' + esc(dabs) + '</b></div>' : '') +
+      '<div class="cbody"><table class="tbl"><tr>' + cells.map(function (c) { return '<th>' + c[0] + '</th>'; }).join('') + '</tr><tr>' +
+        cells.map(function (c) { return '<td class="' + c[2] + '">' + c[1] + '</td>'; }).join('') + '</tr></table>' +
+        '<div class="ring">' + flatRing(x.present || 0, x.late || 0, x.absent || 0) +
+        '<span class="rate"><b>' + (total ? Math.round((x.present || 0) / total * 100) + '%' : '—') + '</b><span>present</span></span></div></div>' +
+      '<div class="cfold"><span class="cfoldb">' + (!l && !a ? '<span class="cfnone">No lates or absences</span>'
+        : '<span class="cfchips">' + (l ? '<span class="chip leave">' + l + ' late</span>' : '') +
+          (a ? '<span class="chip bad">' + a + ' absent</span>' : '') + '</span>' + FCHEV) + '</span></div></section>';
+  }
+  /* Today's card: the row of lessons as the app draws it before it has the time (no ring
+     on the one now, nothing faded: invariant 31), and only for today. Anything older is
+     the card saying how old the figures under it are, while the app is asked again. */
+  function stuToday(s){
+    var t = s.today, iso = todayIso(), at = new Date(Number(s.at || 0));
+    var fresh = s.at && at.getFullYear() + '-' + p2(at.getMonth() + 1) + '-' + p2(at.getDate()) === iso;
+    if (fresh && t && t.cells && t.cells.length && t.date === iso)
+      return '<div class="card ttnow tdcard"><div class="tdhead"><span class="eyebrow">Today</span><span class="tdst"></span></div>' +
+        '<div class="tdstrip">' + t.cells.map(function (c) {
+          if (!c) return '<span class="tdf"></span>';
+          return '<span class="tdl"' + (STU_TONES[c.tone] ? ' data-tone="' + c.tone + '"' : '') + '><span class="tdt">' + esc(c.t || '') +
+            '</span><b class="tdn">' + esc(c.n || '') + '</b><span class="tdx"></span></span>';
+        }).join('') + '</div></div>';
+    if (s.today === null && fresh) return '';
+    return '<div class="card ttnow"><div class="ttmsg"><span class="spin"></span><span>' + seenNote(s) + '</span></div></div>';
+  }
+  var RANGES = [['week', 'This week'], ['two', '2 weeks'], ['all', 'All time']];
+
+  /* A student's Home, drawn as App.html draws it (invariant 35): the name as a large
+     title under the school, today's card, the three ranges and Pick dates, All subjects
+     with its days absent, then a card per subject — the same classes and sizes, copied
+     below as .lens rules, so the look does not change when the app takes over. */
   function paintStudent(token){
     var s;
     try { s = JSON.parse(localStorage.getItem(STU + token) || 'null'); } catch (e) { return false; }
     if (!s || !s.totals) return false;
 
-    var t = s.totals;
-    var pct = function (v) { return Math.round((v || 0) * 100) + '%'; };
-    var row = function (label, x, muted) {
-      return '<div class="srow' + (muted ? ' past' : '') + '">' +
-        '<span class="slab">' + esc(label) + '</span>' +
-        '<span class="sfig">' + (x.total || 0) + ' lessons</span>' +
-        '<span class="spct">' + pct(x.rate) + '</span></div>';
-    };
+    var t = s.totals, lab = String(s.rangeLabel || '');
+    var on = lab === 'This week' ? 'week' : lab === '2 weeks' ? 'two' : (lab === 'All time' || /^Since /.test(lab)) ? 'all' : '';
+    var body = !t.total ? '<div class="card"><div class="empty"><b>Nothing recorded in this range</b></div></div>' :
+      stuCard('All subjects', lab, t, s.fl, s.dabs, false) +
+      '<div class="cards">' + (s.subjects || []).map(function (x) {
+        return stuCard(x.label, [x.teacher || '', x.dropped ? 'No longer taking' : ''].filter(Boolean).join(' · '), x, x.fl, '', true);
+      }).join('') + '</div>';
 
     $('instantInner').innerHTML =
       headBar(s.school, s.name) +
-      // One block in reading order: #instantInner orders its children for the teacher's
-      // Home, and left loose these landed above the name with the gap at the foot (W1).
-      '<div class="stuwrap"><div class="dhead"><i class="eye">' + esc(s.school || '') + '</i><b>' + esc(s.name || '') + '</b><span>' +
-        esc(['Year ' + (s.year || ''), s.option, s.rangeLabel].filter(Boolean).join(' · ')) +
-      '</span></div>' +
-      '<div class="note"><span class="spin"></span>' + seenNote(s) + '</div>' +
-      stripGap(s.strip) +
-      '<div class="stot"><b>' + pct(t.rate) + '</b><span>' + (t.present || 0) + ' present · ' +
-        (t.late || 0) + ' late · ' + (t.absent || 0) + ' absent</span></div>' +
-      (s.subjects || []).map(function (x) { return row(x.label, x, x.dropped); }).join('') +
-      '</div>' + tabBar(s.tabs);
+      '<div class="lens"><div class="head"><div class="headin"><h2 class="title" data-school="' + esc(s.school || '') + '">' +
+        esc(s.name || '') + '</h2><p class="sub">' +
+        esc(['Year ' + (s.year || ''), s.option, lab].filter(Boolean).join(' · ')) + '</p><p class="sub" style="margin-top:6px"></p></div></div>' +
+      stuToday(s) +
+      '<div class="ranges">' + RANGES.map(function (r) {
+        return '<span class="rng" aria-pressed="' + (r[0] === on) + '">' + r[1] + '</span>'; }).join('') + '</div>' +
+      '<span class="linkbtn ctog">Pick dates</span><div class="lbody">' + body + '</div></div>' + tabBar(s.tabs);
 
     $('instant').style.display = 'block';
     tabRoom(s.tabs);
@@ -1624,10 +1784,10 @@
   }
 
   function card(l, admin, live, i, fresh, queued){
-    var sub = [ (l.start ? l.start + '-' + l.end : ''), l.room, (admin ? l.teacher : '') ]
+    var sub = [ (l.start ? l.start + '\u2060-\u2060' + l.end : ''), l.room, (admin ? l.teacher : '') ]
       .filter(Boolean).join(' \u00b7 ');
     var count = queued ? 'register ready'
-              : (live && l.taken) ? (l.flagged + '/' + l.total + ' flagged')
+              : (live && l.taken) ? (l.flagged ? (l.flagged + '/' + l.total + ' flagged') : 'Everyone present')
                                   : (l.total + ' students');
     var tap = markable(l, fresh);
     return '<' + (tap ? 'button type="button"' : 'div') +
