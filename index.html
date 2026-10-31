@@ -1143,8 +1143,28 @@
   function show(el){
     if (!el) return;
     el.__aw = (el.__aw || 0) + 1;
+    // Shown again mid-fade: it comes back from where the fade had got to, in the share of
+    // its time that is left (the app's MOTION.from, owner 30 Oct: "break midway").
+    var was = null;
+    if (el.classList.contains('leaving') && moving()) {
+      try { var cs = getComputedStyle(el); was = { opacity: cs.opacity, transform: cs.transform }; } catch (e) {}
+    }
     el.classList.remove('leaving');
     el.hidden = false;
+    if (was) try {
+      el.getAnimations().forEach(function (a) {
+        var ef = a.effect, k = ef.getKeyframes(), dur = +ef.getComputedTiming().duration || 0;
+        if (k.length < 2 || !dur) return;
+        var f0 = { offset: 0, easing: k[0].easing || 'linear' }, f1 = { offset: 1 }, f = 1;
+        ['opacity', 'transform'].forEach(function (p) {
+          if (!(p in k[0] || p in k[k.length - 1])) return;
+          f0[p] = was[p]; f1[p] = k[k.length - 1][p] || (p === 'opacity' ? '1' : 'none');
+        });
+        if ('opacity' in f0) f = Math.max(0, 1 - parseFloat(was.opacity));
+        ef.setKeyframes([f0, f1]);
+        ef.updateTiming({ duration: Math.round(dur * Math.max(1 / 3, Math.min(1, f))) });
+      });
+    } catch (e) {}
   }
   // Which input came last, for the focus ring (the app's INPUT block, mirrored).
   (function () {
@@ -1173,6 +1193,14 @@
      its storage goes with the page. Per token, like everything else here, and bounded:
      the oldest answers go first once there are too many or they grow too big. */
   var TABC_MAX = 40, TABC_BYTES = 1500000;
+  /* What the app is handed on attendance:ready: the tabs' copies, and how old the admin
+     dashboard's is (0 for none), so an admin's app can have the dashboard's first open ready
+     too (invariant 51) without being handed the dashboard itself. */
+  function cachedFor(token){
+    var adm = 0;
+    try { var a = readAdminCache(token); adm = a ? a.at : 0; } catch (e) {}
+    return { type: 'attendance:cached', v: 1, entries: readTabCache(token), admin: adm };
+  }
   function readTabCache(token){
     try { var o = JSON.parse(localStorage.getItem(TABC + token) || '{}'); return (o && typeof o === 'object') ? o : {}; }
     catch (e) { return {}; }
@@ -2486,7 +2514,7 @@
     function swapDone() {
       var el = K.next, old = K.frame;
       K.next = null; K.frame = el; f = el; QS.frame = el; QS.app = el.contentWindow;
-      toApp({ type: 'attendance:cached', v: 1, entries: readTabCache(t) });
+      toApp(cachedFor(t));
       if (K.swapTab) toApp({ type: 'attendance:tab', v: 1, tab: K.swapTab });
       // Everything the first copy was told on its attendance:ready, this one needs too:
       // without it, the Manage button opened a tab of its own (and Google's error page).
@@ -2558,7 +2586,7 @@
         var sb = $('stuckBar'); away(sb);
         flushQueue();                       // anything marked while it was loading
         // The other tabs' copies, before any tab is opened, so it can draw from them.
-        toApp({ type: 'attendance:cached', v: 1, entries: readTabCache(t) });
+        toApp(cachedFor(t));
         // A tab tapped on the cached bar: the app opens it before it is shown.
         if (QS.tab && QS.tab !== 'home') toApp({ type: 'attendance:tab', v: 1, tab: QS.tab });
         QS.tab = '';
@@ -2611,6 +2639,12 @@
       }
       if (m.type === 'attendance:cache') {
         try { writeTabCache(t, m.key, m.data); } catch (err) {}
+        return;
+      }
+      // The dashboard's first answer, fetched by an admin's app behind Home (invariant 51),
+      // already without anyone's link in it: kept exactly as the dashboard would keep it.
+      if (m.type === 'attendance:admin-cache') {
+        if (m.data && typeof m.data === 'object') { try { writeAdminCache(t, m); } catch (err) {} }
         return;
       }
       if (m.type === 'attendance:snapshot') {

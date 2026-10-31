@@ -1,9 +1,19 @@
 /* Service worker for KS5 Hub. Goes beside index.html on GitHub Pages.
  *
- * It exists for one job: receive a push and show a notification. It deliberately does
- * NOT cache the app — attendance.html already paints its own cached first screen out
- * of localStorage, and a second, stale copy of the app living in a service worker is
- * the classic way a web app starts showing yesterday's data with no way to clear it.
+ * Two jobs. It receives a push and shows a notification. And it keeps the wrapper itself
+ * (index.html, the manifest and the icons) on the device, so the installed app opens from
+ * the phone in its first frame instead of waiting on GitHub Pages, and opens at all with
+ * no signal: the wrapper then paints its own kept screen and kept app (invariants 35, 41).
+ *
+ * What it does NOT keep is anything with data in it. The app and every answer come from
+ * Apps Script, in the wrapper's frame, on an origin this worker never sees; the wrapper
+ * keeps those copies itself, per person, and clears them on sign-out. A second copy of the
+ * data living here is the classic way a web app starts showing yesterday's figures with no
+ * way to clear them.
+ *
+ * The wrapper is served from the device and fetched again behind it on every open (stale
+ * while revalidate): a new index.html is used from the open after the one that fetched it,
+ * exactly as the kept app takes a new build. Bump SHELL to drop every kept file at once.
  *
  * Pushes arrive with no payload. Encrypting one needs ECDH, HKDF and AES-128-GCM, and
  * Apps Script has no AES — so the text is fetched here instead, addressed by a device
@@ -12,28 +22,48 @@
  */
 
 var CFG = 'push-config-v1';
+var SHELL = 'ks5-shell-v1';
+/* The page is kept under the scope's own address whatever was on the URL (a sign-in link's
+   ?t=, ?tab=, ?admin=1): it is one file, and a token must never end up in a cache key. */
+var PAGE = './';
+var ASSETS = ['./manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png',
+  './apple-touch-icon.png', './favicon-32.png'];
+
+function keepAll(c) {
+  // One missing icon must not stop the rest being kept, or the worker installing.
+  return Promise.all([PAGE].concat(ASSETS).map(function (u) {
+    return fetch(u, { cache: 'reload' }).then(function (r) { if (r && r.ok) return c.put(u, r); })
+      .catch(function () {});
+  }));
+}
 
 /* Take over as soon as we are installed, so the first notification does not have to
-   wait for every tab to close. */
-self.addEventListener('install', function (e) { self.skipWaiting(); });
+   wait for every tab to close. The wrapper and icons are kept while installing, so the
+   very next open is already from the device. */
+self.addEventListener('install', function (e) {
+  self.skipWaiting();
+  if (e && e.waitUntil) e.waitUntil(caches.open(SHELL).then(keepAll).catch(function () {}));
+});
 self.addEventListener('activate', function (e) {
   e.waitUntil(Promise.all([
     self.clients.claim(),
-    /* Lets a page load start on the network while this worker wakes, so answering page
-       loads below costs no time. */
-    self.registration.navigationPreload ? self.registration.navigationPreload.enable() : null
+    /* Lets a page load start on the network while this worker wakes, so the fetch made
+       behind a kept page costs no time. */
+    self.registration.navigationPreload ? self.registration.navigationPreload.enable() : null,
+    // An older SHELL's files go. The push config (CFG) is not ours to clear.
+    caches.keys().then(function (keys) {
+      return Promise.all(keys.filter(function (k) { return k.indexOf('ks5-shell-') === 0 && k !== SHELL; })
+        .map(function (k) { return caches.delete(k); }));
+    }).catch(function () {})
   ]));
 });
 
-/* Page loads, and only page loads. Chrome on Android offers Install only to a site whose
-   worker answers them, so this is here for installing, not caching: a load still goes to
-   the network exactly as before, and the one thing added is a plain offline page in place
-   of the browser's own error when there is no network at all. Nothing is stored. */
 /* Drawn as the app draws a page that could not load (its empty state, W13): the
    crossed-out signal in a soft red tile, the words, and Try again as the app's primary
    button; in the app's own colours, dark when the phone (or the person's choice, kept by
    index.html on this same origin) is dark, so an installed app opened in the dark does not
-   flash white. Colours only in the two token blocks, as everywhere. */
+   flash white. Colours only in the two token blocks, as everywhere. Only for a device that
+   has never kept the wrapper: one that has opens on it, offline or not. */
 var OFFLINE = '<!doctype html><html lang="en"><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
   '<meta name="color-scheme" content="light dark"><title>KS5 Hub</title>' +
@@ -63,13 +93,63 @@ var OFFLINE = '<!doctype html><html lang="en"><meta charset="utf-8">' +
     '<path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/></svg></i>' +
   '<b>No connection</b><p>KS5 Hub opens when you are back online.</p>' +
   '<button type="button" onclick="location.reload()">Try again</button></div>';
+
+function scopePath() {
+  try { return new URL(self.registration.scope).pathname; } catch (e) { return '/'; }
+}
+/* Where under the scope a request is, as './name', the key it is kept under; null for
+   anything on another origin or outside the scope. */
+function rel(url) {
+  var p = scopePath();
+  if (url.origin !== self.location.origin || url.pathname.indexOf(p) !== 0) return null;
+  return './' + url.pathname.slice(p.length);
+}
+function offline() {
+  return new Response(OFFLINE, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
+/* Page loads: from the device at once when it has the wrapper, with the network asked
+   behind it to keep that copy current; from the network (kept on the way through) when it
+   has not; the offline page only when it has neither. Chrome on Android offers Install only
+   to a site whose worker answers page loads, so this is also what keeps it installable.
+   The icons and manifest: from the device, from the network the first time. Everything
+   else (above all, anything on Apps Script's origins) is left alone. */
 self.addEventListener('fetch', function (e) {
-  if (e.request.mode !== 'navigate') return;
-  e.respondWith(Promise.resolve(e.preloadResponse).then(function (r) {
-    return r || fetch(e.request);
-  }).catch(function () {
-    return new Response(OFFLINE, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
-  }));
+  var req = e.request, url;
+  try { url = new URL(req.url); } catch (err) { return; }
+  if (req.method && req.method !== 'GET') return;
+  var at = rel(url);
+  if (req.mode === 'navigate') {
+    if (at !== './' && at !== './index.html') return;
+    var fresh = Promise.resolve(e.preloadResponse).then(function (r) { return r || fetch(req); })
+      .then(function (r) {
+        if (!r || !r.ok || r.redirected) return r;
+        var copy = r.clone();
+        return caches.open(SHELL).then(function (c) { return c.put(PAGE, copy); })
+          .catch(function () {}).then(function () { return r; });
+      });
+    e.respondWith(caches.open(SHELL).then(function (c) { return c.match(PAGE); }).catch(function () { return null; })
+      .then(function (hit) {
+        if (hit) {
+          // Kept: shown now. The network's answer only updates the copy, for next time.
+          if (e.waitUntil) e.waitUntil(fresh.catch(function () {}));
+          else fresh.catch(function () {});
+          return hit;
+        }
+        return fresh.then(function (r) { return r || offline(); }).catch(offline);
+      }));
+    return;
+  }
+  if (at && ASSETS.indexOf(at) !== -1) {
+    e.respondWith(caches.open(SHELL).then(function (c) {
+      return c.match(at).then(function (hit) {
+        return hit || fetch(req).then(function (r) {
+          if (r && r.ok) { var copy = r.clone(); c.put(at, copy).catch(function () {}); }
+          return r;
+        });
+      });
+    }).catch(function () { return fetch(req); }));
+  }
 });
 
 /* The page tells us where to ask and who to say we are. Kept in the Cache API rather
