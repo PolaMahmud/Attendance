@@ -22,7 +22,7 @@
  */
 
 var CFG = 'push-config-v1';
-var SHELL = 'ks5-shell-v1';
+var SHELL = 'ks5-shell-v2'; /* v2: the Polar icons (31 Oct). */
 /* The page is kept under the scope's own address whatever was on the URL (a sign-in link's
    ?t=, ?tab=, ?admin=1): it is one file, and a token must never end up in a cache key. */
 var PAGE = './';
