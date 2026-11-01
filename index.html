@@ -227,6 +227,23 @@
        reads on the page and on a card alike; the chosen segment is a raised pill. */
     --seg-track:rgba(118,118,128,.12); --seg-on:#FFFFFF;
     --seg-shadow:drop-shadow(0 3px 4px rgba(0,0,0,.10)) drop-shadow(0 0 .5px rgba(0,0,0,.18));
+    /* The twelve subject colours a person can pick for themselves (invariant 53). Each is
+       a PAIR: --sc-lN is drawn in the light theme and --sc-dN in the dark, and someone can
+       choose the two separately. Declared once, here, and not again in the dark block: the
+       picker shows both shades side by side whichever theme it is opened in. */
+    --sc-l1:#FFF7D6; --sc-l1-line:#FFE373; --sc-d1:#524919; --sc-d1-line:#998213;   /* Lemon */
+    --sc-l2:#FFEED6; --sc-l2-line:#FFC573; --sc-d2:#523B19; --sc-d2-line:#996413;   /* Amber */
+    --sc-l3:#FFE0DE; --sc-l3-line:#FF938D; --sc-d3:#522E2E; --sc-d3-line:#994643;   /* Coral */
+    --sc-l4:#FFDDE4; --sc-l4-line:#FF8CA2; --sc-d4:#52222E; --sc-d4-line:#992B42;   /* Rose */
+    --sc-l5:#F2E3FA; --sc-l5-line:#D3A0ED; --sc-d5:#4A3854; --sc-d5-line:#855B9A;   /* Magenta */
+    --sc-l6:#ECE1F2; --sc-l6-line:#BE98D1; --sc-d6:#432B51; --sc-d6-line:#763E93;   /* Violet */
+    --sc-l7:#E4E4F8; --sc-l7-line:#A3A2E8; --sc-d7:#333354; --sc-d7-line:#51509A;   /* Indigo */
+    --sc-l8:#D6EAFF; --sc-l8-line:#73B6FF; --sc-d8:#253B54; --sc-d8-line:#30629A;   /* Blue */
+    --sc-l9:#DEF2FB; --sc-l9-line:#8ED2F1; --sc-d9:#304954; --sc-d9-line:#4A839A;   /* Cyan */
+    --sc-l10:#D6F6F5; --sc-l10-line:#73E0DB; --sc-d10:#2D4C4D; --sc-d10-line:#438B8A;   /* Aqua */
+    --sc-l11:#DFF6E4; --sc-l11-line:#8FE0A4; --sc-d11:#214A2D; --sc-d11-line:#278540;   /* Green */
+    --sc-l12:#EDF6E0; --sc-l12-line:#C0E095; --sc-d12:#404C29; --sc-d12-line:#708936;   /* Lime */
+
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 
     /* Type (I9): Apple's text styles, and only these. Every size on the page is one of
@@ -284,12 +301,14 @@
     --art-1:#45D9FF; --art-2:#B87CFF; --art-3:#FFA03D; --art-4:#55FF8E; --art-5:#FF52A8;
     --art-o:.26;
 
-    --tt-as1:#332E17; --tt-as1-line:#4E4526;
-    --tt-as2:#362919; --tt-as2-line:#523E23;
-    --tt-as3:#39231E; --tt-as3-line:#56332C;
-    --tt-a21:#1B2841; --tt-a21-line:#2A3D5E;
-    --tt-a22:#1A3125; --tt-a22-line:#284936;
-    --tt-a23:#282142; --tt-a23-line:#3B3161;
+    /* Soft tint (build 2026-11-01b): Apple's system hues as a calm wash with a matching hairline.
+       The old six sat within 1.2:1 of the card and read as one colour. Presets 1, 2, 3, 8, 11, 6. */
+    --tt-as1:#524919; --tt-as1-line:#998213;
+    --tt-as2:#523B19; --tt-as2-line:#996413;
+    --tt-as3:#522E2E; --tt-as3-line:#994643;
+    --tt-a21:#253B54; --tt-a21-line:#30629A;
+    --tt-a22:#214A2D; --tt-a22-line:#278540;
+    --tt-a23:#432B51; --tt-a23-line:#763E93;
   }
 
   /* App.html has this in its shared block and this file never did, so anything with
@@ -505,12 +524,41 @@
   .ttl .sj{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     -webkit-hyphens:auto;hyphens:auto;overflow-wrap:anywhere;
     font-size:var(--fs-caption1);font-weight:600;line-height:1.2;letter-spacing:-.01em}
-  .tt [data-tone="as1"]{background:var(--tt-as1);border-color:var(--tt-as1-line)}
-  .tt [data-tone="as2"]{background:var(--tt-as2);border-color:var(--tt-as2-line)}
-  .tt [data-tone="as3"]{background:var(--tt-as3);border-color:var(--tt-as3-line)}
-  .tt [data-tone="a21"]{background:var(--tt-a21);border-color:var(--tt-a21-line)}
-  .tt [data-tone="a22"]{background:var(--tt-a22);border-color:var(--tt-a22-line)}
-  .tt [data-tone="a23"]{background:var(--tt-a23);border-color:var(--tt-a23-line)}
+  /* Subject colour, resolved once into --tn / --tn-line for whatever wears it (invariant 53).
+     data-tone is the option-block slot, or "u" when the person picked a colour of their own,
+     which arrives as data-tl (light) and data-td (dark) — one rule per shade per theme rather
+     than 144 pairs. Every place a subject is coloured reads the two variables. */
+  [data-tone="as1"]{--tn:var(--tt-as1);--tn-line:var(--tt-as1-line)}
+  [data-tone="as2"]{--tn:var(--tt-as2);--tn-line:var(--tt-as2-line)}
+  [data-tone="as3"]{--tn:var(--tt-as3);--tn-line:var(--tt-as3-line)}
+  [data-tone="a21"]{--tn:var(--tt-a21);--tn-line:var(--tt-a21-line)}
+  [data-tone="a22"]{--tn:var(--tt-a22);--tn-line:var(--tt-a22-line)}
+  [data-tone="a23"]{--tn:var(--tt-a23);--tn-line:var(--tt-a23-line)}
+  :root[data-theme="light"] [data-tl="1"]{--tn:var(--sc-l1);--tn-line:var(--sc-l1-line)}
+  :root[data-theme="light"] [data-tl="2"]{--tn:var(--sc-l2);--tn-line:var(--sc-l2-line)}
+  :root[data-theme="light"] [data-tl="3"]{--tn:var(--sc-l3);--tn-line:var(--sc-l3-line)}
+  :root[data-theme="light"] [data-tl="4"]{--tn:var(--sc-l4);--tn-line:var(--sc-l4-line)}
+  :root[data-theme="light"] [data-tl="5"]{--tn:var(--sc-l5);--tn-line:var(--sc-l5-line)}
+  :root[data-theme="light"] [data-tl="6"]{--tn:var(--sc-l6);--tn-line:var(--sc-l6-line)}
+  :root[data-theme="light"] [data-tl="7"]{--tn:var(--sc-l7);--tn-line:var(--sc-l7-line)}
+  :root[data-theme="light"] [data-tl="8"]{--tn:var(--sc-l8);--tn-line:var(--sc-l8-line)}
+  :root[data-theme="light"] [data-tl="9"]{--tn:var(--sc-l9);--tn-line:var(--sc-l9-line)}
+  :root[data-theme="light"] [data-tl="10"]{--tn:var(--sc-l10);--tn-line:var(--sc-l10-line)}
+  :root[data-theme="light"] [data-tl="11"]{--tn:var(--sc-l11);--tn-line:var(--sc-l11-line)}
+  :root[data-theme="light"] [data-tl="12"]{--tn:var(--sc-l12);--tn-line:var(--sc-l12-line)}
+  :root[data-theme="dark"] [data-td="1"]{--tn:var(--sc-d1);--tn-line:var(--sc-d1-line)}
+  :root[data-theme="dark"] [data-td="2"]{--tn:var(--sc-d2);--tn-line:var(--sc-d2-line)}
+  :root[data-theme="dark"] [data-td="3"]{--tn:var(--sc-d3);--tn-line:var(--sc-d3-line)}
+  :root[data-theme="dark"] [data-td="4"]{--tn:var(--sc-d4);--tn-line:var(--sc-d4-line)}
+  :root[data-theme="dark"] [data-td="5"]{--tn:var(--sc-d5);--tn-line:var(--sc-d5-line)}
+  :root[data-theme="dark"] [data-td="6"]{--tn:var(--sc-d6);--tn-line:var(--sc-d6-line)}
+  :root[data-theme="dark"] [data-td="7"]{--tn:var(--sc-d7);--tn-line:var(--sc-d7-line)}
+  :root[data-theme="dark"] [data-td="8"]{--tn:var(--sc-d8);--tn-line:var(--sc-d8-line)}
+  :root[data-theme="dark"] [data-td="9"]{--tn:var(--sc-d9);--tn-line:var(--sc-d9-line)}
+  :root[data-theme="dark"] [data-td="10"]{--tn:var(--sc-d10);--tn-line:var(--sc-d10-line)}
+  :root[data-theme="dark"] [data-td="11"]{--tn:var(--sc-d11);--tn-line:var(--sc-d11-line)}
+  :root[data-theme="dark"] [data-td="12"]{--tn:var(--sc-d12);--tn-line:var(--sc-d12-line)}
+  .tt [data-tone]{background:var(--tn);border-color:var(--tn-line)}
   .ttgap{box-shadow:inset 0 0 0 1px var(--line)}
   .ttempty{font-size:var(--fs-caption2);color:var(--ink-3);padding:3px 2px}
   .ttempty.tall{padding:16px 2px;text-align:center;font-size:var(--fs-footnote)}
@@ -652,9 +700,7 @@
   .lsn .per span{display:none}
   .lsn .mid .t{font-size:var(--fs-body);font-weight:500}
   .lsn .mid .s{font-size:var(--fs-subhead)}
-  .lsn[data-tone="as1"] .per{background:var(--tt-as1)} .lsn[data-tone="as2"] .per{background:var(--tt-as2)}
-  .lsn[data-tone="as3"] .per{background:var(--tt-as3)} .lsn[data-tone="a21"] .per{background:var(--tt-a21)}
-  .lsn[data-tone="a22"] .per{background:var(--tt-a22)} .lsn[data-tone="a23"] .per{background:var(--tt-a23)}
+  .lsn[data-tone] .per{background:var(--tn);box-shadow:inset 0 0 0 1.5px var(--tn-line)}
 
   /* ---- taking a register before the app is up ---- */
   .lsn.tap{pointer-events:auto;cursor:pointer;text-align:left;
@@ -753,9 +799,7 @@
   .lens .tdl .tdn{max-width:100%;font-size:var(--fs-subhead);font-weight:600;letter-spacing:-.01em;line-height:1.25;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lens .tdl .tdx:empty{display:none}
-  .lens .tdstrip [data-tone="as1"]{--tf:var(--tt-as1)} .lens .tdstrip [data-tone="as2"]{--tf:var(--tt-as2)}
-  .lens .tdstrip [data-tone="as3"]{--tf:var(--tt-as3)} .lens .tdstrip [data-tone="a21"]{--tf:var(--tt-a21)}
-  .lens .tdstrip [data-tone="a22"]{--tf:var(--tt-a22)} .lens .tdstrip [data-tone="a23"]{--tf:var(--tt-a23)}
+  .lens .tdstrip [data-tone]{--tf:var(--tn)}
   @supports (background:color-mix(in srgb,red 50%,blue)){
     .lens .tdl{background:color-mix(in srgb,var(--tf,var(--surface-2)) 50%,var(--surface))}
   }
@@ -1403,9 +1447,17 @@
   var TT_CAL = '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
     '<path d="M3 10h18M8 3v4M16 3v4"/></svg>';
   var TT_CHEV = '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
-  var TT_TONES = { as1:1, as2:1, as3:1, a21:1, a22:1, a23:1 };
+  var TT_TONES = { as1:1, as2:1, as3:1, a21:1, a22:1, a23:1, u:1 };
 
-  function ttTone(l){ return (l && TT_TONES[l.tone]) ? ' data-tone="' + l.tone + '"' : ''; }
+  /* "u" is a colour the person picked for themselves (invariant 53): the app sends the
+     pair to wear as tl / td, one of twelve shades for each theme. */
+  function ttPick(n){ n = Number(n); return (n >= 1 && n <= 12 && n % 1 === 0) ? n : 0; }
+  function ttTone(l){
+    if (!l || !TT_TONES[l.tone]) return '';
+    if (l.tone !== 'u') return ' data-tone="' + l.tone + '"';
+    var a = ttPick(l.tl), b = ttPick(l.td);
+    return (a && b) ? ' data-tone="u" data-tl="' + a + '" data-td="' + b + '"' : '';
+  }
   function ttAt(day){
     var m = {};
     ((day && day.lessons) || []).forEach(function (l) { m[l.period] = l; });
@@ -1694,7 +1746,7 @@
       return '<div class="card ttnow tdcard"><div class="tdhead"><span class="eyebrow">Today</span><span class="tdst"></span></div>' +
         '<div class="tdstrip">' + t.cells.map(function (c) {
           if (!c) return '<span class="tdf"></span>';
-          return '<span class="tdl"' + (STU_TONES[c.tone] ? ' data-tone="' + c.tone + '"' : '') + '><span class="tdt">' + esc(c.t || '') +
+          return '<span class="tdl"' + ttTone(c) + '><span class="tdt">' + esc(c.t || '') +
             '</span><b class="tdn">' + esc(c.n || '') + '</b><span class="tdx"></span></span>';
         }).join('') + '</div></div>';
     if (s.today === null && fresh) return '';
@@ -1820,7 +1872,7 @@
     var tap = markable(l, fresh);
     return '<' + (tap ? 'button type="button"' : 'div') +
       ' class="lsn' + (l.leave && !l.taken ? ' leave' : '') + (tap ? ' tap' : '') + '"' +
-      (l.tone ? ' data-tone="' + esc(l.tone) + '"' : '') +
+      ttTone(l) +
       (tap ? ' data-i="' + i + '"' : '') + '>' +
       '<div class="per"><b>' + esc(l.period) + '</b><span>Per</span></div>' +
       '<div class="mid"><div class="t">' + esc(l.label) + '</div>' +
