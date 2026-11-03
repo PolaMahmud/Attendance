@@ -856,7 +856,6 @@
   .lens .cfoldb{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;
     font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2);line-height:normal}   /* a button there */
   .lens .cfoldb>span{flex:1;min-width:0}
-  .lens .cfchips{display:flex;gap:6px;flex-wrap:wrap}
   .lens .cfnone{color:var(--ink-3)}
   .lens .plchev{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
   .lens .chip.bad{background:var(--full-soft);border-color:var(--full-line);color:var(--full)}
@@ -1720,7 +1719,8 @@
   var FCHEV = '<svg class="plchev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   var STU_TONES = { as1: 1, as2: 1, as3: 1, a21: 1, a22: 1, a23: 1 };
   /* One card of a student's Home, App.html's render() markup: the figures, the ring, and
-     the foot that says how many lates and absences (their dates are not kept here). */
+     the foot that offers the dates (no late/absent pills: the boxes give the counts,
+     owner 2 Nov; the dates themselves are not kept here). */
   function stuCard(head, sub, x, fl, dabs, subj){
     var total = (x.present || 0) + (x.late || 0) + (x.absent || 0), l = fl ? fl[0] : (x.late || 0), a = fl ? fl[1] : (x.absent || 0);
     var cell = function (k, v, c) { return [k, v || 0, c]; };
@@ -1733,8 +1733,7 @@
         '<div class="ring">' + flatRing(x.present || 0, x.late || 0, x.absent || 0) +
         '<span class="rate"><b>' + (total ? Math.round((x.present || 0) / total * 100) + '%' : '—') + '</b><span>present</span></span></div></div>' +
       '<div class="cfold"><span class="cfoldb">' + (!l && !a ? '<span class="cfnone">No lates or absences</span>'
-        : '<span class="cfchips">' + (l ? '<span class="chip leave">' + l + ' late</span>' : '') +
-          (a ? '<span class="chip bad">' + a + ' absent</span>' : '') + '</span>' + FCHEV) + '</span></div></section>';
+        : '<span class="cfdates">Show dates</span>' + FCHEV) + '</span></div></section>';
   }
   /* Today's card: the row of lessons as the app draws it before it has the time (no ring
      on the one now, nothing faded: invariant 31), and only for today. Anything older is
