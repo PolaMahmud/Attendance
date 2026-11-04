@@ -187,7 +187,7 @@
 
     /* Liquid Glass, as App.html defines it. */
     --gl-bg:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.28));
-    --gl-blur:blur(9px) saturate(190%) brightness(1.04);
+    --gl-blur:var(--lg-blur);
     --gl-edge:rgba(255,255,255,.8);
     --gl-shadow:0 10px 30px rgba(31,35,48,.12),0 1px 3px rgba(31,35,48,.06),inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
     --gl-sm:0 4px 14px rgba(31,35,48,.08),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
@@ -209,7 +209,7 @@
     --lg-tint:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.16));
     --lg-thick:linear-gradient(180deg,rgba(255,255,255,.88),rgba(250,250,253,.82));
     --lg-blur:blur(9px) saturate(200%) brightness(1.06);
-    --lg-blur-thick:blur(34px) saturate(180%) brightness(1.04);
+    --lg-blur-thick:blur(24px) saturate(180%) brightness(1.04);
     --lg-blur-clear:blur(4px) saturate(200%) brightness(1.07);
     --lg-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 1px 0 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(255,255,255,.55),inset 0 -6px 10px -6px rgba(20,22,40,.14),inset 0 0 0 .5px rgba(255,255,255,.55),inset 0 6px 14px -8px rgba(255,255,255,.9);
     --lg-drop:0 10px 32px rgba(20,22,32,.13),0 2px 6px rgba(20,22,32,.06),0 0 0 .5px rgba(20,22,32,.08);
@@ -221,6 +221,7 @@
     --lg-lens-ring:inset 0 0 0 1px rgba(255,255,255,.9),inset 0 2px 6px rgba(255,255,255,.7),inset 0 -2px 8px rgba(20,22,32,.10),0 8px 24px rgba(20,22,32,.18);
     --lg-fade:rgba(243,242,247,.86);
     --lg-solid:#F9F9FB;
+    --tbh:58px;
 
     /* The subject line-art behind sign-in and the notification screens: faint, so it
        never competes with the card. This page only. */
@@ -305,7 +306,7 @@
     --sheen:rgba(255,255,255,.06);
 
     --gl-bg:linear-gradient(180deg,rgba(58,58,60,.62),rgba(36,36,38,.58));
-    --gl-blur:blur(9px) saturate(170%);
+    --gl-blur:var(--lg-blur);
     --gl-edge:rgba(255,255,255,.09);
     --gl-shadow:0 14px 34px rgba(0,0,0,.55),inset 0 .5px 0 rgba(255,255,255,.22);
     --gl-sm:0 4px 14px rgba(0,0,0,.4),inset 0 .5px 0 rgba(255,255,255,.22);
@@ -322,7 +323,7 @@
     --lg-tint:linear-gradient(180deg,rgba(58,58,62,.46),rgba(28,28,30,.40));
     --lg-thick:linear-gradient(180deg,rgba(44,44,46,.90),rgba(28,28,30,.86));
     --lg-blur:blur(9px) saturate(180%) brightness(.84);
-    --lg-blur-thick:blur(34px) saturate(160%) brightness(.8);
+    --lg-blur-thick:blur(24px) saturate(160%) brightness(.8);
     --lg-blur-clear:blur(4px) saturate(160%) brightness(.72);
     --lg-rim:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 0 .5px rgba(255,255,255,.13),inset 0 0 18px rgba(255,255,255,.05);
     --lg-drop:0 12px 36px rgba(0,0,0,.6),0 0 0 .5px rgba(0,0,0,.7);
@@ -424,7 +425,7 @@
        (the ghost shapes the owner flagged). */
     background:var(--gl-bar),var(--gl-chrome);
     border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
-    -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%)}
+    -webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
   .tabs-in{display:flex;gap:2px}
   .tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;
     padding:6px 4px 7px;border-radius:99px;font-size:min(var(--fs-caption2),13px,max(11px,3.4vw));font-weight:500;color:var(--ink-2);
@@ -458,13 +459,13 @@
     background:linear-gradient(calc(135deg + var(--tx,0) * 40deg),var(--lg-edge-a),var(--lg-edge-b) 34%,var(--lg-edge-b) 64%,var(--lg-edge-a));
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
     mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);opacity:.9}
-  .tabs .tab{font-size:0;padding:11px 2px;gap:0}
+  .tabs .tab{font-size:0;padding:11px 2px;gap:0;box-sizing:border-box;height:calc(var(--tbh,58px) - 10px)}
   .tabs .tab .ic{width:52px;height:26px}
   .tabs .tab svg{width:25px;height:25px}
   .tabs .tab[aria-current="page"]{background:var(--lg-lens);box-shadow:var(--lg-lens-on)}
   /* /lg-tabbar */
   /* The cached account is the app's: its own round glass button beside the bar. */
-  #instant.hastabs .sbar .avatar{position:fixed;z-index:var(--z-tabs);width:58px;height:58px;
+  #instant.hastabs .sbar .avatar{position:fixed;z-index:var(--z-tabs);width:var(--tbh,58px);height:var(--tbh,58px);
     right:calc((100% - min(calc(100% - 32px),520px)) / 2);bottom:calc(var(--vb-bot,0px) + env(safe-area-inset-bottom) + 10px);
     font-size:var(--fs-subhead);border:0;background:var(--lg-tint);box-shadow:var(--lg-rim),var(--lg-drop);
     -webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
@@ -957,7 +958,7 @@
   .art{position:fixed;inset:0;width:100%;height:100%;opacity:var(--art-o);pointer-events:none}
   .box{position:relative;width:100%;max-width:380px;text-align:left;padding:26px 22px 20px;
     border-radius:32px;background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
-    -webkit-backdrop-filter:blur(18px) saturate(190%);backdrop-filter:blur(18px) saturate(190%)}
+    -webkit-backdrop-filter:var(--lg-blur-thick,blur(24px) saturate(180%));backdrop-filter:var(--lg-blur-thick,blur(24px) saturate(180%))}
   .gtile{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;margin-bottom:16px;
     background:var(--surface-3);color:var(--ink);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm)}
   .gtile.warn{background:var(--low-soft);color:var(--low)}
