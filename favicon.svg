@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Browser-tab icon: the Bold three mark, switching with the system theme. -->
+  <style>
+    .bg{fill:url(#l)} .tr{fill:#1F2330;fill-opacity:.07}
+    @media (prefers-color-scheme:dark){.bg{fill:url(#d)} .tr{fill:#fff;fill-opacity:.08}}
+  </style>
+  <defs>
+    <linearGradient id="l" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E4E2EC"/></linearGradient>
+    <linearGradient id="d" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="#2B3040"/><stop offset="1" stop-color="#0B0C11"/></linearGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86E3AE"/><stop offset="1" stop-color="#3DBA74"/></linearGradient>
+    <linearGradient id="o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFCB7D"/><stop offset="1" stop-color="#FFA03A"/></linearGradient>
+    <linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFA39D"/><stop offset="1" stop-color="#F0625F"/></linearGradient>
+  </defs>
+  <rect class="bg" width="64" height="64" rx="14"/>
+  <rect class="tr" x="12" y="28" width="40" height="10" rx="5"/>
+  <rect class="tr" x="12" y="41.5" width="40" height="10" rx="5"/>
+  <rect fill="url(#g)" x="12" y="14.5" width="40" height="10" rx="5"/>
+  <rect fill="url(#o)" x="12" y="28" width="28.8" height="10" rx="5"/>
+  <rect fill="url(#r)" x="12" y="41.5" width="19.2" height="10" rx="5"/>
+  <rect fill="#fff" fill-opacity=".45" x="15" y="15.5" width="34" height="3" rx="1.5"/>
+  <rect fill="#fff" fill-opacity=".45" x="15" y="29" width="22.8" height="3" rx="1.5"/>
+  <rect fill="#fff" fill-opacity=".45" x="15" y="42.5" width="13.2" height="3" rx="1.5"/>
+</svg>

@@ -142,7 +142,7 @@
 
      iOS wants a PNG here; it ignores SVG for apple-touch-icon, which is what the
      placeholder used to be. It also applies its OWN rounded mask, so the file is
-     full bleed: indigo right to the edges, no corners of its own, and no alpha at all
+     full bleed: the light background right to the edges, no corners of its own, and no alpha at all
      because iOS composites transparency against black. make-icons.ps1 builds these
      from icon.png, the 1024px master.
 
@@ -152,6 +152,9 @@
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="KS5 Hub">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<!-- The tab icon as a drawing that follows the system's light/dark setting. Browsers that
+     can't use an SVG tab icon (older Safari) keep the PNG above. -->
+<link rel="icon" type="image/svg+xml" sizes="any" href="./favicon.svg">
 <link rel="manifest" href="./manifest.webmanifest">
 
 <!-- Start the DNS lookup and TLS handshake for Apps Script now, in parallel with

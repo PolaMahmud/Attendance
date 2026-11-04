@@ -22,12 +22,12 @@
  */
 
 var CFG = 'push-config-v1';
-var SHELL = 'ks5-shell-v3'; /* v3: the manifest no longer pins the app upright (3 Nov). v2: the Polar icons (31 Oct). */
+var SHELL = 'ks5-shell-v4'; /* v4: the liquid glass icons (4 Nov). v3: the manifest no longer pins the app upright (3 Nov). v2: the Polar icons (31 Oct). */
 /* The page is kept under the scope's own address whatever was on the URL (a sign-in link's
    ?t=, ?tab=, ?admin=1): it is one file, and a token must never end up in a cache key. */
 var PAGE = './';
 var ASSETS = ['./manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png',
-  './apple-touch-icon.png', './favicon-32.png'];
+  './apple-touch-icon.png', './favicon-32.png', './favicon.svg'];
 
 function keepAll(c) {
   // One missing icon must not stop the rest being kept, or the worker installing.
