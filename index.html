@@ -323,15 +323,15 @@
     --gl-p-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.1);
     --gl-p-ink:#1C1C1E;
 
-    --lg-tint:linear-gradient(180deg,rgba(58,58,62,.46),rgba(28,28,30,.40));
+    --lg-tint:linear-gradient(180deg,rgba(48,48,50,.62),rgba(42,42,44,.62));
     --lg-thick:linear-gradient(180deg,rgba(44,44,46,.90),rgba(28,28,30,.86));
-    --lg-blur:blur(9px) saturate(180%) brightness(.84);
+    --lg-blur:blur(6px) saturate(150%);
     --lg-blur-thick:blur(24px) saturate(160%) brightness(.8);
-    --lg-blur-clear:blur(4px) saturate(160%) brightness(.72);
-    --lg-rim:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 0 .5px rgba(255,255,255,.13),inset 0 0 18px rgba(255,255,255,.05);
+    --lg-blur-clear:blur(4px) saturate(150%);
+    --lg-rim:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 0 .5px rgba(255,255,255,.08),inset 0 0 6px rgba(255,255,255,.035);
     --lg-drop:0 12px 36px rgba(0,0,0,.6),0 0 0 .5px rgba(0,0,0,.7);
-    --lg-spec:rgba(255,255,255,.22);
-    --lg-edge-a:rgba(255,255,255,.42); --lg-edge-b:rgba(255,255,255,.04);
+    --lg-spec:rgba(255,255,255,.06);
+    --lg-edge-a:rgba(255,255,255,.17); --lg-edge-b:rgba(255,255,255,.06);
     --lg-lens:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.11));
     --lg-lens-on:inset 0 1px 0 rgba(255,255,255,.25),inset 0 0 0 .5px rgba(255,255,255,.14);
     --lg-lens-move:rgba(255,255,255,.04);
@@ -451,27 +451,56 @@
   .ph .tab{cursor:pointer;-webkit-tap-highlight-color:transparent}
   .ph.hastabs{padding-bottom:calc(env(safe-area-inset-bottom) + 100px)}
   /* lg-tabbar: the Liquid Glass tab bar, the same in App.html and index.html (tabs.test.js
-     holds the two copies equal, so the cached bar is the app's bar to the pixel). */
-  .tabs{--lgs:radial-gradient(130% 120% at calc(var(--lx,30%) + var(--tx,0) * 18%) calc(var(--ly,-30%) + var(--ty,0) * 14%),var(--lg-spec),transparent 46%);
-    --tbw:min(calc(100% - 32px),520px);--tbx:calc((100% - var(--tbw)) / 2);
+     holds the two copies equal, so the cached bar is the app's bar to the pixel).
+     Measured off iOS 26's own bar (owner, 6 Nov: a screen recording of the Clock app, read
+     frame by frame). Dark: a neutral grey glass, about #1D1D1D over black, that lets roughly
+     a third of what is under it through, softly blurred; a hairline of light on its edge and
+     nothing more. The current tab sits in a pill DARKER than the bar (#0C0C0C), never a
+     lighter one. Light is the same glass in white. Held or moving, the bar lifts a shade
+     and swells a little, and the pill becomes a clear lens (LGTAB). */
+  :root{
+    --tb-fill:rgba(252,252,254,.70); --tb-fill-on:rgba(255,255,255,.80);
+    --tb-blur:blur(4px) saturate(180%);
+    --tb-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.55),inset 0 0 0 .5px rgba(255,255,255,.7);
+    --tb-drop:0 8px 28px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05),0 0 0 .5px rgba(0,0,0,.07);
+    --tb-edge-a:rgba(255,255,255,.95); --tb-edge-b:rgba(255,255,255,.40);
+    --tb-pill:rgba(118,118,128,.15);
+    --tb-ink:var(--ink); --tb-ink-on:var(--ink);
+    --tb-lens-fill:rgba(255,255,255,.22);
+    --tb-lens-rim:rgba(255,255,255,.95); --tb-lens-band:rgba(0,0,0,.09);
+    --tb-lens-r:rgba(255,80,140,.16); --tb-lens-b:rgba(40,160,255,.16);
+    --tb-lens-drop:0 6px 20px rgba(0,0,0,.14),0 1px 3px rgba(0,0,0,.08)}
+  :root[data-theme="dark"]{
+    --tb-fill:rgba(46,46,48,.62); --tb-fill-on:rgba(60,60,63,.64);
+    --tb-blur:blur(4px) saturate(150%);
+    --tb-rim:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 6px rgba(255,255,255,.035);
+    --tb-drop:0 10px 30px rgba(0,0,0,.45),0 0 0 .5px rgba(0,0,0,.6);
+    --tb-edge-a:rgba(255,255,255,.17); --tb-edge-b:rgba(255,255,255,.07);
+    --tb-pill:rgba(0,0,0,.58);
+    --tb-lens-fill:rgba(255,255,255,.035);
+    --tb-lens-rim:rgba(255,255,255,.17); --tb-lens-band:rgba(0,0,0,.6);
+    --tb-lens-r:rgba(255,110,150,.22); --tb-lens-b:rgba(90,190,255,.22);
+    --tb-lens-drop:0 6px 18px rgba(0,0,0,.4)}
+  .tabs{--tbw:min(calc(100% - 32px),520px);--tbx:calc((100% - var(--tbw)) / 2);
     left:var(--tbx);right:calc(var(--tbx) + 68px);max-width:none;margin:0;padding:5px;border-radius:99px;
     bottom:calc(var(--vb-bot,0px) + env(safe-area-inset-bottom) + 10px);
-    background:var(--lgs),var(--lg-tint);border:0;box-shadow:var(--lg-rim),var(--lg-drop);
-    -webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
+    background:var(--tb-fill);border:0;box-shadow:var(--tb-rim),var(--tb-drop);
+    -webkit-backdrop-filter:var(--tb-blur);backdrop-filter:var(--tb-blur);transition:background-color .22s var(--ease-out)}
+  .tabs.lg-act{background-color:var(--tb-fill-on)}
   .tabs::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;z-index:2;
-    background:linear-gradient(calc(135deg + var(--tx,0) * 40deg),var(--lg-edge-a),var(--lg-edge-b) 34%,var(--lg-edge-b) 64%,var(--lg-edge-a));
+    background:linear-gradient(180deg,var(--tb-edge-a),var(--tb-edge-b) 30%,var(--tb-edge-b) 70%,var(--tb-edge-a));
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
-    mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);opacity:.9}
-  .tabs .tab{font-size:0;padding:11px 2px;gap:0;box-sizing:border-box;height:calc(var(--tbh,58px) - 10px)}
+    mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+  .tabs .tab{font-size:0;padding:11px 2px;gap:0;box-sizing:border-box;height:calc(var(--tbh,58px) - 10px);color:var(--tb-ink)}
   .tabs .tab .ic{width:52px;height:26px}
   .tabs .tab svg{width:25px;height:25px}
-  .tabs .tab[aria-current="page"]{background:var(--lg-lens);box-shadow:var(--lg-lens-on)}
+  .tabs .tab[aria-current="page"]{background:var(--tb-pill);box-shadow:none;color:var(--tb-ink-on)}
   /* /lg-tabbar */
   /* The cached account is the app's: its own round glass button beside the bar. */
   #instant.hastabs .sbar .avatar{position:fixed;z-index:var(--z-tabs);width:var(--tbh,58px);height:var(--tbh,58px);
     right:calc((100% - min(calc(100% - 32px),520px)) / 2);bottom:calc(var(--vb-bot,0px) + env(safe-area-inset-bottom) + 10px);
-    font-size:var(--fs-subhead);border:0;background:var(--lg-tint);box-shadow:var(--lg-rim),var(--lg-drop);
-    -webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
+    font-size:var(--fs-subhead);border:0;background:var(--tb-fill);box-shadow:var(--tb-rim),var(--tb-drop);
+    -webkit-backdrop-filter:var(--tb-blur);backdrop-filter:var(--tb-blur)}
   @media (prefers-reduced-transparency:reduce){
     .tabs,#instant.hastabs .sbar .avatar{background:var(--lg-solid) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}}
   @media (orientation:landscape) and (max-height:500px){
