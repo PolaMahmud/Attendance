@@ -445,6 +445,8 @@
   :root{
     --tb-fill:rgba(252,252,254,.62); --tb-fill-on:rgba(255,255,255,.52);
     --tb-blur:blur(9px) saturate(180%) brightness(1.04);
+    --tb-glass-blur:blur(6px) saturate(180%) brightness(1.04);
+    --tb-rim-blur:blur(14px) saturate(200%) brightness(1.03);
     --tb-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.55),inset 0 0 0 .5px rgba(255,255,255,.7);
     --tb-drop:0 8px 28px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05),0 0 0 .5px rgba(0,0,0,.07);
     --tb-edge-a:rgba(255,255,255,.95); --tb-edge-b:rgba(255,255,255,.40);
@@ -460,6 +462,8 @@
   :root[data-theme="dark"]{
     --tb-fill:rgba(46,46,48,.60); --tb-fill-on:rgba(70,70,74,.40);
     --tb-blur:blur(9px) saturate(150%);
+    --tb-glass-blur:blur(6px) saturate(150%);
+    --tb-rim-blur:blur(14px) saturate(220%) brightness(1.12);
     --tb-rim:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 6px rgba(255,255,255,.035);
     --tb-drop:0 10px 30px rgba(0,0,0,.45),0 0 0 .5px rgba(0,0,0,.6);
     --tb-edge-a:rgba(255,255,255,.28); --tb-edge-b:rgba(255,255,255,.07);
@@ -490,6 +494,25 @@
   .tabs .tab .ic{width:52px;height:26px}
   .tabs .tab svg{width:25px;height:25px}
   .tabs .tab[aria-current="page"]{background:var(--tb-pill);box-shadow:none;color:var(--tb-ink-on)}
+  /* The bar's rim wherever Chromium's glass (html.lg-bar) is not drawn, Safari/iPhone first (owner,
+     17 Nov: "some blur behind, not an actual refracted and diffracted glass"). No browser but
+     Chromium bends a backdrop, so this is the nearest thing: the bar's blur moves to a layer 12px
+     larger than the bar and clipped back to it, so the page just outside the bar bleeds into its
+     rim, and a band inside the rim takes a heavier, more saturated blur of it, as the edge of thick
+     glass gathers light (--rim-x/--rim-y: its depth at the ends and along the sides). Static: nothing
+     animates. A layer under the bar's own blur would see nothing but the bar, hence the move. */
+  @supports ((-webkit-backdrop-filter:none) or (backdrop-filter:none)) and (clip-path:inset(1px round 1px)){
+    html:not(.lg-bar) body .tabs,html:not(.lg-bar) body.lg-scroll .tabs{-webkit-backdrop-filter:none;backdrop-filter:none}
+    html:not(.lg-bar) .tabs::after{content:"";position:absolute;inset:-12px;z-index:-1;pointer-events:none;
+      -webkit-clip-path:inset(12px round 99px);clip-path:inset(12px round 99px);-webkit-backdrop-filter:var(--tb-glass-blur);backdrop-filter:var(--tb-glass-blur)}
+    html:not(.lg-bar) .tabs-in::before{content:"";position:absolute;inset:-17px;z-index:-2;pointer-events:none;border-radius:99px;
+      -webkit-clip-path:inset(12px round 99px);clip-path:inset(12px round 99px);-webkit-backdrop-filter:var(--tb-rim-blur);backdrop-filter:var(--tb-rim-blur);
+      -webkit-mask:linear-gradient(180deg,#000 12px,transparent calc(12px + var(--rim-y,11px)),transparent calc(100% - 12px - var(--rim-y,11px)),#000 calc(100% - 12px)),
+        linear-gradient(90deg,#000 12px,transparent calc(12px + var(--rim-x,26px)),transparent calc(100% - 12px - var(--rim-x,26px)),#000 calc(100% - 12px));
+      mask:linear-gradient(180deg,#000 12px,transparent calc(12px + var(--rim-y,11px)),transparent calc(100% - 12px - var(--rim-y,11px)),#000 calc(100% - 12px)),
+        linear-gradient(90deg,#000 12px,transparent calc(12px + var(--rim-x,26px)),transparent calc(100% - 12px - var(--rim-x,26px)),#000 calc(100% - 12px))}
+  }
+  @media (prefers-reduced-transparency:reduce){.tabs::after,.tabs-in::before{content:none !important}}
   /* /lg-tabbar */
   /* The cached account is the app's: its own round glass button beside the bar. */
   #instant.hastabs .sbar .avatar{position:fixed;z-index:var(--z-tabs);width:var(--tbh,58px);height:var(--tbh,58px);
