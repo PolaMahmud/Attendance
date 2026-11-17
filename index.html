@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script>
-/* KS5 attendance — backend switch (step 2 of db-migration/PLAN.md, "Rollout").
+/* KS5 attendance — backend switch (inert while backend.json has no newUrl).
  *
  * Paste this, inside <script>…<\/script>, as the FIRST thing in <head> of index.html (the Apps Script
  * app, side "old"), and of the new app's page at ./v2/ (side "new") with SIDE changed to 'new'.
@@ -176,7 +176,7 @@
     --ink:#1F2330; --ink-2:#6B6F7B; --ink-3:#686C78;
     --line:#E7E6EE; --line-2:#D4D3DD;
 
-    --accent:#1F2330; --accent-hover:#363A48; --accent-ink:#FFFFFF;
+    --accent:#1F2330; --accent-ink:#FFFFFF;
     --accent-soft:#ECEBF2; --accent-line:#D4D3DD;
 
     --low:#8A4B12;  --low-soft:#FBE6CF;  --low-line:#F0CFA8;
@@ -195,7 +195,6 @@
     --gl-shadow:0 10px 30px rgba(31,35,48,.12),0 1px 3px rgba(31,35,48,.06),inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
     --gl-sm:0 4px 14px rgba(31,35,48,.08),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
     --gl-bar:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10));
-    --gl-bar-blur:blur(5px) saturate(220%) brightness(1.06);
     --gl-chrome:rgba(243,242,247,.92);
     --gl-lens:rgba(255,255,255,.78);
     --gl-lens-shadow:inset 0 1px 0 #FFFFFF,0 2px 10px rgba(31,35,48,.10);
@@ -207,22 +206,11 @@
     /* Liquid Glass, second pass (4 Nov). Glass that behaves as glass: a thin tint over a
        heavy blur (so what passes under reads as colour and light, never as words), a rim
        that catches the light, a highlight that moves with the finger and the phone, and
-       on Chromium real refraction at the edges (#lg-edge). --lg-thick is for what you
-       read on (menus, sheets, toasts); --lg-solid is the Reduce Transparency fallback. */
-    --lg-tint:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.16));
-    --lg-thick:linear-gradient(180deg,rgba(255,255,255,.88),rgba(250,250,253,.82));
+       on Chromium real refraction at the edges (#lg-edge). --lg-solid is the Reduce
+       Transparency fallback. */
     --lg-blur:blur(9px) saturate(200%) brightness(1.06);
     --lg-blur-thick:blur(24px) saturate(180%) brightness(1.04);
-    --lg-blur-clear:blur(4px) saturate(200%) brightness(1.07);
-    --lg-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 1px 0 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(255,255,255,.55),inset 0 -6px 10px -6px rgba(20,22,40,.14),inset 0 0 0 .5px rgba(255,255,255,.55),inset 0 6px 14px -8px rgba(255,255,255,.9);
-    --lg-drop:0 10px 32px rgba(20,22,32,.13),0 2px 6px rgba(20,22,32,.06),0 0 0 .5px rgba(20,22,32,.08);
-    --lg-spec:rgba(255,255,255,.85);
-    --lg-edge-a:rgba(255,255,255,.98); --lg-edge-b:rgba(255,255,255,.10);
-    --lg-lens:linear-gradient(180deg,rgba(255,255,255,.70),rgba(255,255,255,.45));
-    --lg-lens-on:inset 0 1px 0 #FFFFFF,inset 0 0 0 .5px rgba(255,255,255,.7),0 2px 10px rgba(20,22,32,.10);
-    --lg-lens-move:rgba(255,255,255,.10);
-    --lg-lens-ring:inset 0 0 0 1px rgba(255,255,255,.9),inset 0 2px 6px rgba(255,255,255,.7),inset 0 -2px 8px rgba(20,22,32,.10),0 8px 24px rgba(20,22,32,.18);
-    --lg-fade:rgba(243,242,247,.86);
+    --lg-spec:rgba(255,255,255,.50);
     --lg-solid:#F9F9FB;
     --tbh:58px;
 
@@ -230,12 +218,6 @@
        never competes with the card. This page only. */
     --art-1:#00B2F0; --art-2:#9B5CFF; --art-3:#FF7A1A; --art-4:#12D466; --art-5:#FF2E8A;
     --art-o:.24;
-
-    /* The shell's own JS writes var(--late) and var(--absent) into the legend
-       swatches inline, so those two names have to survive. Declared literally in
-       both themes rather than aliased to --low / --full: an alias resolves against
-       whichever value wins on :root, which is correct but easy to break silently. */
-    --late:#8A4B12; --absent:#9B2F35;
 
     /* Subject tones, by option-block slot — the six App.html knows, and not one more.
        Copied rather than derived: this page paints the timetable card on the first
@@ -279,13 +261,21 @@
     --fs-title1:calc(28rem / 17);   /* Title 1 */
     --fs-title2:calc(22rem / 17);   /* Title 2 */
     --fs-title3:calc(20rem / 17);   /* Title 3 */
-    --fs-headline:1rem;             /* Headline: Body's size, set semibold */
     --fs-body:1rem;                 /* Body, 17 */
     --fs-callout:calc(16rem / 17);  /* Callout */
     --fs-subhead:calc(15rem / 17);  /* Subheadline */
     --fs-footnote:calc(13rem / 17); /* Footnote */
     --fs-caption1:calc(12rem / 17); /* Caption 1 */
     --fs-caption2:calc(11rem / 17); /* Caption 2, the smallest there is */
+
+    /* The app's motion tokens, the same values (App.html, "Motion tokens"): entrances ease
+       out, exits ease in, what a finger moved springs. Only the shimmer and the spinners,
+       loops that never stop, stay linear. */
+    --ease-out:cubic-bezier(.22,1,.36,1); --ease-in:cubic-bezier(.4,0,1,1); --spring:cubic-bezier(.34,1.32,.64,1);
+    --ease-ios:cubic-bezier(.32,.72,0,1);
+
+    /* The timetable's row and gutter, which Larger Text moves (owner, 24d). */
+    --tt-row:max(32px,calc(var(--fs-caption1) * 2.4 + 2px)); --tt-gutter:max(52px,calc(var(--fs-caption2) * 3.6));
   }
   :root[data-theme="dark"]{
     /* iOS's grouped dark ramp (I15), as App.html has it: black page, raised grey cards. */
@@ -293,7 +283,7 @@
     --ink:#F2F2F7; --ink-2:#AEAEB2; --ink-3:#9C9CA1;
     --line:#38383A; --line-2:#48484A;
 
-    --accent:#F2F2F7; --accent-hover:#FFFFFF; --accent-ink:#1C1C1E;
+    --accent:#F2F2F7; --accent-ink:#1C1C1E;
     --accent-soft:#3A3A3C; --accent-line:#48484A;
     --seg-track:rgba(118,118,128,.24); --seg-on:#636366;
     --seg-shadow:drop-shadow(0 3px 4px rgba(0,0,0,.35));
@@ -302,8 +292,6 @@
     --full:#F0B1B1; --full-soft:#3E2527; --full-line:#5E393B;
     --ok:#A6DDB8;   --ok-soft:#23362B;   --ok-line:#355440;
     --ring-p:#7FC79A; --ring-l:#E9B47E; --ring-a:#E39595;
-
-    --late:#F3C99A; --absent:#F0B1B1;
 
     --shadow:0 1px 2px rgba(0,0,0,.4);
     --sheen:rgba(255,255,255,.06);
@@ -314,7 +302,6 @@
     --gl-shadow:0 14px 34px rgba(0,0,0,.55),inset 0 .5px 0 rgba(255,255,255,.22);
     --gl-sm:0 4px 14px rgba(0,0,0,.4),inset 0 .5px 0 rgba(255,255,255,.22);
     --gl-bar:linear-gradient(180deg,rgba(28,28,30,.55),rgba(0,0,0,.42));
-    --gl-bar-blur:blur(6px) saturate(170%);
     --gl-chrome:rgba(0,0,0,.90);
     --gl-lens:rgba(255,255,255,.10);
     --gl-lens-shadow:inset 0 .5px 0 rgba(255,255,255,.18);
@@ -323,20 +310,9 @@
     --gl-p-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.1);
     --gl-p-ink:#1C1C1E;
 
-    --lg-tint:linear-gradient(180deg,rgba(48,48,50,.62),rgba(42,42,44,.62));
-    --lg-thick:linear-gradient(180deg,rgba(44,44,46,.90),rgba(28,28,30,.86));
     --lg-blur:blur(6px) saturate(150%);
     --lg-blur-thick:blur(24px) saturate(160%) brightness(.8);
-    --lg-blur-clear:blur(4px) saturate(150%);
-    --lg-rim:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 0 .5px rgba(255,255,255,.08),inset 0 0 6px rgba(255,255,255,.035);
-    --lg-drop:0 12px 36px rgba(0,0,0,.6),0 0 0 .5px rgba(0,0,0,.7);
-    --lg-spec:rgba(255,255,255,.06);
-    --lg-edge-a:rgba(255,255,255,.17); --lg-edge-b:rgba(255,255,255,.06);
-    --lg-lens:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.11));
-    --lg-lens-on:inset 0 1px 0 rgba(255,255,255,.25),inset 0 0 0 .5px rgba(255,255,255,.14);
-    --lg-lens-move:rgba(255,255,255,.04);
-    --lg-lens-ring:inset 0 0 0 1px rgba(255,255,255,.30),inset 0 2px 6px rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.5);
-    --lg-fade:rgba(0,0,0,.82);
+    --lg-spec:rgba(255,255,255,.10);
     --lg-solid:#1C1C1E;
 
     --art-1:#45D9FF; --art-2:#B87CFF; --art-3:#FFA03D; --art-4:#55FF8E; --art-5:#FF52A8;
@@ -355,7 +331,7 @@
   /* App.html has this in its shared block and this file never did, so anything with
      width:100% plus padding was rendering wider than its container: the lesson card
      (347 + 26 + 2 = 375 in a 347 track), the code input and the save buttons. */
-  *{box-sizing:border-box}
+  *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   /* The root is Body (I9). 106.25% is 17px wherever the browser's default is 16. On an
      iPhone (-webkit-touch-callout is iOS-only) the root is the system's body font
      instead, which is what the Larger Text setting moves; macOS Safari also knows
@@ -371,7 +347,6 @@
   html,body,*{touch-action:pan-x pan-y}
   /* Text is not selectable anywhere, as in a native app. Fields must stay selectable
      or iOS will not let anyone place the cursor, select or paste inside them. */
-  *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
   /* pointer-events is the load-bearing half of this rule, not opacity.
      The frame is fixed at inset:0 above the cached screen, so at opacity:0 it is
@@ -456,11 +431,20 @@
      frame by frame). Dark: a neutral grey glass, about #1D1D1D over black, that lets roughly
      a third of what is under it through, softly blurred; a hairline of light on its edge and
      nothing more. The current tab sits in a pill DARKER than the bar (#0C0C0C), never a
-     lighter one. Light is the same glass in white. Held or moving, the bar lifts a shade
-     and swells a little, and the pill becomes a clear lens (LGTAB). */
+     lighter one. Light is the same glass in white. Held or moving, the bar lifts to a lighter,
+     clearer glass and swells a little, and the pill becomes a clear lens (LGTAB).
+     Third pass (owner, 14 Nov: "better reflect iOS's liquid glass ... the way Instagram has
+     implemented it"). The blur and the tint were changed together, never the tint alone (the
+     ghosts of 29 Oct came from a 5px blur): at 9px a word under the bar is colour and shape,
+     never letters, so the tint can be thinner (light .62, dark .60) and more of the page shows.
+     9px is the smooth pass's ceiling (4 Nov, "laggy" on Chrome for Android). The spot of light
+     (--lgs) is now drawn on the bar and the account button, where the finger and the tilt move
+     it, and the edge ring turns with the tilt; the dark ring catches a little more light (.28,
+     never past .3: a bright ring read as an outlined slab, 6 Nov). The lens's rim carries
+     clear glass (LGTAB, LGX): its colour is the glass's own, in its rim band only (--tb-lens-*). */
   :root{
-    --tb-fill:rgba(252,252,254,.70); --tb-fill-on:rgba(255,255,255,.80);
-    --tb-blur:blur(4px) saturate(180%);
+    --tb-fill:rgba(252,252,254,.62); --tb-fill-on:rgba(255,255,255,.52);
+    --tb-blur:blur(9px) saturate(180%) brightness(1.04);
     --tb-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.55),inset 0 0 0 .5px rgba(255,255,255,.7);
     --tb-drop:0 8px 28px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05),0 0 0 .5px rgba(0,0,0,.07);
     --tb-edge-a:rgba(255,255,255,.95); --tb-edge-b:rgba(255,255,255,.40);
@@ -468,27 +452,38 @@
     --tb-ink:var(--ink); --tb-ink-on:var(--ink);
     --tb-lens-fill:rgba(255,255,255,.22);
     --tb-lens-rim:rgba(255,255,255,.95); --tb-lens-band:rgba(0,0,0,.09);
-    --tb-lens-r:rgba(255,80,140,.16); --tb-lens-b:rgba(40,160,255,.16);
+    --tb-lens-blur:blur(0px); --tb-lens-spec:rgba(255,255,255,.95); --tb-lens-line:rgba(0,0,0,.08);
+    --tb-lens-shade:rgba(0,0,0,.10); --tb-lens-glint:rgba(255,236,190,.95); --tb-lens-under:rgb(255,255,255);
+    --tb-lens-blend:screen; --tb-lens-glow:.28; --tb-flare:.35;
+    --tb-rep-rim:inset 0 0 0 1px rgba(0,0,0,.20),inset 0 0 0 2.5px rgba(255,255,255,.95),inset 0 -3px 3px -2px rgba(0,0,0,.10);
     --tb-lens-drop:0 6px 20px rgba(0,0,0,.14),0 1px 3px rgba(0,0,0,.08)}
   :root[data-theme="dark"]{
-    --tb-fill:rgba(46,46,48,.62); --tb-fill-on:rgba(60,60,63,.64);
-    --tb-blur:blur(4px) saturate(150%);
+    --tb-fill:rgba(46,46,48,.60); --tb-fill-on:rgba(70,70,74,.40);
+    --tb-blur:blur(9px) saturate(150%);
     --tb-rim:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 6px rgba(255,255,255,.035);
     --tb-drop:0 10px 30px rgba(0,0,0,.45),0 0 0 .5px rgba(0,0,0,.6);
-    --tb-edge-a:rgba(255,255,255,.17); --tb-edge-b:rgba(255,255,255,.07);
+    --tb-edge-a:rgba(255,255,255,.28); --tb-edge-b:rgba(255,255,255,.07);
     --tb-pill:rgba(0,0,0,.58);
     --tb-lens-fill:rgba(255,255,255,.035);
     --tb-lens-rim:rgba(255,255,255,.17); --tb-lens-band:rgba(0,0,0,.6);
-    --tb-lens-r:rgba(255,110,150,.22); --tb-lens-b:rgba(90,190,255,.22);
+    --tb-lens-spec:rgba(255,255,255,.42); --tb-lens-line:rgba(0,0,0,.18);
+    --tb-lens-shade:rgba(0,0,0,.42); --tb-lens-glint:rgba(255,226,170,.9); --tb-lens-under:rgb(0,0,0);
+    --tb-lens-blend:multiply; --tb-lens-glow:.3; --tb-flare:.45;
+    --tb-rep-rim:inset 0 0 0 1px rgba(255,255,255,.34),inset 0 0 0 2.5px rgba(0,0,0,.55),inset 0 3px 3px -2px rgba(255,255,255,.10);
     --tb-lens-drop:0 6px 18px rgba(0,0,0,.4)}
+  /* The spot of light on floating glass, declared once for every piece (it has to be declared
+     on the element itself, so the finger's --lx/--ly and the tilt's --tx/--ty on that element
+     move it): a soft highlight, by default up and to the left, where the light comes from. */
+  .tabs,#av,#back,.savebar,.plact,.acctmenu,.toast,.gbpanel,.askcard,.cal.bsheet,.menupanel,.sbar .avatar,.qsavebar{
+    --lgs:radial-gradient(130% 120% at calc(var(--lx,30%) + var(--tx,0) * 18%) calc(var(--ly,-30%) + var(--ty,0) * 14%),var(--lg-spec),transparent 46%)}
   .tabs{--tbw:min(calc(100% - 32px),520px);--tbx:calc((100% - var(--tbw)) / 2);
     left:var(--tbx);right:calc(var(--tbx) + 68px);max-width:none;margin:0;padding:5px;border-radius:99px;
     bottom:calc(var(--vb-bot,0px) + env(safe-area-inset-bottom) + 10px);
-    background:var(--tb-fill);border:0;box-shadow:var(--tb-rim),var(--tb-drop);
+    background:var(--lgs),var(--tb-fill);border:0;box-shadow:var(--tb-rim),var(--tb-drop);
     -webkit-backdrop-filter:var(--tb-blur);backdrop-filter:var(--tb-blur);transition:background-color .22s var(--ease-out)}
   .tabs.lg-act{background-color:var(--tb-fill-on)}
   .tabs::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;z-index:2;
-    background:linear-gradient(180deg,var(--tb-edge-a),var(--tb-edge-b) 30%,var(--tb-edge-b) 70%,var(--tb-edge-a));
+    background:linear-gradient(calc(135deg + var(--tx,0) * 40deg),var(--tb-edge-a),var(--tb-edge-b) 34%,var(--tb-edge-b) 64%,var(--tb-edge-a));
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
     mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
   .tabs .tab{font-size:0;padding:11px 2px;gap:0;box-sizing:border-box;height:calc(var(--tbh,58px) - 10px);color:var(--tb-ink)}
@@ -499,10 +494,10 @@
   /* The cached account is the app's: its own round glass button beside the bar. */
   #instant.hastabs .sbar .avatar{position:fixed;z-index:var(--z-tabs);width:var(--tbh,58px);height:var(--tbh,58px);
     right:calc((100% - min(calc(100% - 32px),520px)) / 2);bottom:calc(var(--vb-bot,0px) + env(safe-area-inset-bottom) + 10px);
-    font-size:var(--fs-subhead);border:0;background:var(--tb-fill);box-shadow:var(--tb-rim),var(--tb-drop);
+    font-size:var(--fs-subhead);border:0;background:var(--lgs),var(--tb-fill);box-shadow:var(--tb-rim),var(--tb-drop);
     -webkit-backdrop-filter:var(--tb-blur);backdrop-filter:var(--tb-blur)}
   @media (prefers-reduced-transparency:reduce){
-    .tabs,#instant.hastabs .sbar .avatar{background:var(--lg-solid) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}}
+    .tabs,#instant.hastabs .sbar .avatar,.qsavebar{background:var(--lg-solid) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}}
   @media (orientation:landscape) and (max-height:500px){
     #instant.hastabs .sbar .avatar{position:relative;right:auto;bottom:auto;width:38px;height:38px;font-size:var(--fs-footnote)}}
 
@@ -579,15 +574,9 @@
     -webkit-overflow-scrolling:touch;padding-bottom:2px;position:relative;scroll-padding-left:calc(var(--tt-gutter) + 6px)}
   /* Larger Text (owner, 24d): the cells hold two lines of their own text and the axis its
      times at any size; at the default both are what they were (32px, 52px). */
-  /* The app's motion tokens, the same values (App.html, "Motion tokens"): entrances ease
-     out, exits ease in, what a finger moved springs. Only the shimmer and the spinners,
-     loops that never stop, stay linear. */
-  :root{--ease-out:cubic-bezier(.22,1,.36,1);--ease-in:cubic-bezier(.4,0,1,1);--spring:cubic-bezier(.34,1.32,.64,1);
-    --ease-ios:cubic-bezier(.32,.72,0,1)}
   @supports (transition-timing-function:linear(0,1)){
     :root{--spring:linear(0,.047,.16,.303,.452,.593,.715,.816,.894,.952,.992,1.017,1.032,1.038,1.038,1.035,
       1.03,1.024,1.019,1.014,1.009,1.006,1.003,1.001,1,.999,.999,.999,.999,.999,1)}}
-  :root{--tt-row:max(32px,calc(var(--fs-caption1) * 2.4 + 2px));--tt-gutter:max(52px,calc(var(--fs-caption2) * 3.6))}
   .ttgutter{position:sticky;left:0;z-index:2;flex:none;width:var(--tt-gutter);padding:6px 4px 6px 0;
     border:1px solid transparent;background:var(--surface)}
   .ttgutter .ttdn{visibility:hidden}
@@ -598,12 +587,11 @@
   .ttgrow b{font-size:var(--fs-caption2);font-weight:700;color:var(--ink-2)}
   .ttgrow span{font-size:var(--fs-caption2);font-weight:600;color:var(--ink-3)}
   .ttday{flex:1 0 96px;min-width:96px;padding:6px;border:1px solid var(--line);
-    border-radius:var(--r-md);background:var(--surface-2)}
+    border-radius:var(--r-md);background:var(--surface-2);container-type:inline-size}
   .ttday.today{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
   .ttdn{height:26px;display:flex;align-items:center;gap:5px;width:100%;text-align:left;
     padding:0 1px 4px}
   /* Weekday then ordinal date (S9), as App.html draws it. */
-  .ttday{container-type:inline-size}
   .ttdn .dw,.ttchip .dw{font-size:var(--fs-caption1);font-weight:600;color:var(--ink-2);white-space:nowrap}
   .ttdn b,.ttchip b{font-size:var(--fs-footnote);font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
   .ttdn sup,.ttchip sup{font-size:.66em;line-height:0;vertical-align:.52em;margin-left:.5px;letter-spacing:0}
@@ -661,7 +649,7 @@
 
   .ttchips{display:flex;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;
     -webkit-overflow-scrolling:touch;padding-bottom:2px;margin-bottom:8px}
-  .ttchip{flex:none;min-width:46px;display:flex;flex-direction:column;align-items:center;
+  .ttchip{flex:1 0 auto;min-width:46px;display:flex;flex-direction:column;align-items:center;
     gap:1px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--r-md);
     background:var(--surface-2);font-variant-numeric:tabular-nums}
   .ttchip .dw{font-size:var(--fs-caption2);line-height:1.2}
@@ -669,7 +657,7 @@
   .ttchip.today b,.ttchip.today .dw{color:var(--accent)}
   .ttchip.sel{background:var(--surface-3);border-color:var(--line-2)}
   .ttlist{display:flex;flex-direction:column;gap:3px}
-  .ttp{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:6px 10px;
+  .ttp{display:flex;align-items:baseline;gap:9px;width:100%;text-align:left;padding:6px 10px;
     border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
   .ttp .pn{width:18px;flex:none;font-size:var(--fs-caption2);font-weight:700;color:var(--ink-3);
     font-variant-numeric:tabular-nums}
@@ -704,10 +692,10 @@
   .name .nm{font-size:var(--fs-footnote);font-weight:500;color:var(--ink-2)}
   .avatar{width:38px;height:38px;border-radius:50%;background:var(--gl-bg);color:var(--ink);
     border:1px solid var(--gl-edge);box-shadow:var(--gl-sm);
-    display:grid;place-items:center;font-size:var(--fs-footnote);font-weight:700;flex:none}
-  .dhead{text-align:center;margin:2px 0 12px}
-  .dhead b{display:block;font-size:var(--fs-callout);font-weight:700;letter-spacing:-.02em;line-height:1.3}
-  .dhead span{font-size:var(--fs-footnote);color:var(--ink-2)}
+    display:grid;place-items:center;font-size:min(var(--fs-footnote),16px);font-weight:700;flex:none}
+  .dhead{text-align:left;margin:4px 4px 18px}
+  .dhead b{display:block;font-size:var(--fs-large);font-weight:700;letter-spacing:.2px;line-height:1.2;padding-bottom:2px}
+  .dhead span{font-size:var(--fs-body);color:var(--ink-2)}
   .note{display:flex;align-items:center;justify-content:center;gap:7px;
     font-size:var(--fs-caption1);color:var(--ink-2);margin:0 auto 12px;padding:5px 12px;width:max-content;
     max-width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:99px}
@@ -721,15 +709,14 @@
   .lsn{display:flex;gap:12px;align-items:center;text-align:left;width:100%;
     background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:11px 13px;
     box-shadow:var(--shadow);pointer-events:none;color:var(--ink);font-family:inherit}
-  .lsn .per{width:42px;height:42px;flex:none;border-radius:var(--r-sm);background:var(--surface-2);
-    border:1px solid var(--line);display:grid;place-content:center;text-align:center}
+  .lsn .per{width:40px;height:40px;flex:none;border:0;border-radius:12px;background:var(--surface-2);
+    display:grid;place-content:center;text-align:center}
   .lsn .per b{display:block;font-size:var(--fs-body);font-weight:700;letter-spacing:-.03em;line-height:1;
     font-variant-numeric:tabular-nums}
-  .lsn .per span{display:block;font-size:var(--fs-caption2);font-weight:700;letter-spacing:.07em;
-    text-transform:uppercase;color:var(--ink-3);margin-top:2px}
+  .lsn .per span{display:none}
   .lsn .mid{flex:1;min-width:0}
-  .lsn .mid .t{font-weight:600;font-size:var(--fs-subhead);letter-spacing:-.01em}
-  .lsn .mid .s{font-size:var(--fs-footnote);color:var(--ink-2);margin-top:1px}
+  .lsn .mid .t{font-weight:500;font-size:var(--fs-body);letter-spacing:-.01em}
+  .lsn .mid .s{font-size:var(--fs-subhead);color:var(--ink-2);margin-top:1px}
   /* Grid items default to min-width:auto, so a card whose chip will not wrap grows
      past its own track instead of shrinking. Same rule as App.html. */
   .lessons>*{min-width:0}
@@ -743,10 +730,9 @@
   .chip{font-size:var(--fs-caption1);font-weight:600;border-radius:99px;padding:3px 9px;white-space:nowrap;
     background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2)}
   .chip.ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
-  .chip.todo{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+  .chip.todo,.chip.queued{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
   .chip.leave{background:var(--low-soft);border-color:var(--low-line);color:var(--low)}
   .chip.wait{background:var(--surface-2);border-color:var(--line);color:var(--ink-3)}
-  .chip.queued{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 
 
   /* ---- the cached Home, laid out as the app's (Liquid Glass layout in App.html) ----
@@ -763,18 +749,14 @@
   .sbar .avatar{position:relative}
   .sbar .avatar::after{content:"";position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;box-sizing:border-box;
     border-radius:50%;background:var(--ink-3);border:2.5px solid var(--bg)}
-  #instantInner>.dhead,#instantInner>.stuwrap{order:1}
   /* The app's date row is 84px with its day arrows beside it; the still copy has none. */
-  #instantInner>.dhead{min-height:84px}
+  #instantInner>.dhead{order:1;min-height:84px}
   #instantInner>.ttwhenwrap{display:none}
   #instantInner>.ttnow,#instantInner>.note{order:2}
   #instantInner>.dsum{order:3}
   #instantInner>.lessons,#instantInner>.sblock.hlsn,#instantInner>.nolsn{order:4}
   #instantInner>.tt,#instantInner>.htt{order:5;margin-top:22px}
-  .dhead{text-align:left;margin:4px 4px 18px}
   .dhead .eye{display:block;font-style:normal;font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2);margin-bottom:2px}
-  .dhead b{font-size:var(--fs-large);line-height:1.2;letter-spacing:.2px;padding-bottom:2px}
-  .dhead span{font-size:var(--fs-body)}
   /* A copy of App.html's .daysum (A1): change the two together. */
   .dsum{display:flex;gap:7px;flex-wrap:wrap;align-items:baseline;margin:22px 4px 10px}
   .dsum .lab{font-size:var(--fs-title2);font-weight:700;letter-spacing:-.01em;color:var(--ink);margin-right:auto}
@@ -791,11 +773,6 @@
     overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
   #instantInner .lsn{border:0;border-radius:0;box-shadow:none;background:transparent;min-height:68px;padding:11px 16px}
   #instantInner .lsn:not(:first-child){background:linear-gradient(var(--line),var(--line)) 68px 0/calc(100% - 68px) 1px no-repeat}
-  .lsn .per{width:40px;height:40px;border:0;border-radius:12px}
-  .lsn .per b{font-size:var(--fs-body)}
-  .lsn .per span{display:none}
-  .lsn .mid .t{font-size:var(--fs-body);font-weight:500}
-  .lsn .mid .s{font-size:var(--fs-subhead)}
   .lsn[data-tone] .per{background:var(--tn);box-shadow:inset 0 0 0 1.5px var(--tn-line)}
 
   /* ---- taking a register before the app is up ---- */
@@ -807,7 +784,7 @@
      the press lands at once and the release eases back on the iOS curve. */
   .lsn.tap:active{transform:none;background-color:var(--surface-3)}
   .ph .tab .ic{transition:transform .3s var(--spring)}
-  .ph .tab:active .ic{transform:scale(.9);transition-duration:.06s}
+  .ph .tab:active .ic{transform:scale(1.08);transition-duration:.06s}   /* swells, as the app's glyph does */
   /* The register as the app draws it (W9): back where the app's back is, "Take register"
      over a large title and "P1 · 08:00–08:50 · Thu 22 Oct", the running count as three
      soft tiles, then the tiles — every one an icon and its word, Present included — and
@@ -851,21 +828,6 @@
   .qtile[data-s="A"]{background:var(--full-soft);border-color:var(--full-line)}
   .qtile[data-s="A"] .st{color:var(--full)}
 
-  /* ---- a student's cached summary ---- */
-  .stot{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
-    padding:18px;text-align:center;margin-bottom:9px;box-shadow:var(--shadow)}
-  .stot b{display:block;font-size:var(--fs-large);font-weight:700;letter-spacing:-.03em;line-height:1;
-    font-variant-numeric:tabular-nums}
-  .stot span{display:block;font-size:var(--fs-footnote);color:var(--ink-2);margin-top:6px}
-  .srow{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface);
-    border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:8px;box-shadow:var(--shadow)}
-  .srow.past{opacity:.55}
-  .slab{flex:1;min-width:0;font-size:var(--fs-subhead);font-weight:600;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap}
-  .sfig{font-size:var(--fs-footnote);color:var(--ink-3);flex:none}
-  .spct{font-weight:700;font-size:var(--fs-callout);flex:none;min-width:52px;text-align:right;
-    font-variant-numeric:tabular-nums}
-
   /* ---- a student's cached Home: App.html's rules for it, scoped to .lens ----
      Copied from the app's .head, #lensWrap, .ttnow.tdcard/.tdl, the segmented control,
      .linkbtn/#ctoggle, .card/.chead/.dabs/.cbody/.tbl/.ring and .cfold (invariant 35).
@@ -892,6 +854,7 @@
     min-width:84px;max-width:168px;padding:0 12px;text-align:left;color:var(--ink);
     background:var(--tf,var(--surface-2));font-variant-numeric:tabular-nums}
   .lens .tdl .tdt{font-size:var(--fs-caption1);font-weight:600;color:var(--ink-2);white-space:nowrap}
+  /* 600, not the app's 700: the app's 700 is only for the lesson now or next, and this still copy has neither (invariant 31). */
   .lens .tdl .tdn{max-width:100%;font-size:var(--fs-subhead);font-weight:600;letter-spacing:-.01em;line-height:1.25;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lens .tdl .tdx:empty{display:none}
@@ -956,12 +919,13 @@
   .lens .plchev{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
   .lens .chip.bad{background:var(--full-soft);border-color:var(--full-line);color:var(--full)}
 
-  /* The app's floating Save bar. Its second line says the one thing that differs here:
-     the register goes once the app has loaded, not this second. */
+  /* The app's floating Save bar, in the app's own glass (the tab bar's: --tb-*, lg-tabbar).
+     Its second line says the one thing that differs here: the register goes once the app
+     has loaded, not this second. */
   .qsavebar{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:2;margin:14px 0 0;
     display:flex;align-items:center;gap:12px;padding:7px 7px 7px 20px;border-radius:calc(var(--fs-body) * .6 + 23px);
-    background:var(--gl-bar);border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
-    -webkit-backdrop-filter:var(--gl-bar-blur);backdrop-filter:var(--gl-bar-blur)}
+    background:var(--lgs),var(--tb-fill);border:0;box-shadow:var(--tb-rim),var(--tb-drop);
+    -webkit-backdrop-filter:var(--tb-blur);backdrop-filter:var(--tb-blur)}
   .qinfo{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
   .qinfo b{font-size:var(--fs-subhead);font-weight:600}
   .qinfo span{display:flex;align-items:center;gap:5px;font-size:var(--fs-footnote);color:var(--ink-2);
@@ -974,14 +938,18 @@
   .qbtn:hover{filter:brightness(1.08)}
   /* (the presses above) */
   /* The release springs back (only the scale: colour and filter have nothing to overshoot to). */
-  .qtile,.qbtn{transition-property:background,border-color,filter,transform;transition-duration:.12s,.12s,.22s,.42s;
+  /* Every button on the wrapper's own screens answers the finger, as the app's do: solid
+     ones sink, round glass swells (owner, 4 Nov: glass swells, solid sinks). */
+  .qtile,.qbtn,.box .go,.gfoot button,.notif button,.qback,.qicon{transition-property:background,border-color,filter,transform;transition-duration:.12s,.12s,.22s,.42s;
     transition-timing-function:var(--ease-out),var(--ease-out),var(--ease-out),var(--spring)}
-  .qtile:active,.qbtn:active{transform:scale(.97);filter:brightness(.94);transition-duration:.06s}
+  :is(.qtile,.qbtn,.box .go,.gfoot button,.notif button):active{transform:scale(.97);filter:brightness(.94);transition-duration:.06s}
+  :is(.qback,.qicon):active{transform:scale(1.08);filter:brightness(1.06);transition-duration:.06s}
 
   /* ---- sign-in (first open, or after Sign out) and the notification gate ----
      One glass card over the six subjects drawn faintly behind it. */
   .ask,.gate{position:fixed;inset:0;display:grid;place-items:center;padding:24px 16px;
     overflow-y:auto;background:var(--bg)}
+  /* Not the app's --z-ask: this is the page's own sign-in, a layer of its own above the placeholder and the frame. */
   .ask{z-index:3}
   .gate{z-index:20}
   .gate[hidden]{display:none}
@@ -990,12 +958,11 @@
   .art{position:fixed;inset:0;width:100%;height:100%;opacity:var(--art-o);pointer-events:none}
   .box{position:relative;width:100%;max-width:380px;text-align:left;padding:26px 22px 20px;
     border-radius:32px;background:var(--gl-bg);border:1px solid var(--gl-edge);box-shadow:var(--gl-shadow);
-    -webkit-backdrop-filter:var(--lg-blur-thick,blur(24px) saturate(180%));backdrop-filter:var(--lg-blur-thick,blur(24px) saturate(180%))}
+    -webkit-backdrop-filter:var(--lg-blur-thick);backdrop-filter:var(--lg-blur-thick)}
   .gtile{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;margin-bottom:16px;
     background:var(--surface-3);color:var(--ink);border:1px solid var(--gl-edge);box-shadow:var(--gl-sm)}
   .gtile.warn{background:var(--low-soft);color:var(--low)}
   .gtile svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .box .kicker{font-size:var(--fs-footnote);font-weight:600;color:var(--ink-2);margin:0 0 2px}
   .box h1{font-size:var(--fs-title1);line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0 0 6px;color:var(--ink)}
   .box p{font-size:var(--fs-subhead);color:var(--ink-2);margin:0 0 16px;line-height:1.45}
   .box label{display:block;font-size:var(--fs-footnote);font-weight:600;margin:0 0 6px;color:var(--ink)}
@@ -1068,8 +1035,11 @@
   .lstep{font-size:var(--fs-subhead);color:var(--ink);font-weight:600;margin:12px 0 4px;min-height:1.45em}
   .lbar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;
     border:1px solid var(--line);position:relative}
-  .lbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;
-    background:var(--accent);transition:width .45s var(--ease-out)}
+  /* Filled by a clip of its full length (LOAD.draw sets --lv), never by its width: only
+     transform, opacity and clip-path move (invariant 39). */
+  .lbar i{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:99px;
+    background:var(--accent);clip-path:inset(0 calc(100% - var(--lv,0%)) 0 0 round 99px);
+    transition:clip-path .45s var(--ease-out)}
   .lbar i::after{content:"";position:absolute;inset:0;
     background:linear-gradient(100deg,transparent 20%,var(--sheen) 50%,transparent 80%);
     background-size:220% 100%;animation:sh 1.4s linear infinite}
@@ -1102,14 +1072,30 @@
   /* The wrapper's own overlays come and go as the app's do (owner, 25d: "all the things
      have exit animation"): the bars rise from the bottom and sink back, the gate and the
      signed-out pill fade. Leaving (away()), they take no taps. */
-  .notif:not([hidden]){animation:w-in .42s var(--spring) both}
-  .gate:not([hidden]),.okpill:not([hidden]){animation:w-fade .25s var(--ease-out) both}
-  .notif.leaving{animation:w-out .22s var(--ease-in) both;pointer-events:none}
-  .gate.leaving,.okpill.leaving{animation:w-unfade .18s var(--ease-in) both;pointer-events:none}
+  /* Scoped under html.motion (added on the first touch or key, as the app does), so nothing
+     moves on the first paint; filling backwards, never forwards, so nothing stays moved: a
+     leaving one's end is a plain declaration beside its animation. */
+  .motion .notif:not([hidden]){animation:w-in .42s var(--spring) backwards}
+  .motion .gate:not([hidden]),.motion .okpill:not([hidden]),.motion .ask.w-on,.motion .w-fade{animation:w-fade .25s var(--ease-out) backwards}
+  .motion .notif.leaving{opacity:0;transform:translateY(14px) scale(.98);animation:w-out .22s var(--ease-in);pointer-events:none}
+  .motion .gate.leaving,.motion .okpill.leaving,.motion .ask.leaving,.motion .ph.leaving{opacity:0;animation:w-unfade .18s var(--ease-in);pointer-events:none}
   @keyframes w-in{from{opacity:0;transform:translateY(14px) scale(.98)}}
-  @keyframes w-out{to{opacity:0;transform:translateY(14px) scale(.98)}}
+  @keyframes w-out{from{opacity:1;transform:none}}
   @keyframes w-fade{from{opacity:0}}
-  @keyframes w-unfade{to{opacity:0}}
+  @keyframes w-unfade{from{opacity:1}}
+  /* The register the teacher can take before the app is up is pushed over the cached day
+     and popped off it, as the app's register is (its m-push / m-back, --ease-ios); a tile
+     tapped gives, a count rolls, a refusal shakes once. */
+  @keyframes w-push{from{transform:translateX(100%)}}
+  @keyframes w-pop{from{transform:none}}
+  @keyframes w-bump{30%{transform:scale(.93)}65%{transform:scale(1.03)}}
+  @keyframes w-roll{from{opacity:0;transform:translateY(.5em)}}
+  @keyframes w-shake{0%{opacity:0}20%{opacity:1;transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+  .motion .ph.w-push{animation:w-push .42s var(--ease-ios) backwards}
+  .motion .ph.w-popping{transform:translateX(100%);animation:w-pop .42s var(--ease-ios);pointer-events:none}
+  .motion .w-bump{animation:w-bump .28s var(--ease-out)}
+  .motion .w-roll{animation:w-roll .36s var(--spring) backwards}
+  .motion .w-shake{animation:w-shake .45s var(--ease-out) backwards}
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none !important;transition:none !important}
   }
@@ -1128,7 +1114,8 @@
   After the first successful load the app posts a copy of the day back to this page,
   which stores it per token. Later opens paint those cards immediately, so the teacher
   is looking at their real timetable while Apps Script is still starting up. The
-  snapshot holds no student names and no marks — only the lesson grid.
+  snapshot holds no marks: the lesson grid and each class's list of names (so a register can be
+  taken before the app is up), per token, and cleared on sign out.
 -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <!-- The six subjects, drawn once and used behind sign-in and the notification gate. -->
@@ -1268,9 +1255,37 @@
   /* Out as it came in (the .leaving rules), then hidden; at once where motion is not
      wanted or not there to play. show() takes back an exit still under way, so a bar
      shown again mid-fade is not hidden by the fade's end. */
+  /* Motion wakes on the first touch or key, as the app's does (html.motion), and never with
+     reduced motion asked for or nothing to draw it with: the first paint never moves. */
+  (function () {
+    var root = document.documentElement, EV = ['pointerdown', 'keydown'];
+    function wake() {
+      EV.forEach(function (t) { document.removeEventListener(t, wake, true); });
+      try {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if (typeof document.documentElement.getAnimations !== 'function') return;
+      } catch (e) { return; }
+      root.classList.add('motion');
+    }
+    EV.forEach(function (t) { document.addEventListener(t, wake, true); });
+  })();
   function moving(){
-    try { return !!(window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+    try { return document.documentElement.classList.contains('motion') && !!(window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
       window.getComputedStyle && typeof document.body.getAnimations === 'function'); } catch (e) { return false; }
+  }
+  /* A one-shot class, restarted (a tile's give, a count's roll, a refusal's shake). */
+  function play(el, c){
+    if (!el || !moving()) return;
+    el.classList.remove(c); void el.offsetWidth; el.classList.add(c);
+  }
+  /* Something shown by display going away: out as it came (.leaving), then put away; at
+     once where motion is not wanted. The page under it is already final. */
+  function gone(el){
+    if (!el || el.style.display === 'none') return;
+    if (!moving()) { el.style.display = 'none'; return; }
+    var tok = el.__gw = (el.__gw || 0) + 1;
+    el.classList.add('leaving');
+    setTimeout(function () { if (el.__gw !== tok) return; el.classList.remove('leaving'); el.style.display = 'none'; }, 200);
   }
   function away(el){
     if (!el || el.hidden || el.classList.contains('leaving')) return;
@@ -1322,7 +1337,7 @@
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function stored(){ try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
-  function keep(t){ try { localStorage.setItem(KEY, t); } catch (e) {} }
+  function keep(t){ lsSet(KEY, t); }
 
   /* ---- the other tabs' copies --------------------------------------------
      Home is painted from the snapshot below. The Weekly Plan, Gradebook and Resources keep
@@ -1334,20 +1349,24 @@
   var TABC_MAX = 40, TABC_BYTES = 1500000;
   /* What the app is handed on attendance:ready: the tabs' copies, and how old the admin
      dashboard's is (0 for none), so an admin's app can have the dashboard's first open ready
-     too (invariant 51) without being handed the dashboard itself. */
-  function cachedFor(token){
+     too (invariant 51) without being handed the dashboard itself. The copies come from KEPT
+     below, which may answer after the app is up: the app draws late arrivals (STORE.on). */
+  function sendCached(token){
     var adm = 0;
     try { var a = readAdminCache(token); adm = a ? a.at : 0; } catch (e) {}
-    return { type: 'attendance:cached', v: 1, entries: readTabCache(token), admin: adm };
+    KEPT.all(token, function (entries) { toApp({ type: 'attendance:cached', v: 1, entries: entries, admin: adm }); });
   }
+  /* The key rule, for both homes of the copies: a short plain name, or name:anything-plain
+     ('res', 'plan:2026-09-20', 'gb:class:Y12-IT', 'q:apiWeekAt:1x2y'). */
+  function tabKey(key){ return typeof key === 'string' && key.length <= 120 && /^[a-z]+(?::[\w:|.-]*)?$/i.test(key); }
   function readTabCache(token){
-    try { var o = JSON.parse(localStorage.getItem(TABC + token) || '{}'); return (o && typeof o === 'object') ? o : {}; }
-    catch (e) { return {}; }
+    var o = readJSON(TABC + token);
+    return (o && typeof o === 'object') ? o : {};
   }
   function writeTabCache(token, key, data){
     // A bare name is a key too: Resources keeps its one answer as plain 'res', and a
     // pattern that insisted on a colon turned it away, so that tab never drew from here.
-    if (typeof key !== 'string' || key.length > 80 || !/^[a-z]+(?::[\w:|.-]*)?$/i.test(key)) return;
+    if (!tabKey(key)) return;
     var all = readTabCache(token);
     if (data === null || data === undefined) delete all[key];
     else all[key] = { data: data, at: Date.now() };
@@ -1363,6 +1382,143 @@
     }
   }
 
+  /* ---- what each person has seen, kept (invariant 56) ----------------------
+     Everything a person has looked at or had fetched ahead is kept on the device so the
+     whole app opens with no connection: IndexedDB, database 'ks5', one record per
+     [token, key] with when it came and its size. About 25 MB per person; past that the
+     answers fetched longest ago go first. Readable only under that person's code (every
+     read and write names the token), and every record of theirs goes on sign out. Where
+     IndexedDB cannot open (a private window, an old browser) it is localStorage with the
+     limits above, exactly as before. Answers kept in localStorage by an older wrapper move
+     over the first time a person's copies are read, then go from localStorage. The app's
+     frame has no origin of its own, so it never touches this: it posts attendance:cache and
+     is handed attendance:cached, as before. */
+  var KEPT = (function () {
+    var NAME = 'ks5', OS = 'answers', BUDGET = 25000000, ITEM = 4000000;
+    var db = null, state = 'none', waiting = [], moved = {};
+    function idb(){ try { return window.indexedDB || null; } catch (e) { return null; } }
+    function settle(s){
+      state = s;
+      if (s === 'ready') persist();
+      var w = waiting; waiting = [];
+      w.forEach(function (f) { try { f(); } catch (e) {} });
+    }
+    function opened(cb){
+      if (state === 'ready' || state === 'off') return cb();
+      waiting.push(cb);
+      if (state === 'opening') return;
+      state = 'opening';
+      var f = idb();
+      if (!f) return settle('off');
+      try {
+        var rq = f.open(NAME, 1);
+        rq.onupgradeneeded = function () {
+          var d = rq.result;
+          if (!d.objectStoreNames.contains(OS)) d.createObjectStore(OS, { keyPath: ['token', 'key'] }).createIndex('token', 'token');
+        };
+        rq.onsuccess = function () { db = rq.result; settle('ready'); };
+        rq.onerror = rq.onblocked = function () { settle('off'); };
+      } catch (e) { settle('off'); }
+    }
+    // Asked once per device: that the browser keep this rather than clear it to make room.
+    function persist(){
+      try {
+        if (localStorage.getItem('attendance-persist') || !navigator.storage || !navigator.storage.persist) return;
+        localStorage.setItem('attendance-persist', '1');
+        navigator.storage.persist().then(function () {}, function () {});
+      } catch (e) {}
+    }
+    function store(mode){ return db.transaction(OS, mode).objectStore(OS); }
+    function list(token, cb){
+      var out = [];
+      try {
+        var rq = store('readonly').index('token').openCursor(IDBKeyRange.only(token));
+        rq.onsuccess = function () { var c = rq.result; if (c) { out.push(c.value); c['continue'](); } else cb(out); };
+        rq.onerror = function () { cb(out); };
+      } catch (e) { cb(out); }
+    }
+    function size(data){ try { return JSON.stringify(data).length; } catch (e) { return 0; } }
+    function migrate(token, cb){
+      if (moved[token]) return cb();
+      moved[token] = true;
+      var old = readTabCache(token), keys = Object.keys(old);
+      if (!keys.length) return cb();
+      try {
+        var s = store('readwrite');
+        keys.forEach(function (k) {
+          var v = old[k];
+          if (tabKey(k) && v && v.data !== undefined && v.data !== null)
+            s.put({ token: token, key: k, data: v.data, at: v.at || Date.now(), size: size(v.data) });
+        });
+        s.transaction.oncomplete = function () { try { localStorage.removeItem(TABC + token); } catch (e) {} cb(); };
+        s.transaction.onerror = s.transaction.onabort = function () { cb(); };
+      } catch (e) { cb(); }
+    }
+    // Past the budget, the answers fetched longest ago go first.
+    function trim(token){
+      list(token, function (recs) {
+        var sum = 0;
+        recs.forEach(function (r) { sum += r.size || 0; });
+        if (sum <= BUDGET) return;
+        recs.sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
+        try {
+          var s = store('readwrite');
+          while (sum > BUDGET && recs.length > 1) { var r = recs.shift(); sum -= r.size || 0; s['delete']([token, r.key]); }
+        } catch (e) {}
+      });
+    }
+    return {
+      /* Every copy kept for this person, as { key: {data, at} }. */
+      all: function (token, cb){
+        opened(function () {
+          if (state !== 'ready') return cb(readTabCache(token));
+          migrate(token, function () {
+            list(token, function (recs) {
+              var o = {};
+              recs.forEach(function (r) { o[r.key] = { data: r.data, at: r.at }; });
+              cb(o);
+            });
+          });
+        });
+      },
+      /* One copy, kept with when it came; null drops it. */
+      put: function (token, key, data){
+        if (!token || !tabKey(key)) return;
+        opened(function () {
+          if (state !== 'ready') return writeTabCache(token, key, data);
+          migrate(token, function () {
+            try {
+              var s = store('readwrite');
+              if (data === null || data === undefined) { s['delete']([token, key]); return; }
+              var n = size(data);
+              if (!n || n > ITEM) return;
+              s.put({ token: token, key: key, data: data, at: Date.now(), size: n });
+              s.transaction.oncomplete = function () { trim(token); };
+            } catch (e) {}
+          });
+        });
+      },
+      /* Everything of this person's, from both homes (sign out). */
+      clear: function (token, cb){
+        var done = function () { if (cb) { var f = cb; cb = null; f(); } };
+        try { localStorage.removeItem(TABC + token); } catch (e) {}
+        opened(function () {
+          if (state !== 'ready') return done();
+          list(token, function (recs) {
+            if (!recs.length) return done();
+            try {
+              var s = store('readwrite');
+              recs.forEach(function (r) { s['delete']([token, r.key]); });
+              s.transaction.oncomplete = s.transaction.onerror = s.transaction.onabort = done;
+            } catch (e) { done(); }
+          });
+        });
+      },
+      mode: function () { return state; }
+    };
+  })();
+  window.__KEPT = KEPT;   // read by offline.test.js; nothing in the page relies on it
+
   /* ---- the kept app (invariant 41) ----------------------------------------
      Apps Script takes seconds to serve the app, and until it had, all this page could show
      was a picture of it: the tabs lit up under a finger and did nothing. So this page keeps
@@ -1377,7 +1533,25 @@
   // The Students view's flag, as Code.gs's FLAG_PREF_RE takes it: "days-3-1.5".
   var FLAG_PREF = /^(count|days)-[1-9]\d?-(?:[1-9]\d?(?:\.5)?|0\.5)$/;
   var OFFLINE = 'No connection. Check your signal and try again.';
+  /* One way to read and one to write this device's storage: nothing throws, a missing or
+     unreadable value is null, a refused write says false. */
   function readJSON(k){ try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function lsSet(k, text){ try { localStorage.setItem(k, text); return true; } catch (e) { return false; } }
+  function writeJSON(k, v){ try { return lsSet(k, JSON.stringify(v)); } catch (e) { return false; } }
+  /* The preferences this page holds for the app (it owns them: the frame's own storage is
+     thrown away), each as the app takes it, or '' when absent or not a value it knows. It
+     is what both the ordinary frame's URL and the kept page's slots are made from. */
+  function prefs(){
+    var p = { theme: '', ttv: '', tto: '', pv: '', fl: '' };
+    try {
+      var v = localStorage.getItem('attendance-theme'); if (v === 'dark' || v === 'light') p.theme = v;
+      v = localStorage.getItem('attendance-tt-view'); if (v === 'day' || v === 'week') p.ttv = v;
+      v = localStorage.getItem('attendance-tt-open'); if (v === '0' || v === '1') p.tto = v;
+      v = localStorage.getItem('attendance-plan-view'); if (v === 'day' || v === 'week') p.pv = v;
+      v = localStorage.getItem('attendance-flag'); if (FLAG_PREF.test(v || '')) p.fl = v;
+    } catch (e) {}
+    return p;
+  }
   function readShell(token){
     var s = readJSON(SHELLS + token);
     return (s && s.v === 1 && typeof s.html === 'string' && typeof s.build === 'string' &&
@@ -1403,17 +1577,20 @@
   }
   function readBoot(token){
     var b = readJSON(BOOTS + token);
-    return (b && b.v === 1 && b.boot && typeof b.boot === 'object' && b.boot.ok) ? b : null;
+    if (!(b && b.v === 1 && b.boot && typeof b.boot === 'object' && b.boot.ok)) return null;
+    // When it was kept, so a page opened on it with no line can say how old it is (invariant 56).
+    if (typeof b.at === 'number') b.boot.keptAt = b.at;
+    return b;
   }
   function writeBoot(token, boot){
     if (!boot || typeof boot !== 'object' || !boot.ok) return;
     var rec = JSON.stringify({ v: 1, at: Date.now(), boot: boot });
     if (rec.length > 1500000) return;
-    try { localStorage.setItem(BOOTS + token, rec); } catch (e) {}
+    lsSet(BOOTS + token, rec);
   }
   // A copy that once failed to paint is not tried again until a newer one replaces it.
   function shellBad(build){ try { return localStorage.getItem(SHELL_BAD) === build; } catch (e) { return false; } }
-  function markShellBad(build){ try { localStorage.setItem(SHELL_BAD, build); } catch (e) {} }
+  function markShellBad(build){ lsSet(SHELL_BAD, build); }
   function canKeep(){
     try {
       var x = document.createElement('iframe');
@@ -1454,19 +1631,10 @@
     var json = JSON.stringify(b).replace(/</g, '\\u003c')
       .replace(new RegExp(String.fromCharCode(0x2028), 'g'), '\\u2028')
       .replace(new RegExp(String.fromCharCode(0x2029), 'g'), '\\u2029');   // line breaks JSON allows and a script does not
-    var theme = '', tv = '', to = '', pv = '', fl = '';
-    try {
-      theme = localStorage.getItem('attendance-theme') || '';
-      tv = localStorage.getItem('attendance-tt-view') || '';
-      to = localStorage.getItem('attendance-tt-open') || '';
-      pv = localStorage.getItem('attendance-plan-view') || '';
-      fl = localStorage.getItem('attendance-flag') || '';
-    } catch (e) {}
+    var P = prefs();
     var html = fill(sh.html, SLOT_BOOT, json);
-    html = fill(html, SLOT_THEME, (theme === 'dark' || theme === 'light') ? theme : '');
-    html = fill(html, SLOT_TT, ((tv === 'day' || tv === 'week') ? tv : '') + ',' +
-      ((to === '0' || to === '1') ? to : '') + ',' + ((pv === 'day' || pv === 'week') ? pv : '') + ',' +
-      (FLAG_PREF.test(fl) ? fl : ''));
+    html = fill(html, SLOT_THEME, P.theme);
+    html = fill(html, SLOT_TT, P.ttv + ',' + P.tto + ',' + P.pv + ',' + P.fl);
     // The shim runs before any of the page's own scripts.
     var h = html.search(/<head[^>]*>/i);
     if (h === -1) return SHIM + html;
@@ -1541,7 +1709,11 @@
      either — the week is a picture until the app is ready to act on a tap. */
   var TT_CAL = '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
     '<path d="M3 10h18M8 3v4M16 3v4"/></svg>';
-  var TT_CHEV = '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+  // The down chevron, plain (the timetable's fold) or as a class's own (a student card's fold).
+  function chevDown(cls){
+    return '<svg' + (cls ? ' class="' + cls + '"' : '') + ' viewBox="0 0 24 24"' + (cls ? ' aria-hidden="true"' : '') +
+      '><path d="M6 9l6 6 6-6"/></svg>';
+  }
   var TT_TONES = { as1:1, as2:1, as3:1, a21:1, a22:1, a23:1, u:1 };
 
   /* "u" is a colour the person picked for themselves (invariant 53): the app sends the
@@ -1570,7 +1742,6 @@
 
   /* A column's head as the app draws it (S9): the weekday, then the date as an ordinal
      with the letters raised. Both lengths of weekday; the column's width picks one. */
-  var LONGDAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   function ttOrd(n){
     var t = n % 100, s = (t >= 11 && t <= 13) ? 'th' : (['th','st','nd','rd'][n % 10] || 'th');
     return n + '<sup>' + s + '</sup>';
@@ -1578,7 +1749,7 @@
   function ttHead(day){
     var p = String(day.date || '').split('-');
     var w = p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2], 12).getDay() : -1;
-    var sh = w < 0 ? String(day.dow || '') : SHORT[w], lg = w < 0 ? sh : LONGDAY[w], dd = +(p[2] || 0);
+    var sh = w < 0 ? String(day.dow || '') : SHORT[w], lg = w < 0 ? sh : DAYS[w], dd = +(p[2] || 0);
     return '<span class="dw"><span class="wl">' + esc(lg) + '</span><span class="ws" aria-hidden="true">' +
       esc(sh) + '</span></span>' + (dd ? '<b>' + ttOrd(dd) + '</b>' : '');
   }
@@ -1656,7 +1827,7 @@
             '<span class="ttview' + (tt.view === 'day' ? '' : ' on') + '">Week</span>' +
             '<span class="ttview' + (tt.view === 'day' ? ' on' : '') + '">Day</span>' +
           '</div>' +
-          '<span class="ttfold' + (tt.open === false ? ' shut' : '') + '">' + TT_CHEV + '</span>' +
+          '<span class="ttfold' + (tt.open === false ? ' shut' : '') + '">' + chevDown() + '</span>' +
         '</div>' + body +
       '</section>' + nowCard(hint);
   }
@@ -1715,6 +1886,14 @@
           '</svg></span>' + TAB_BAR[n][0] + '</span>';
       }).join('') + '</div></div>';
   }
+  // The cached bar's current tab: the one `pick` says yes to.
+  function markTab(pick){
+    var bar = $('instantTabs');
+    if (!bar) return;
+    Array.prototype.forEach.call(bar.querySelectorAll('.tab'), function (x) {
+      if (pick(x)) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current');
+    });
+  }
   // Room under the last card, and the notification bar lifted clear, before the app says so.
   function tabRoom(v){
     var on = !!tabList(v), bar = $('instantTabs');
@@ -1723,16 +1902,10 @@
   }
 
   function readSnap(token){
-    try {
-      var raw = localStorage.getItem(SNAP + token);
-      if (!raw) return null;
-      var s = JSON.parse(raw);
-      return (s && s.v === 1) ? s : null;
-    } catch (e) { return null; }
+    var s = readJSON(SNAP + token);
+    return (s && s.v === 1) ? s : null;
   }
-  function writeSnap(token, s){
-    try { localStorage.setItem(SNAP + token, JSON.stringify(s)); } catch (e) {}
-  }
+  function writeSnap(token, s){ writeJSON(SNAP + token, s); }
 
   /* Store today's day under its date, and also keep the lesson grid under its
      weekday. The timetable repeats weekly, so last Monday's grid is a correct
@@ -1812,8 +1985,6 @@
       '<circle cx="56" cy="56" r="48" fill="none" stroke-width="12" style="stroke:var(--surface-3)"/>' + arcs + '</svg>';
   }
   var GOCHEV = '<svg class="cgo" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
-  var FCHEV = '<svg class="plchev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-  var STU_TONES = { as1: 1, as2: 1, as3: 1, a21: 1, a22: 1, a23: 1 };
   /* One card of a student's Home, App.html's render() markup: the figures, the ring, and
      the foot that offers the dates (no late/absent pills: the boxes give the counts,
      owner 2 Nov; the dates themselves are not kept here). */
@@ -1829,14 +2000,14 @@
         '<div class="ring">' + flatRing(x.present || 0, x.late || 0, x.absent || 0) +
         '<span class="rate"><b>' + (total ? Math.round((x.present || 0) / total * 100) + '%' : '—') + '</b><span>present</span></span></div></div>' +
       '<div class="cfold"><span class="cfoldb">' + (!l && !a ? '<span class="cfnone">No lates or absences</span>'
-        : '<span class="cfdates">Show dates</span>' + FCHEV) + '</span></div></section>';
+        : '<span class="cfdates">Show dates</span>' + chevDown('plchev')) + '</span></div></section>';
   }
   /* Today's card: the row of lessons as the app draws it before it has the time (no ring
      on the one now, nothing faded: invariant 31), and only for today. Anything older is
      the card saying how old the figures under it are, while the app is asked again. */
   function stuToday(s){
     var t = s.today, iso = todayIso(), at = new Date(Number(s.at || 0));
-    var fresh = s.at && at.getFullYear() + '-' + p2(at.getMonth() + 1) + '-' + p2(at.getDate()) === iso;
+    var fresh = s.at && isoOf(at) === iso;
     if (fresh && t && t.cells && t.cells.length && t.date === iso)
       return '<div class="card ttnow tdcard"><div class="tdhead"><span class="eyebrow">Today</span><span class="tdst"></span></div>' +
         '<div class="tdstrip">' + t.cells.map(function (c) {
@@ -1854,8 +2025,7 @@
      with its days absent, then a card per subject — the same classes and sizes, copied
      below as .lens rules, so the look does not change when the app takes over. */
   function paintStudent(token){
-    var s;
-    try { s = JSON.parse(localStorage.getItem(STU + token) || 'null'); } catch (e) { return false; }
+    var s = readJSON(STU + token);
     if (!s || !s.totals) return false;
 
     var t = s.totals, lab = String(s.rangeLabel || '');
@@ -1885,12 +2055,9 @@
   /* ---- registers marked before the app finished loading ------------------- */
 
   function readQueue(token){
-    try { return JSON.parse(localStorage.getItem(QUEUE + token) || '[]') || []; }
-    catch (e) { return []; }
+    return readJSON(QUEUE + token) || [];
   }
-  function writeQueue(token, q){
-    try { localStorage.setItem(QUEUE + token, JSON.stringify(q)); } catch (e) {}
-  }
+  function writeQueue(token, q){ writeJSON(QUEUE + token, q); }
   function sameLesson(a, b){
     return a.classId === b.classId && a.date === b.date && String(a.period) === String(b.period);
   }
@@ -1917,7 +2084,8 @@
   var SHORT  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  function todayIso(){ var d = new Date(); return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+  function isoOf(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+  function todayIso(){ return isoOf(new Date()); }
   // midday avoids any daylight-saving edge shifting the day by one
   function asDate(iso){ return new Date(iso + 'T12:00:00'); }
   // Must match ini() in App.html exactly: first word + LAST word. When these two
@@ -2095,15 +2263,31 @@
       QS.marks[st.id] = (prev && prev.statuses && prev.statuses[st.id]) || 'P';
     });
     QS.editing = true;
-    $('quick').style.display = 'block';
-    $('instant').style.display = 'none';
+    var q = $('quick'), ins = $('instant');
+    q.__gw = (q.__gw || 0) + 1; q.classList.remove('w-popping');
+    q.style.display = 'block';
     renderQuick();
+    /* Pushed over the day, as the app pushes a register: the day stays under it for the
+       length of the move and is then put away (it is covered: nothing waits on it). */
+    if (moving()) {
+      play(q, 'w-push');
+      var tok = ins.__qw = (ins.__qw || 0) + 1;
+      setTimeout(function () { if (ins.__qw === tok && QS.editing) ins.style.display = 'none'; }, 440);
+    } else ins.style.display = 'none';
   }
   function closeQuick(){
     QS.editing = false;
     QS.lesson = null;
-    $('quick').style.display = 'none';
-    $('instant').style.display = 'block';
+    var q = $('quick'), ins = $('instant');
+    ins.__qw = (ins.__qw || 0) + 1;
+    ins.style.display = 'block';
+    // Popped off: it slides away to the right over the day, which is already back under it.
+    if (moving()) {
+      q.classList.remove('w-push');
+      var tok = q.__gw = (q.__gw || 0) + 1;
+      play(q, 'w-popping');
+      setTimeout(function () { if (q.__gw !== tok) return; q.classList.remove('w-popping'); q.style.display = 'none'; }, 440);
+    } else q.style.display = 'none';
     repaintCards();
     // The app may have finished loading while they were marking; only now is it
     // safe to swap the screen out from under them.
@@ -2134,14 +2318,18 @@
   function quickCount(){
     var l = QS.lesson, c = { P: 0, L: 0, A: 0 };
     l.students.forEach(function (st) { c[QS.marks[st.id] || 'P']++; });
-    $('qcP').textContent = c.P; $('qcL').textContent = c.L; $('qcA').textContent = c.A;
+    // Each count rolls to its new figure when it changes (the app's MOTION.num).
+    [['qcP', c.P], ['qcL', c.L], ['qcA', c.A]].forEach(function (x) {
+      var el = $(x[0]), was = el.textContent;
+      if (was !== String(x[1])) { el.textContent = x[1]; if (was !== '0' || x[1] !== 0) play(el, 'w-roll'); }
+    });
     var n = c.L + c.A;
     $('qInfo').textContent = n ? n + ' flagged' : 'Everyone present';
   }
 
   function renderQuick(){
     var l = QS.lesson;
-    var d = new Date(QS.iso + 'T12:00:00');
+    var d = asDate(QS.iso);
     // "P1 · 08:00–08:50 · Thu 22 Oct", the app's own line (H4).
     var meta = 'P' + l.period + (l.start ? ' \u00b7 ' + l.start + '\u2013' + l.end : '') +
       (isNaN(d) ? '' : ' \u00b7 ' + SHORT[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]);
@@ -2167,8 +2355,11 @@
 
     $('qb').addEventListener('click', closeQuick);
     $('qall').addEventListener('click', function () {
-      l.students.forEach(function (st) { QS.marks[st.id] = 'P'; });
+      var was = {}; l.students.forEach(function (st) { was[st.id] = QS.marks[st.id] || 'P'; QS.marks[st.id] = 'P'; });
       renderQuick();
+      // The tiles that changed give; the rest stay still.
+      Array.prototype.forEach.call($('qgrid').querySelectorAll('.qtile'), function (t) {
+        if (was[t.getAttribute('data-id')] !== 'P') play(t, 'w-bump'); });
     });
     $('qsave').addEventListener('click', saveQuick);
 
@@ -2180,6 +2371,7 @@
       var next = CYCLE[QS.marks[id] || 'P'];
       QS.marks[id] = next;
       el.setAttribute('data-s', next);
+      play(el, 'w-bump');
       var who = l.students.filter(function (s) { return s.id === id; })[0] || { name: '' };
       el.querySelector('.av').innerHTML = next === 'A' ? '&#10005;' : esc(initials(who.name));
       el.querySelector('.st').innerHTML = TILEWORD[next];
@@ -2205,8 +2397,8 @@
      never our own iframe's contentWindow — that iframe is Google's shim page, and
      the app runs in a sandbox frame one level below it. Posting to the shim drops
      the message silently. */
-  /* Same target rule as flushQueue: the window that talked to US, never our own
-     iframe, which is Google's shim page one level above where the app runs. */
+  /* The window that talked to US, never our own iframe, which is Google's shim page one
+     level above where the app runs (flushQueue and every other word to the app go this way). */
   function toApp(msg){
     var target = QS.app || (QS.frame && QS.frame.contentWindow);
     if (!target) return false;
@@ -2227,12 +2419,14 @@
   function sendInsets(){ toApp({ type: 'attendance:insets', v: 1, top: topInset() }); }
   window.addEventListener('resize', function(){ if (QS.ready) sendInsets(); });
 
-  function flushQueue(){
-    var target = QS.app || (QS.frame && QS.frame.contentWindow);
-    if (!QS.ready || !target) return;
-    var q = readQueue(QS.token);
+  /* skip: registers already on their way (the bridge's own line), so none is sent twice. */
+  function flushQueue(skip){
+    if (!QS.ready) return;
+    var q = readQueue(QS.token).filter(function (x) {
+      return !(skip || []).some(function (s) { return sameLesson(s, x); });
+    });
     if (!q.length) return;
-    try { target.postMessage({ type:'attendance:save', v:1, items:q }, '*'); } catch (e) {}
+    toApp({ type: 'attendance:save', v: 1, items: q });
   }
 
   /* ---- opening the app ---------------------------------------------------- */
@@ -2299,7 +2493,7 @@
     ];
     var TICK = '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
         OFF = '<path d="M2 9a15 15 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/>';
-    var on = false, stage = -1, pct = 0, timer = null, drawn = '';
+    var on = false, stage = -1, pct = 0, timer = null, drawn = '', first = false;
     function draw() {
       var fill = $('loadFill'), bar = $('loadBar');
       if (!fill || !bar) return;
@@ -2309,11 +2503,12 @@
       // is this stage's share of its own climb, held short of arriving.
       var at = Math.max(0, stage), last = STAGES.length - 1;
       var vis = (p >= 100 || at >= last) ? 1 : (at + 0.9 * Math.max(0, Math.min(1, (pct - st.at) / (st.cap - st.at)))) / last;
-      fill.style.width = (vis * 100).toFixed(1) + '%';
+      fill.style.setProperty('--lv', (vis * 100).toFixed(1) + '%');
       bar.setAttribute('aria-valuenow', String(p));
       // Offline before the server has answered is the one thing worth saying instead.
       var off = stage < 2 && navigator.onLine === false;
-      var say = off ? 'Waiting for a connection' : st.say;
+      // Nothing of this person's on this device at all: a first open needs a line, said plainly.
+      var say = off ? (first ? 'No connection. The first open on this device needs one.' : 'Waiting for a connection') : st.say;
       if ($('loadStep').textContent !== say) $('loadStep').textContent = say;
       // Redrawn only when a stage changes (not on every creep of the bar), so the
       // colour change can ease rather than restart four times a second.
@@ -2363,6 +2558,14 @@
         setTimeout(function () { el.hidden = true; }, 700);
       },
       on: function () { return on; },
+      first: function (v) { first = !!v; draw(); },
+      // No line: the bar stops creeping (nothing is coming), and goes on when the line is back.
+      hold: function (stop) {
+        if (!on) return;
+        if (stop && timer) { clearInterval(timer); timer = null; }
+        else if (!stop && !timer) timer = setInterval(tick, 250);
+        draw();
+      },
       stage: function () { return stage; },
       pct: function () { return pct; }
     };
@@ -2415,8 +2618,162 @@
   })();
   window.__TRAP = TRAP;   // read by back.test.js; nothing in the page relies on it
 
+  /* ---- the bridge: a kept page's line to the server (invariants 41, 56) ----------
+     A page kept on this device (the app, or the admin dashboard) has no google.script.run
+     of its own: its shim posts attendance:rpc up here, and this hands it to ?bridge=1, a
+     page with nothing in it but google.script.run, which is up long before the whole app
+     would be. Until it is, calls wait here; with no bridge after 20 s they fail with a
+     reason. A register (apiSave) is the one thing that does not wait or fail (owner, 14 Nov):
+     it is put in the register queue at once and sent when the line is back; any other
+     write is refused before it goes anywhere while there is no line (invariant 56: the
+     page refuses it first; this is the second lock). The page is told whenever the line
+     goes or comes back (attendance:net), and so is o.net. */
+  var WRITES = /^api(Excuse|PlanSave|PlanSaveWeek|ResSave|GbSave|GbDelete|GbDismiss|GbRestore|GbPurge|GbWeights|NoteSave|NoteDelete|SetSubjectColour|PushSubscribe|PushUnsubscribe|AdminSave|AdminSetting|AdminOptionCodes)$/;
+  var ONLINE_ONLY = 'You’re offline. This needs a connection.';
+  /* Whether the server can be reached at all: a page served by the network that answers is a
+     line; one that never answers (no internet behind a "connected" phone) is none. Without
+     fetch, nothing can be known, and the answer is yes, as it always was. */
+  function reachable(cb){
+    if (navigator.onLine === false) return cb(false);
+    if (typeof fetch !== 'function') return cb(true);
+    var done = false, end = function (v) { if (!done) { done = true; cb(v); } };
+    setTimeout(function () { end(false); }, 8000);
+    try { fetch(WEBAPP_URL + '?bridge=1', { mode: 'no-cors', cache: 'no-store', credentials: 'omit' }).then(function () { end(true); }, function () { end(false); }); }
+    catch (e) { end(true); }
+  }
+  function makeBridge(o) {
+    var t = o.token;
+    var BR = { frame: null, win: null, up: false, down: false, build: '', q: [], wait: {}, timer: null, deadline: null,
+               triedPlain: false };
+    function tell() {
+      var off = !BR.up && (BR.down || navigator.onLine === false);
+      if (BR.said === off) return;
+      BR.said = off;
+      o.to({ type: 'attendance:net', v: 1, off: off });
+      if (o.net) o.net(off);
+    }
+    // An answer, back to the frame that asked — or to this page, for a call of its own.
+    function rpcOut(item, ok, value, error) {
+      if (item.saved && ok) queueDrop(t, item.saved);      // it reached the server; a lost line keeps it
+      if (item.own) { try { item.own(ok, value, error); } catch (e) {} return; }
+      try { item.to.postMessage({ type: 'attendance:rpc-done', v: 1, id: item.id, ok: ok, value: value, error: error || '' }, '*'); }
+      catch (e) {}
+    }
+    function send(item) {
+      BR.wait[item.id] = item;
+      try { BR.win.postMessage({ type: 'attendance:rpc', v: 1, id: item.id, fn: item.fn, args: item.args }, '*'); }
+      catch (e) { delete BR.wait[item.id]; rpcOut(item, false, null, OFFLINE); }
+    }
+    /* A register saved before the server can be reached is kept on the device too, exactly
+       like one taken on the cached screen: if the app is closed first, it goes next time. */
+    function keepRegister(item) {
+      var p = item.args[1] || {};
+      if (!p.classId || !p.date || !p.statuses) return;
+      item.saved = { classId: String(p.classId), date: String(p.date), period: String(p.period) };
+      queueAdd(t, { classId: item.saved.classId, date: item.saved.date, period: item.saved.period,
+                    statuses: p.statuses, label: '', at: Date.now() });
+    }
+    function rpcIn(e, m) {
+      var item = { id: String(m.id || ''), fn: String(m.fn || ''), args: Array.isArray(m.args) ? m.args : [], to: e.source };
+      if (!item.id) return;
+      if (!/^api[A-Z][A-Za-z0-9]{0,60}$/.test(item.fn)) { rpcOut(item, false, null, 'Unknown call'); return; }
+      if (BR.up) { send(item); return; }
+      // The second lock: with no line, no write but a register leaves this device.
+      if (WRITES.test(item.fn) && (BR.down || navigator.onLine === false)) { rpcOut(item, false, null, ONLINE_ONLY); return; }
+      if (item.fn === 'apiSave') {
+        keepRegister(item);
+        // No line: it is on this device now and goes when the line is back; said at once.
+        if (BR.down || navigator.onLine === false) { rpcOut(item, false, null, OFFLINE); return; }
+        BR.q.push(item); return;
+      }
+      if (BR.down) { rpcOut(item, false, null, OFFLINE); return; }
+      BR.q.push(item);
+    }
+    // No line to the server after all: say so to everything waiting. A register is already
+    // kept on the device (keepRegister), so it is told too, and goes when it can.
+    function fail() {
+      var keep = [];
+      BR.q.forEach(function (item) {
+        if (item.own) keep.push(item); else rpcOut(item, false, null, OFFLINE);
+      });
+      BR.q = keep;
+      tell();
+    }
+    function start(anon) {
+      var el = document.createElement('iframe');
+      el.id = 'bridge';
+      el.title = 'Attendance connection';
+      el.setAttribute('aria-hidden', 'true');
+      el.tabIndex = -1;
+      el.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;border:0;opacity:0;visibility:hidden;pointer-events:none';
+      if (anon) { try { el.credentialless = true; } catch (e) {} }
+      el.onload = function () {
+        o.mark('bridge loaded' + (anon ? ' (cookie-free)' : ''));
+        if (BR.timer) clearTimeout(BR.timer);
+        BR.timer = setTimeout(stuck, 12000);
+      };
+      el.src = WEBAPP_URL + '?bridge=1';
+      if (BR.frame && BR.frame.parentNode) BR.frame.parentNode.removeChild(BR.frame);
+      BR.frame = el;
+      BR.win = null;
+      document.body.appendChild(el);
+      o.mark('bridge requested' + (anon ? ' (cookie-free)' : ''));
+      // Nothing to wait for forever: calls fail with a reason after this.
+      if (BR.deadline) clearTimeout(BR.deadline);
+      BR.deadline = setTimeout(function () { if (!BR.up) { BR.down = true; fail(); } }, 20000);
+    }
+    function stuck() {
+      if (BR.up || !o.on() || !navigator.onLine) return;
+      if (o.anon && !BR.triedPlain) {
+        BR.triedPlain = true;
+        o.mark('no answer from the cookie-free bridge — retrying the ordinary way');
+        start(false);
+        return;
+      }
+      BR.down = true;
+      fail();
+      // A phone that says it is online and cannot reach anything is offline, not a Google
+      // account problem: only a server that answers and still will not serve gets the account story.
+      reachable(function (yes) { if (yes && !BR.up && o.stuck) o.stuck(); });
+    }
+    function up(e, m) {
+      if (BR.up && e.source === BR.win) return;
+      BR.win = e.source; BR.up = true; BR.down = false; BR.build = String(m.build || '');
+      if (BR.timer) { clearTimeout(BR.timer); BR.timer = null; }
+      if (BR.deadline) { clearTimeout(BR.deadline); BR.deadline = null; }
+      o.mark('bridge up (' + BR.build + ')');
+      var q = BR.q; BR.q = [];
+      q.forEach(send);
+      tell();
+      if (o.up) o.up(BR.build);
+    }
+    function done(e, m) {
+      if (e.source !== BR.win) return;
+      var item = BR.wait[m.id];
+      if (!item) return;
+      delete BR.wait[m.id];
+      rpcOut(item, !!m.ok, m.value, m.error);
+    }
+    // The line back: a bridge again, if there was none. Gone: the page is told.
+    window.addEventListener('online', function () {
+      if (o.on() && !BR.up && BR.down) { BR.down = false; start(o.anon && !BR.triedPlain); }
+    });
+    window.addEventListener('offline', function () {
+      if (!o.on()) return;
+      BR.up = false; BR.down = true;
+      // Calls already sent will never answer: each says so, registers kept for later.
+      Object.keys(BR.wait).forEach(function (id) {
+        var item = BR.wait[id]; delete BR.wait[id];
+        if (item.fn === 'apiSave') keepRegister(item);
+        rpcOut(item, false, null, OFFLINE);
+      });
+      tell();
+    });
+    return { st: BR, send: send, rpcIn: rpcIn, fail: fail, start: start, up: up, done: done, tell: tell };
+  }
+
   function open(t, extra){
-    $('ask').style.display = 'none';
+    gone($('ask'));
     TRAP.arm();
     mark('script start');
     QS.token = t;
@@ -2437,11 +2794,7 @@
     if (!painted) LOAD.start();
 
     if (QS.tab) {
-      var bar0 = $('instantTabs');
-      if (bar0) Array.prototype.forEach.call(bar0.querySelectorAll('.tab'), function (x) {
-        if (x.getAttribute('data-tab') === QS.tab) x.setAttribute('aria-current', 'page');
-        else x.removeAttribute('aria-current');
-      });
+      markTab(function (x) { return x.getAttribute('data-tab') === QS.tab; });
     }
 
     var shown = false;
@@ -2452,12 +2805,12 @@
        page, and a first payload to open it on. A link asking for another screen
        (view=students, s=P014) goes the ordinary way. */
     var keptShell = !extra && canKeep() ? readShell(t) : null;
+    LOAD.first(!readShell(t) && !readBoot(t) && !readSnap(t));
     var keptBoot = keptShell ? readBoot(t) : null;
     if (keptShell && (!keptBoot || shellBad(keptShell.build) ||
         keptShell.mode !== (keptBoot.boot.teacher ? 'app' : 'student'))) keptShell = null;
     var K = { on: !!keptShell, frame: null, next: null, sh: keptShell, readyTimer: null, swapTab: '', updating: false };
-    var BR = { frame: null, win: null, up: false, down: false, build: '', q: [], wait: {}, timer: null, deadline: null,
-               triedPlain: false };
+    var BRG = null, BR = null;     // the bridge (makeBridge), made once credOK is known, below
 
     /* Google refused, and only the browser can explain why.
 
@@ -2481,8 +2834,27 @@
         swapFrame(false);
         return;
       }
-      explain();
+      // Connected, says the phone, and nothing answers: that is no internet, not an account.
+      reachable(function (yes) { if (!yes) held(); else if (!QS.ready) explain(); });
     }
+    /* No line, and the app has not come up (the ordinary way): what is on screen stays on
+       screen, the cached register or the loading screen saying there is no connection. The
+       browser's own "no internet" page is never swapped in over it (invariant 56), and the
+       app is asked for again the moment the line is back. */
+    var offHeld = false;
+    function held() {
+      if (QS.ready || offHeld) return;
+      offHeld = true;
+      LOAD.hold(true);
+      mark('no connection: what is on screen stays');
+      window.addEventListener('online', function again() {
+        window.removeEventListener('online', again);
+        offHeld = false;
+        LOAD.hold(false);
+        if (!QS.ready && !K.on) swapFrame(credOK && !triedPlain);
+      });
+    }
+    function offline() { return !QS.ready && (navigator.onLine === false || offHeld); }
     function explain() {
       var b = $('stuckBar');
       if (!b || !b.hidden) return;
@@ -2507,6 +2879,8 @@
       if (shown) return;
       // Never swap the app in over a half-marked register. closeQuick calls back.
       if (QS.editing) { QS.onDone = reveal; return; }
+      // Nor the browser's error page over the cached screen, with no line (invariant 56).
+      if (!K.on && offline()) { held(); return; }
       shown = true;
       if (f) f.classList.add('ready');
       LOAD.done(QS.ready);
@@ -2524,11 +2898,7 @@
         e.preventDefault();
         e.stopPropagation();
         QS.tab = b.getAttribute('data-tab') || '';
-        var all = $('instantTabs').querySelectorAll('.tab');
-        for (var i = 0; i < all.length; i++) {
-          if (all[i] === b) all[i].setAttribute('aria-current', 'page');
-          else all[i].removeAttribute('aria-current');
-        }
+        markTab(function (x) { return x === b; });
         return;
       }
       var c = e.target.closest ? e.target.closest('.lsn.tap') : null;
@@ -2541,102 +2911,13 @@
     function keptWin(src) {
       return !!src && ((K.frame && src === K.frame.contentWindow) || (K.next && src === K.next.contentWindow));
     }
-    // An answer, back to the frame that asked — or to this page, for a call of its own.
-    function rpcOut(item, ok, value, error) {
-      if (item.saved && ok) queueDrop(t, item.saved);      // it reached the server; a lost line keeps it
-      if (item.own) { try { item.own(ok, value, error); } catch (e) {} return; }
-      try { item.to.postMessage({ type: 'attendance:rpc-done', v: 1, id: item.id, ok: ok, value: value, error: error || '' }, '*'); }
-      catch (e) {}
-    }
-    function toBridge(item) {
-      BR.wait[item.id] = item;
-      try { BR.win.postMessage({ type: 'attendance:rpc', v: 1, id: item.id, fn: item.fn, args: item.args }, '*'); }
-      catch (e) { delete BR.wait[item.id]; rpcOut(item, false, null, OFFLINE); }
-    }
-    /* A register saved before the server can be reached is kept on the device too, exactly
-       like one taken on the cached screen: if the app is closed first, it goes next time. */
-    function keepRegister(item) {
-      var p = item.args[1] || {};
-      if (!p.classId || !p.date || !p.statuses) return;
-      item.saved = { classId: String(p.classId), date: String(p.date), period: String(p.period) };
-      queueAdd(t, { classId: item.saved.classId, date: item.saved.date, period: item.saved.period,
-                    statuses: p.statuses, label: '', at: Date.now() });
-    }
-    function rpcIn(e, m) {
-      var item = { id: String(m.id || ''), fn: String(m.fn || ''), args: Array.isArray(m.args) ? m.args : [], to: e.source };
-      if (!item.id) return;
-      if (!/^api[A-Z][A-Za-z0-9]{0,60}$/.test(item.fn)) { rpcOut(item, false, null, 'Unknown call'); return; }
-      if (BR.up) { toBridge(item); return; }
-      if (item.fn === 'apiSave') { keepRegister(item); BR.q.push(item); return; }
-      if (BR.down) { rpcOut(item, false, null, OFFLINE); return; }
-      BR.q.push(item);
-    }
-    // No line to the server after all: say so to everything waiting — except registers,
-    // which stay saved on the device and go when it can.
-    function failQueued() {
-      var keep = [];
-      BR.q.forEach(function (item) {
-        if (item.fn === 'apiSave' || item.own) keep.push(item); else rpcOut(item, false, null, OFFLINE);
-      });
-      BR.q = keep;
-    }
-    function startBridge(anon) {
-      var el = document.createElement('iframe');
-      el.id = 'bridge';
-      el.title = 'Attendance connection';
-      el.setAttribute('aria-hidden', 'true');
-      el.tabIndex = -1;
-      el.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;border:0;opacity:0;visibility:hidden;pointer-events:none';
-      if (anon) { try { el.credentialless = true; } catch (e) {} }
-      el.onload = function () {
-        mark('bridge loaded' + (anon ? ' (cookie-free)' : ''));
-        if (BR.timer) clearTimeout(BR.timer);
-        BR.timer = setTimeout(bridgeStuck, 12000);
-      };
-      el.src = WEBAPP_URL + '?bridge=1';
-      if (BR.frame && BR.frame.parentNode) BR.frame.parentNode.removeChild(BR.frame);
-      BR.frame = el;
-      BR.win = null;
-      document.body.appendChild(el);
-      mark('bridge requested' + (anon ? ' (cookie-free)' : ''));
-    }
-    function bridgeStuck() {
-      if (BR.up || !K.on || !navigator.onLine) return;
-      if (credOK && !BR.triedPlain) {
-        BR.triedPlain = true;
-        mark('no answer from the cookie-free bridge — retrying the ordinary way');
-        startBridge(false);
-        return;
-      }
-      BR.down = true;
-      failQueued();
-      explain();
-    }
-    function bridgeUp(e, m) {
-      if (BR.up && e.source === BR.win) return;
-      BR.win = e.source; BR.up = true; BR.down = false; BR.build = String(m.build || '');
-      if (BR.timer) { clearTimeout(BR.timer); BR.timer = null; }
-      if (BR.deadline) { clearTimeout(BR.deadline); BR.deadline = null; }
-      var sb = $('stuckBar'); away(sb);
-      mark('bridge up (' + BR.build + ')');
-      var q = BR.q; BR.q = [];
-      q.forEach(toBridge);
-      checkBuild();
-    }
-    function bridgeDone(e, m) {
-      if (e.source !== BR.win) return;
-      var item = BR.wait[m.id];
-      if (!item) return;
-      delete BR.wait[m.id];
-      rpcOut(item, !!m.ok, m.value, m.error);
-    }
     /* A newer build is deployed than the page kept here: fetch it through the bridge, keep
        it, and tell the page — which says when it can be swapped without losing anything. */
     function checkBuild() {
       if (!K.sh || !BR.build || BR.build === K.sh.build || K.updating) return;
       K.updating = true;
       mark('newer app deployed (' + BR.build + ') — fetching it');
-      toBridge({ id: 'w' + Date.now().toString(36), fn: 'apiShell', args: [t], own: function (ok, r) {
+      BRG.send({ id: 'w' + Date.now().toString(36), fn: 'apiShell', args: [t], own: function (ok, r) {
         if (!ok || !r || !r.ok || !writeShell(t, r)) { K.updating = false; return; }
         K.sh = readShell(t);
         toApp({ type: 'attendance:update', v: 1 });
@@ -2661,7 +2942,7 @@
     function swapDone() {
       var el = K.next, old = K.frame;
       K.next = null; K.frame = el; f = el; QS.frame = el; QS.app = el.contentWindow;
-      toApp(cachedFor(t));
+      sendCached(t);
       if (K.swapTab) toApp({ type: 'attendance:tab', v: 1, tab: K.swapTab });
       // Everything the first copy was told on its attendance:ready, this one needs too:
       // without it, the Manage button opened a tab of its own (and Google's error page).
@@ -2678,9 +2959,7 @@
       QS.app = el.contentWindow;
       LOAD.step(2);                         // the page is already here; only its data is not
       mark('kept app started (' + K.sh.build + ')');
-      startBridge(credOK);
-      // Nothing to wait for forever: calls fail with a reason after this, registers excepted.
-      BR.deadline = setTimeout(function () { if (!BR.up) { BR.down = true; failQueued(); } }, 20000);
+      BRG.start(credOK);
       // A copy that does not paint is dropped for the ordinary way, and not tried again.
       K.readyTimer = setTimeout(function () {
         if (QS.ready) return;
@@ -2695,9 +2974,6 @@
         ordinary();
       }, 8000);
     }
-    window.addEventListener('online', function () {
-      if (K.on && !BR.up && BR.down) { BR.down = false; startBridge(credOK && !BR.triedPlain); }
-    });
 
     // Store every snapshot the app sends, for this open and all the ones after.
     window.addEventListener('message', function (e) {
@@ -2708,10 +2984,10 @@
       // The kept app's line to the server, both ways. Nothing else may use it.
       if (m && m.v === 1 && (m.type === 'attendance:bridge' || m.type === 'attendance:rpc-done')) {
         if (!K.on || !e.source || keptWin(e.source)) return;
-        if (m.type === 'attendance:bridge') bridgeUp(e, m); else bridgeDone(e, m);
+        if (m.type === 'attendance:bridge') BRG.up(e, m); else BRG.done(e, m);
         return;
       }
-      if (m && m.v === 1 && m.type === 'attendance:rpc') { if (K.on && keptWin(e.source)) rpcIn(e, m); return; }
+      if (m && m.v === 1 && m.type === 'attendance:rpc') { if (K.on && keptWin(e.source)) BRG.rpcIn(e, m); return; }
       // A newer kept app has painted, behind the one on screen: bring it forward.
       if (m === 'attendance:ready' && K.next && e.source === K.next.contentWindow) { swapDone(); return; }
       // Remember which window the app actually speaks from; it is not our iframe. Settled
@@ -2733,7 +3009,7 @@
         var sb = $('stuckBar'); away(sb);
         flushQueue();                       // anything marked while it was loading
         // The other tabs' copies, before any tab is opened, so it can draw from them.
-        toApp(cachedFor(t));
+        sendCached(t);
         // A tab tapped on the cached bar: the app opens it before it is shown.
         if (QS.tab && QS.tab !== 'home') toApp({ type: 'attendance:tab', v: 1, tab: QS.tab });
         QS.tab = '';
@@ -2755,10 +3031,8 @@
       if (m.type === 'attendance:print') { if (e.source === QS.app) { try { printDoc(m.html); } catch (err) {} } return; }
       // The app has booted and is telling us the application server key.
       if (m.type === 'attendance:push-ready') {
-        // Whether this person is already reachable on another device, and which "Ask
-        // everyone again" round the office is on — see pushReady for both.
+        // Whether this person is already reachable on another device — see pushReady.
         PUSH.reachable = !!m.reachable;
-        PUSH.round = m.round;
         PUSH.name = String(m.name || '');
         try { pushReady(m.vapid, t); } catch (err) {}
         return;
@@ -2772,7 +3046,7 @@
         if (K.on || e.source === QS.app) {
           try { sessionStorage.setItem('attendance-admin-from', '1'); } catch (err) {}
           // The theme on screen, so the dashboard opens in it (openAdmin puts it on the URL).
-          if (m.theme === 'dark' || m.theme === 'light') { try { localStorage.setItem('attendance-theme', m.theme); } catch (err) {} }
+          if (m.theme === 'dark' || m.theme === 'light') lsSet('attendance-theme', m.theme);
           location.assign(location.pathname + '?admin=1');
         }
         return;
@@ -2785,7 +3059,7 @@
         return;
       }
       if (m.type === 'attendance:cache') {
-        try { writeTabCache(t, m.key, m.data); } catch (err) {}
+        try { KEPT.put(t, m.key, m.data); } catch (err) {}
         return;
       }
       // The dashboard's first answer, fetched by an admin's app behind Home (invariant 51),
@@ -2802,7 +3076,7 @@
         // Stamped on arrival so a summary that is never refreshed can say how old it
         // is. The device that writes it is the device that reads it, so only its own
         // clock has to agree with itself.
-        try { m.at = Date.now(); localStorage.setItem(STU + t, JSON.stringify(m)); } catch (err) {}
+        m.at = Date.now(); writeJSON(STU + t, m);
         return;
       }
       if (m.type === 'attendance:theme') {
@@ -2849,7 +3123,7 @@
       }
       if (m.type === 'attendance:plan') {
         // The weekly plan's Day/Week, kept here for the same reason as the timetable's.
-        try { localStorage.setItem('attendance-plan-view', m.view === 'day' ? 'day' : 'week'); } catch (err) {}
+        lsSet('attendance-plan-view', m.view === 'day' ? 'day' : 'week');
         return;
       }
       if (m.type === 'attendance:hold') {
@@ -2863,6 +3137,8 @@
         }
         return;
       }
+      // The line is back, says the app: the registers kept here go now (invariant 56).
+      if (m.type === 'attendance:flush') { if (K.on || e.source === QS.app) flushQueue(); return; }
       if (m.type === 'attendance:saved') {
         // Only drop it once the server has confirmed; a failure keeps it queued so
         // the next open tries again rather than losing the register.
@@ -2894,6 +3170,16 @@
     var credOK = false;
     try { credOK = 'credentialless' in HTMLIFrameElement.prototype; } catch (e) {}
     var triedPlain = false;
+    BRG = makeBridge({ token: t, anon: credOK, mark: mark, to: toApp, on: function () { return K.on; },
+      // Up: a newer build is fetched, and registers kept on this device while there was no
+      // line go now (those still waiting in the bridge's own line go with it).
+      up: function () {
+        var sb = $('stuckBar'); away(sb);
+        flushQueue(Object.keys(BR.wait).map(function (k) { return BR.wait[k].saved; }).filter(Boolean));
+        checkBuild();
+      },
+      stuck: function () { explain(); } });
+    BR = BRG.st;
 
     // Built fresh with its src already set, so the only load event is the app's own —
     // an iframe that starts empty fires one for about:blank and hides the shell too early.
@@ -2918,21 +3204,11 @@
       /* Hand the app the theme on its URL. It runs in a sandbox frame with no query
          string of its own, so this is the only way it can know before its first paint;
          anything later shows as a flash of the wrong theme. */
-      var themed = '';
-      try {
-        var pref = localStorage.getItem('attendance-theme');
-        if (pref === 'dark' || pref === 'light') themed = '&theme=' + pref;
-        // The timetable's Day/Week and fold, for the same reason: see attendance:tt.
-        var tv = localStorage.getItem('attendance-tt-view'), to = localStorage.getItem('attendance-tt-open');
-        if (tv === 'day' || tv === 'week') themed += '&ttv=' + tv;
-        if (to === '0' || to === '1') themed += '&tto=' + to;
-        // ...and the weekly plan's Day/Week: see attendance:plan.
-        var pv = localStorage.getItem('attendance-plan-view');
-        if (pv === 'day' || pv === 'week') themed += '&pv=' + pv;
-        // ...and the Students view's flag: see attendance:flag.
-        var fl = localStorage.getItem('attendance-flag');
-        if (FLAG_PREF.test(fl || '')) themed += '&fl=' + fl;
-      } catch (e) {}
+      /* ...with the timetable's Day/Week and fold (attendance:tt), the weekly plan's Day/Week
+         (attendance:plan) and the Students view's flag (attendance:flag), for the same reason. */
+      var P = prefs();
+      var themed = (P.theme ? '&theme=' + P.theme : '') + (P.ttv ? '&ttv=' + P.ttv : '') + (P.tto ? '&tto=' + P.tto : '') +
+        (P.pv ? '&pv=' + P.pv : '') + (P.fl ? '&fl=' + P.fl : '');
       el.src = WEBAPP_URL + '?t=' + encodeURIComponent(t) + (extra || '') + themed;
       return el;
     }
@@ -2962,6 +3238,7 @@
       // never leave a placeholder up forever if something goes wrong
       setTimeout(function () {
         if (QS.editing || !f) return;           // unless they are mid-register
+        if (offline()) { held(); return; }      // or there is no line: the frame holds an error page
         f.classList.add('ready');
         LOAD.done(false);
         $('shell').classList.add('gone');
@@ -2982,11 +3259,9 @@
      prints this. */
   var WRAPPER_BUILD = '2026-10-16c';
   var PUSHKEY = 'attendance-push:';
+  function notifyOn() { return /[?&]notify=1/.test(location.search); }   // ?notify=1: the diagnostics
   var PUSH = { reg: null, vapid: '', token: '' };
 
-  function pushSupported() {
-    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-  }
   function b64ToBytes(b64) {
     var pad = new Array((4 - b64.length % 4) % 4 + 1).join('=');
     var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
@@ -3125,7 +3400,7 @@
      anyway and states the reason. One link diagnoses it, on the device that has the
      problem, without anyone reading a console. */
   function pushWhyNot(reason) {
-    if (!/[?&]notify=1/.test(location.search)) return;
+    if (!notifyOn()) return;
     var bar = $('notifBar');
     if (!bar) return;
     $('notifText').textContent = reason + '  [wrapper ' + WRAPPER_BUILD + ']';
@@ -3179,6 +3454,8 @@
   function gate(kind) {
     var g = GATE[kind], box = $('gate');
     if (!g || !box) return;
+    // Already up (asked, then blocked): what it says cross-fades to the new case.
+    if (!box.hidden && !box.classList.contains('leaving')) play(box.querySelector('.box'), 'w-fade');
     $('gateTitle').textContent = g.title;
     $('gateBody').textContent = g.body;
     $('gateWhy').innerHTML = (g.why || []).map(function (x) {
@@ -3225,12 +3502,12 @@
     PUSH.token = token || '';
     /* Which of the four the device is in. An iPhone browser tab first: it has no Push API
        until the app is installed, so it would otherwise look like an unsupported browser. */
-    var iOSdev = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-                     navigator.standalone === true;
+    var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                    navigator.standalone === true;
     var noPush = !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window);
     if (noPush && !PUSH.reachable) {
-      if (iOSdev && !standalone) gate('install'); else gate('unsupported');
+      if (iOS && !installed) gate('install'); else gate('unsupported');
     }
     if (!('serviceWorker' in navigator)) {
       return pushWhyNot('This browser cannot show notifications (no service worker support).');
@@ -3244,28 +3521,8 @@
         'the web app, then run Attendance > Notifications > Check notifications can work.');
     }
     PUSH.vapid = vapid;
-    PUSH.token = token || '';
 
-    /* "Not now" holds until the office asks again. It was remembered forever at first, so
-       one tap made someone unreachable for good; then it lasted a day, which nagged. Now
-       the office sets the pace: Attendance > Notifications > Ask everyone again starts a
-       new round, doGet hands its id over as askRound, and a device that said "Not now" in
-       an earlier round sees the bar again — once. Once this device has said yes its
-       permission is 'granted', and that branch below returns before any of this is
-       consulted, so the bar never shows again.
-
-       Compared for equality, not order: the only question is "has there been a round
-       since?". A value an older build wrote — '1' meaning never, or a date from the daily
-       snooze — matches no round, so it is asked once more and then settles. */
-    var round = String(PUSH.round || '0');
-    var diag = /[?&]notify=1/.test(location.search);
-    var snoozed = function (kind) {
-      if (diag) return false;
-      try { return localStorage.getItem(PUSHKEY + kind) === round; } catch (e) { return false; }
-    };
-    var snooze = function (kind) {
-      try { localStorage.setItem(PUSHKEY + kind, round); } catch (e) {}
-    };
+    var diag = notifyOn();
     /* Reachable on ANOTHER device already: the server says this person has a live
        subscription somewhere. Enabling once is enough — asking again on every laptop and
        tablet they happen to open this on is nagging someone who already said yes, and a
@@ -3277,9 +3534,6 @@
 
     /* iOS grants the Push API to an INSTALLED app only. Offering a button that cannot
        work, to exactly the people most likely to tap it, is worse than staying quiet. */
-    var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    var installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-                    navigator.standalone === true;
     if (iOS && !installed) {
       /* Apple grants the Push API only to an installed app, so asking here could not work.
          Installing is the single step that makes it work: the gate says how. */
@@ -3297,7 +3551,7 @@
         /* Re-subscribe on every load. iOS quietly drops subscriptions after a reinstall
            or a long gap, and from in here a dead one looks exactly like a live one. */
         subscribeAndRegister();
-        if (!/[?&]notify=1/.test(location.search)) return;
+        if (!notifyOn()) return;
         var gb = $('notifBar');
         if (!gb) return;
         $('notifText').textContent = 'Notifications are on for this device  [wrapper ' +
@@ -3329,7 +3583,7 @@
   /* The app wrote the subscription to the sheet and sent back the device key. */
   function pushRegistered(key) {
     if (!key) return;
-    try { localStorage.setItem(PUSHKEY + PUSH.token, key); } catch (e) {}
+    lsSet(PUSHKEY + PUSH.token, key);
     tellWorker(key);
   }
 
@@ -3356,18 +3610,21 @@
     var tk = stored();
     try { sessionStorage.setItem('attendance-signedout', String(name || '').slice(0, 80) || '1'); } catch (e) {}
     try {
-      [SNAP, STU, TABC, ADMC, SHELLS, BOOTS, PUSHKEY].forEach(function (p) { localStorage.removeItem(p + tk); });
+      [SNAP, STU, TABC, ADMC, ADMS, SHELLS, BOOTS, PUSHKEY].forEach(function (p) { localStorage.removeItem(p + tk); });
       localStorage.removeItem(KEY);
     } catch (e) {}
     var go = function () { location.replace(location.pathname); };
-    try {
-      if (!('serviceWorker' in navigator)) return go();
-      navigator.serviceWorker.getRegistration()
-        .then(function (r) { return r && r.pushManager ? r.pushManager.getSubscription() : null; })
-        .then(function (sub) { return sub ? sub.unsubscribe() : null; })
-        .then(go, go);
-      setTimeout(go, 1500);                 // never wait on a push service to leave
-    } catch (e) { go(); }
+    setTimeout(go, 1500);                   // never wait on a push service, or the store, to leave
+    // Everything kept of what they saw goes too (invariant 56); the register queue stays.
+    KEPT.clear(tk, function () {
+      try {
+        if (!('serviceWorker' in navigator)) return go();
+        navigator.serviceWorker.getRegistration()
+          .then(function (r) { return r && r.pushManager ? r.pushManager.getSubscription() : null; })
+          .then(function (sub) { return sub ? sub.unsubscribe() : null; })
+          .then(go, go);
+      } catch (e) { go(); }
+    });
   }
   /* A whole link or just its code: take the t= out of a link, and trim either. */
   function codeFrom(v) {
@@ -3403,26 +3660,100 @@
     try { localStorage.setItem(ADMC + token, text); }
     catch (e) { try { localStorage.removeItem(ADMC + token); } catch (e2) {} }
   }
+  /* The dashboard page itself, kept like the app's (invariant 56): apiAdminShell hands it
+     over with two slots open, the code and the theme, so nothing in what is kept could open
+     anyone's attendance. Per token; it goes on sign out. */
+  var ADMS = 'attendance-adminshell:', SLOT_TOKEN = '__ATTENDANCE_TOKEN__';
+  function readAdminShell(token){
+    var s = readJSON(ADMS + token);
+    return (s && s.v === 1 && typeof s.html === 'string' && typeof s.build === 'string' && s.html.indexOf(SLOT_TOKEN) !== -1) ? s : null;
+  }
+  function writeAdminShell(token, m){
+    if (!m || typeof m.html !== 'string' || typeof m.build !== 'string' || !m.build || m.html.length > 1500000 ||
+        m.html.indexOf(SLOT_TOKEN) === -1 || (token && m.html.indexOf(token) !== -1)) return false;
+    try { localStorage.setItem(ADMS + token, JSON.stringify({ v: 1, build: m.build, html: m.html, at: Date.now() })); return true; }
+    catch (e) { try { localStorage.removeItem(ADMS + token); } catch (e2) {} return false; }
+  }
+  function keptAdminDoc(sh, t){
+    var theme = '';
+    try { theme = localStorage.getItem('attendance-theme') || ''; } catch (e) {}
+    var html = fill(fill(sh.html, SLOT_TOKEN, t), SLOT_THEME, (theme === 'dark' || theme === 'light') ? theme : '');
+    var h = html.search(/<head[^>]*>/i);
+    if (h === -1) return SHIM + html;
+    var end = html.indexOf('>', h) + 1;
+    return html.slice(0, end) + SHIM + html.slice(end);
+  }
   function openAdmin(t) {
     $('ask').style.display = 'none';
     $('shell').classList.add('gone');
     document.title = 'Admin';
-    var el = document.createElement('iframe');
-    el.id = 'admin';
-    el.title = 'Admin dashboard';
-    el.setAttribute('allow', 'clipboard-write');
-    try { if ('credentialless' in HTMLIFrameElement.prototype) el.credentialless = true; } catch (e) {}
-    el.className = 'ready';
+    var anon = false;
+    try { anon = 'credentialless' in HTMLIFrameElement.prototype; } catch (e) {}
+    var ash = canKeep() ? readAdminShell(t) : null, BRG = null;
+    var el = null;
     /* The theme the person picked in the app, on the URL, exactly as the app's own frame
        gets it. Without it the dashboard only ever saw the phone's setting: an app set to
        Light on a phone in dark mode opened a dark dashboard, every time. */
-    var themed = '';
-    try {
-      var pref = localStorage.getItem('attendance-theme');
-      if (pref === 'dark' || pref === 'light') themed = '&theme=' + pref;
-    } catch (e) {}
-    el.src = WEBAPP_URL + '?admin=1&in=1&t=' + encodeURIComponent(t) + themed;
-    document.body.appendChild(el);
+    function live() {
+      var f = document.createElement('iframe');
+      f.id = 'admin';
+      f.title = 'Admin dashboard';
+      f.setAttribute('allow', 'clipboard-write');
+      if (anon) { try { f.credentialless = true; } catch (e) {} }
+      var th = prefs().theme, themed = th ? '&theme=' + th : '';
+      f.src = WEBAPP_URL + '?admin=1&in=1&t=' + encodeURIComponent(t) + themed;
+      return f;
+    }
+    /* Kept on this device: opened from here at once, its calls through the bridge, on the
+       stripped copy of the sheet kept beside it. With no line it reads, and changes nothing. */
+    function kept() {
+      var f = document.createElement('iframe');
+      f.id = 'admin';
+      f.title = 'Admin dashboard';
+      f.setAttribute('allow', 'clipboard-write');
+      f.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox ' +
+        'allow-downloads allow-top-navigation-by-user-activation');
+      f.srcdoc = keptAdminDoc(ash, t);
+      return f;
+    }
+    function put(f) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+      el = f;
+      // Faded in, as the app's frame is (iframe.ready's transition), not snapped on.
+      el.className = '';
+      document.body.appendChild(el);
+      requestAnimationFrame(function () { el.className = 'ready'; });
+    }
+    var heard = false;
+    if (ash) {
+      put(kept());
+      BRG = makeBridge({ token: t, anon: anon, mark: mark, on: function () { return !!ash; },
+        to: function (m) { try { el.contentWindow.postMessage(m, '*'); } catch (e) {} },
+        // A newer dashboard is deployed: kept for the next open (the page on screen still works).
+        up: function (build) {
+          if (!build || build === ash.build) return;
+          BRG.send({ id: 'a' + Date.now().toString(36), fn: 'apiAdminShell', args: [t], own: function (ok, r) {
+            if (ok && r && r.ok) writeAdminShell(t, r);
+          } });
+        } });
+      BRG.start(anon);
+      // A copy that never says it is up is dropped for the page Apps Script serves.
+      setTimeout(function () { if (!heard && navigator.onLine !== false) { ash = null; put(live()); } }, 8000);
+    } else if (navigator.onLine === false) {
+      // Never opened here before, and no line: said plainly, with the way back (invariant 56).
+      var box = document.createElement('div');
+      box.id = 'admin';
+      box.setAttribute('role', 'alert');
+      box.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;' +
+        'background:var(--bg);color:var(--ink);font:inherit';
+      box.innerHTML = '<div><b style="display:block;margin-bottom:6px">No connection</b>' +
+        '<p style="margin:0 0 16px;color:var(--ink-2)">The dashboard opens with no connection once it has been opened on this device.</p>' +
+        '<button type="button" class="btn">Back to KS5 Hub</button></div>';
+      box.querySelector('button').onclick = function () { location.replace(location.pathname); };
+      document.body.appendChild(box);
+      window.addEventListener('online', function () { location.reload(); });
+      return;
+    } else put(live());
     // Apps Script nests the page a frame or two inside ours: anything posted from under
     // our frame is the dashboard; anything else (an opener, another tab) is not.
     function fromAdmin(w) {
@@ -3436,15 +3767,25 @@
     window.addEventListener('message', function (e) {
       var m = e && e.data;
       if (!m || m.v !== 1) return;
-      if (m.type === 'attendance:admin-ready' || m.type === 'attendance:admin-cache') {
+      // The kept dashboard's line to the server, both ways (as the kept app's).
+      if (BRG && ash && (m.type === 'attendance:bridge' || m.type === 'attendance:rpc-done')) {
+        if (!e.source || e.source === el.contentWindow) return;
+        if (m.type === 'attendance:bridge') BRG.up(e, m); else BRG.done(e, m);
+        return;
+      }
+      if (m.type === 'attendance:rpc') { if (BRG && ash && e.source === el.contentWindow) BRG.rpcIn(e, m); return; }
+      if (m.type === 'attendance:admin-ready' || m.type === 'attendance:admin-cache' || m.type === 'attendance:admin-shell') {
         if (!e.source || !fromAdmin(e.source)) return;
         if (m.type === 'attendance:admin-cache') { try { writeAdminCache(t, m); } catch (err) {} return; }
-        var kept = readAdminCache(t);
-        try { e.source.postMessage({ type: 'attendance:admin-cached', v: 1, at: kept ? kept.at : 0,
-          tab: kept ? kept.tab : '', data: kept ? kept.data : null }, '*'); } catch (err) {}
+        if (m.type === 'attendance:admin-shell') { try { writeAdminShell(t, m); } catch (err) {} return; }
+        heard = true;
+        var kc = readAdminCache(t), ks = readAdminShell(t);
+        try { e.source.postMessage({ type: 'attendance:admin-cached', v: 1, at: kc ? kc.at : 0,
+          tab: kc ? kc.tab : '', data: kc ? kc.data : null, shell: ks ? ks.build : '' }, '*'); } catch (err) {}
         return;
       }
       if (m.type !== 'attendance:admin-back') return;
+      if (!e.source || !fromAdmin(e.source)) return;
       var from = '';
       try { from = sessionStorage.getItem('attendance-admin-from') || ''; sessionStorage.removeItem('attendance-admin-from'); } catch (err) {}
       if (from && history.length > 1) history.back(); else location.replace(location.pathname);
@@ -3480,6 +3821,7 @@
       if (!v) {
         $('codeErr').textContent = $('code').value.trim()
           ? 'That isn\u2019t a KS5 Hub link or code.' : 'Paste your link or code first.';
+        play($('codeErr'), 'w-shake');            // in, with one shake: a refusal reads as "no"
         return;
       }
       $('codeErr').textContent = '';
